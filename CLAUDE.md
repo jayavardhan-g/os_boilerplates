@@ -1,34 +1,81 @@
 # Purpose of this folder
 
-This is Jayavardhan's changelog/runbook for setting up **CachyOS** — Hyprland config, but also any other CachyOS-related system setup (VPN clients, package installs, shell tooling, anything else done while getting this machine configured). The actual record lives in `cachy-cachy-system-config/`, named for that full scope rather than just Hyprland — anything CachyOS-related belongs in this one repo/folder, not split across several. Most of what gets recorded touches files *outside* this folder (mainly `~/.config/hypr/`, but not only that).
+This is Jayavardhan's changelog/runbook for system/config decisions on his machine —
+not limited to any one distro or tool. It's split by scope:
+
+- **`cachyos/`** — anything specific to *this* **CachyOS + Hyprland** setup: Hyprland
+  binds/layouts/workspaces, input device quirks, and any fix that only exists because of
+  Hyprland or this distro's packaging (AUR, pacman-specific choices tied to a CachyOS/Arch
+  decision). Most of what gets recorded here touches files outside this repo (mainly
+  `~/.config/hypr/`, but not only that). Wouldn't apply if the window manager or distro
+  changed.
+- **Every other top-level folder is one portable tool** (`vim/`, `neovim/`, `ssh/`,
+  `vpn/`, `spotify/`, etc.) — a real dotfile or setup decision that would work
+  identically on any Linux box (or macOS, for some) regardless of window manager or
+  distro. One folder per tool, not a shared "global" catch-all.
+
+See root `README.md` for the current folder map — keep it in sync with this rule whenever
+a top-level folder is added or removed.
 
 This folder itself holds no code to run. It's a durable record so that:
 - Jayavardhan can look back and remember *why* a setting is the way it is.
 - If he reinstalls or sets up a new machine, he can replay some or all of these changes instead of starting from scratch.
 - The whole thing can be committed to git as a personal dotfiles/decisions log.
 
-**Don't commit `.claude/`** — it holds session-local Claude Code settings (e.g. `settings.local.json`, a permission allowlist), not part of the CachyOS setup record. Keep a `.gitignore` at the repo root with `.claude/` in it.
+**Don't commit `.claude/`** — it holds session-local Claude Code settings (e.g. `settings.local.json`, a permission allowlist), not part of this record. Keep a `.gitignore` at the repo root with `.claude/` in it.
 
-## What you (Claude) must do in this folder
+## What you (Claude) must do in this repo
 
-**1. Before making changes**, skim `cachy-system-config/README.md` (the index) and the relevant category folder. If today's task modifies or extends something already recorded there, update that existing entry rather than writing a near-duplicate.
+**1. Before making changes**, skim root `README.md` to find the right home — `cachyos/README.md` (for a Hyprland/CachyOS-specific change) or the relevant tool folder — then skim that index/folder. If today's task modifies or extends something already recorded there, update that existing entry rather than writing a near-duplicate.
 
-**2. Whenever a session makes an actual system/config change** — edits a file under `~/.config/hypr/` (or any other dotfile/system config), changes a setting via `hyprctl`/similar that the user wants kept, installs a package, or makes any other decision the user would want to reproduce later — record it before the conversation ends. Ephemeral diagnostics (`hyprctl getoption` to check a value, one-off `ls`/`grep` to investigate) are NOT recorded — only the actual persisted decision/change.
+**2. Whenever a session makes an actual system/config change** — edits a dotfile, changes a setting via `hyprctl`/similar that the user wants kept, installs a package, or makes any other decision the user would want to reproduce later — record it before the conversation ends. Ephemeral diagnostics (`hyprctl getoption` to check a value, one-off `ls`/`grep` to investigate) are NOT recorded — only the actual persisted decision/change.
+
+**Classify every change before writing it down** — this is the part most likely to get skipped:
+- Ask: *would this exact problem and fix exist on a different window manager or distro?*
+  If yes, it's portable → goes in that tool's own folder. If the problem or fix only
+  exists **because** this machine runs Hyprland/CachyOS specifically (e.g. a keyring
+  daemon that needs manual starting because Chromium's desktop-environment detection
+  doesn't recognize Hyprland, or an AUR package chosen for Arch-specific packaging
+  reasons), it's CachyOS-specific → goes in `cachyos/`, even if the tool itself
+  (VSCode, say) is cross-platform.
+- Don't classify by "does this command happen to be pacman/AUR" — plenty of portable-tool
+  entries reference pacman just because that's this machine's package manager (e.g.
+  installing `python-lsp-server`). The test is whether the underlying *problem and fix*
+  are Hyprland/CachyOS-caused, not what package manager the install line happens to use.
+- **If a single change has both parts** (e.g. installing a cross-platform tool, but also
+  wiring it into Hyprland's autostart/keybinds/window rules), split it: document the
+  portable setup in the tool's own folder, and document only the Hyprland-specific wiring
+  in `cachyos/` (usually `cachyos/system/` or `window-management/`) — cross-link the two
+  with `[[name]]` rather than duplicating content. Don't split further than that: if the
+  portable part is too thin to stand as its own entry (no real reusable artifact, just a
+  one-line reason embedded in a Hyprland-caused fix), keep the whole thing in `cachyos/`
+  instead of creating a near-empty tool folder for it.
 
 **Never record secrets.** This folder is meant for git, possibly a remote/shared one. Never write usernames, passwords, API keys/tokens, Wi-Fi credentials, private IPs/hostnames tied to a specific person, license keys, or any other credential into an entry — not even inside a config snippet. If a change necessarily involves one (e.g. setting up a login for some service), describe the step in words ("prompted for the account password during setup") and use a placeholder like `<password>` in any snippet, never the real value. If you're about to paste a command or config block into an entry, scan it for anything that looks like a secret first.
 
-**3. File location and naming**: create/update a file at:
+**3. File location and naming**:
 
+For a **CachyOS/Hyprland-specific** change, create/update a file at:
 ```
-cachy-system-config/<category>/<kebab-case-slug>.md
+cachyos/<category>/<kebab-case-slug>.md
 ```
-
 Categories in use so far (add a new one if nothing fits — update this list when you do):
 - `input/` — keyboard, mouse, touchpad, scroll behavior
 - `keybindings/` — Hyprland binds, submaps, dispatchers
 - `window-management/` — layouts, tiling behavior, workspaces
 - `appearance/` — theming, decorations, colors
-- `system/` — packages, services, anything outside `~/.config/hypr`
+- `system/` — packages, services, anything outside `~/.config/hypr` that's still
+  Hyprland/CachyOS-caused
+
+For a **portable tool config**, create/update a file at:
+```
+<tool>/<kebab-case-slug>.md
+```
+at the repo root — no category subfolders needed here, since each tool folder is usually
+small (often just one file). Use an existing tool folder if one already exists for that
+tool (check root `README.md`); create a new one if nothing fits — a tool folder is
+warranted once there's a real portable artifact to document (a dotfile, a plugin config),
+not for a single passing mention.
 
 **4. Entry template** — use this structure for every file:
 
@@ -36,7 +83,7 @@ Categories in use so far (add a new one if nothing fits — update this list whe
 # <Short title>
 
 **Date:** YYYY-MM-DD
-**Category:** <input|keybindings|window-management|appearance|system>
+**Category:** <input|keybindings|window-management|appearance|system> (cachyos/ entries) or the tool name (portable entries, e.g. `vim`, `neovim`)
 **Files touched:** `~/.config/hypr/config/whatever.lua` (or other paths)
 
 ## What
@@ -55,8 +102,17 @@ Gotchas, conflicts with other binds/settings, things that didn't work and why, o
 follow-up decisions that superseded this one (link to that file instead of duplicating).
 ```
 
-**5. After writing/updating entries**, also update `cachy-system-config/README.md`'s index table (one row per entry file: title, category, one-line summary, path) so it stays a usable table of contents. Keep the README table sorted by category, then roughly chronological within category.
+**5. After writing/updating entries**, keep the indexes in sync:
+- A `cachyos/`-specific entry: update `cachyos/README.md`'s index table (one row per
+  entry file: title, category, one-line summary, path). Keep it sorted by category, then
+  roughly chronological within category.
+- A portable-tool entry: update root `README.md`'s folder table if this created a new
+  top-level tool folder, or its linked file if the folder already existed and just needs
+  a different file linked. These folders are small enough not to need their own
+  per-folder README/index table the way `cachyos/` does.
 
 **6. Superseded decisions**: if a later session changes something already recorded (e.g. a keybind gets moved again), update the existing entry's `Change` section to the new final state, and add a line under `Notes` describing what it used to be and why it changed, rather than leaving stale/contradictory info across two files.
 
 Keep entries factual and terse — this is a reference for reproducing setup, not a narrative. No need to record failed experiments unless the failure itself is the useful lesson (e.g. "X doesn't work because Y" is worth keeping so it isn't retried).
+
+See the `better-os-question` skill for how to answer "is there a better OS than this?" if Jayavardhan asks.

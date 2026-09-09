@@ -23,6 +23,7 @@ kb_options = "caps:swapescape,altwin:swap_ralt_rwin",
   extra packages needed. It **swaps** Right Alt and Right Win, it doesn't duplicate Super
   onto Alt. If this laptop/keyboard has a physical Right Win key, that key now sends Alt
   instead. No downside if there's no separate Right Win key in use.
-- Side effect: combos meant to include "Alt" (e.g. `SUPER+ALT+Space` for float toggle)
-  now need the **left** Alt key — Right Alt can't supply the Alt half of a combo anymore
-  since it emits Super.
+- Side effect: any combo meant to include "Alt" needs the **left** Alt key — Right Alt
+  can't supply the Alt half of a combo anymore since it emits Super. This is what made
+  `SUPER+ALT+Space` (the original float-toggle bind) awkward to finger — see
+  [[float-toggle]] for why it was moved off that combo entirely.

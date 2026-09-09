@@ -1,11 +1,15 @@
-# System config index
+# CachyOS + Hyprland config index
 
-Reference/runbook of CachyOS + Hyprland configuration decisions. See `../CLAUDE.md` for
-how this is maintained. Each row links to an entry with the full rationale and a
+Reference/runbook of decisions that are specific to *this CachyOS + Hyprland setup* —
+things that wouldn't apply if you swapped window managers or distros. Portable,
+tool-specific configs (Vim, Neovim, SSH, VPN client, Spotify) live in their own top-level
+folders instead — see `../README.md` for the full repo map. See `../CLAUDE.md` for how
+this index is maintained. Each row links to an entry with the full rationale and a
 copy-pasteable snippet — pick and choose which ones to reapply on a fresh setup.
 
 | Title | Category | Summary | File |
 |---|---|---|---|
+| Tighter gaps + orange-only active border | appearance | `gaps_in`/`gaps_out` reduced; only the focused window shows a border (orange-to-transparent gradient), unfocused windows borderless | [appearance/window-decorations.md](appearance/window-decorations.md) |
 | Scroll direction: Windows-style per device type | input | Mouse wheel traditional, touchpad natural — matches Windows defaults for each device | [input/scroll-direction.md](input/scroll-direction.md) |
 | Right Alt acts as Super | input | Swaps Right Alt ↔ Right Win via XKB so Right Alt sends Super | [input/right-alt-as-super.md](input/right-alt-as-super.md) |
 | Vim-style hjkl window navigation | keybindings | SUPER+hjkl focus, SUPER+SHIFT+hjkl move window | [keybindings/vim-navigation.md](keybindings/vim-navigation.md) |
@@ -13,10 +17,11 @@ copy-pasteable snippet — pick and choose which ones to reapply on a fresh setu
 | Window resizing: submap, quick combo, and reset | keybindings | SUPER+R resize submap, SUPER+CTRL+SHIFT+hjkl direct resize, SUPER+SHIFT+R reset | [keybindings/resize.md](keybindings/resize.md) |
 | Smart special-workspace (scratchpad) toggle | keybindings | SUPER+SHIFT+S sends to special or pulls back out, context-aware | [keybindings/special-workspace-toggle.md](keybindings/special-workspace-toggle.md) |
 | Finger mapping for modifier-heavy keybinds | keybindings | Which hand/finger presses what, so the vim-style binds habituate as one consistent pattern | [keybindings/finger-ergonomics.md](keybindings/finger-ergonomics.md) |
-| Fortinet SSL-VPN client (openfortivpn) | system | `labvpn` fish command (start/stop/status/log) wraps openfortivpn for the lab GPU server VPN | [system/fortinet-vpn-client.md](system/fortinet-vpn-client.md) |
-| Spotify (Flatpak, user-scope) + SpotX patch | system | User-scope Flatpak install (no sudo needed) patched with the official SpotX-Bash ad-block/feature script | [system/spotify-and-spotx.md](system/spotify-and-spotx.md) |
-| SSH TERM mismatch fix (kitty terminfo not on remote) | system | `SetEnv TERM=xterm-256color` in `~/.ssh/config` fixes broken `clear`/`vim` over SSH from kitty | [system/ssh-term-mismatch-fix.md](system/ssh-term-mismatch-fix.md) |
+| Float toggle rebind: SUPER+ALT+Space → SUPER+SHIFT+F | keybindings | Original combo needed two thumb-modifiers plus a thumb-region key (Space); moved to a clean 3-finger chord | [keybindings/float-toggle.md](keybindings/float-toggle.md) |
+| Noctalia greeter-sync password prompt (unresolved) | system | Why the password popup on every settings change can't easily be fixed via a scoped polkit rule (run0 uses random transient unit names) | [system/noctalia-greeter-sync-password-prompt.md](system/noctalia-greeter-sync-password-prompt.md) |
+| VSCode (official Microsoft build) + keyring | system | `visual-studio-code-bin` via AUR (needed for Remote-SSH/Marketplace) + gnome-keyring so Settings Sync works under Hyprland — kept here (not in a global vscode/ folder) since the actual problem and fix only exist because Hyprland isn't a Chromium-recognized desktop environment | [system/vscode-official-build.md](system/vscode-official-build.md) |
 | Master layout | window-management | One window takes half the screen, rest share the remainder; SUPER+M to swap master | [window-management/master-layout.md](window-management/master-layout.md) |
+| Auto-relaunch apps into the special workspace on every start | window-management | Spotify + 3 kitty terminals (claude, labvpn, home) autostart and route straight into the hidden scratchpad workspace | [window-management/persistent-special-workspace-apps.md](window-management/persistent-special-workspace-apps.md) |
 
 ## Quick setup from scratch
 

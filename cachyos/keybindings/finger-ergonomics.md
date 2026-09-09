@@ -44,6 +44,7 @@ modifier on the **right** hand instead (using Right Alt, which sends Super — s
 | `SUPER+M` (swap master) | left thumb | right index |
 | `SUPER+S` (toggle special visible) | right thumb (Right Alt) | left ring |
 | `SUPER+SHIFT+S` (send to / pull from special) | right thumb (Right Alt) + left pinky (Shift) | left ring (S) |
+| `SUPER+SHIFT+F` (toggle float) | left thumb (Super) + left pinky (Shift) | right index (F) |
 
 ## Notes
 - **Why thumb+pinky / thumb+ring work well together:** thumb and pinky (or thumb and
