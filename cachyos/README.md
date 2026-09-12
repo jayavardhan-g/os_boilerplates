@@ -22,6 +22,7 @@ copy-pasteable snippet — pick and choose which ones to reapply on a fresh setu
 | VSCode (official Microsoft build) + keyring | system | `visual-studio-code-bin` via AUR (needed for Remote-SSH/Marketplace) + gnome-keyring so Settings Sync works under Hyprland — kept here (not in a global vscode/ folder) since the actual problem and fix only exist because Hyprland isn't a Chromium-recognized desktop environment | [system/vscode-official-build.md](system/vscode-official-build.md) |
 | Master layout | window-management | One window takes half the screen, rest share the remainder; SUPER+M to swap master | [window-management/master-layout.md](window-management/master-layout.md) |
 | Auto-relaunch apps into the special workspace on every start | window-management | Spotify + 3 kitty terminals (claude, labvpn, home) autostart and route straight into the hidden scratchpad workspace | [window-management/persistent-special-workspace-apps.md](window-management/persistent-special-workspace-apps.md) |
+| Xpad notes pinned to a monitor-aware workspace 7 | window-management | Workspace 7 follows the external monitor when connected, falls back to the laptop otherwise; notes float unpinned-to-center, survive reboot, and stay put through monitor reconnects | [window-management/xpad-workspace-and-monitor-persistence.md](window-management/xpad-workspace-and-monitor-persistence.md) |
 
 ## Quick setup from scratch
 
