@@ -95,14 +95,9 @@ already covered by `SUPER+SHIFT+F` above:
 bind = SUPER, v, spawn, noctalia msg panel-toggle clipboard
 ```
 
-**Monitor-focus/move-to-monitor bug fixed** — the skeleton had both actions
-on the identical `SUPER+ALT+Left/Right` combo, so only one could ever fire:
-```
-bind = SUPER+ALT, Left, focusmon, left          # unchanged
-bind = SUPER+ALT, Right, focusmon, right        # unchanged
-bind = SUPER+SHIFT+ALT, Left, tagmon, left      # was also SUPER+ALT
-bind = SUPER+SHIFT+ALT, Right, tagmon, right    # was also SUPER+ALT
-```
+**Monitor-focus/move-to-monitor** — see [[multi-monitor-setup]] for the full
+story (a collision bug fix, an abandoned digit-remap experiment, and the
+final bracket-key scheme actually in place now).
 
 **Screenshot keys**, matching Hyprland's physical-key convention on top of
 Mango's own letter-based ones (kept, not removed):
@@ -154,3 +149,6 @@ bind = NONE, F6, spawn, noctalia msg screenshot-region
 - Not ported from Hyprland: auto-relaunch apps into the special-tag on
   startup, and the monitor-aware Xpad-workspace persistence setup. Nothing
   wired up yet for either.
+- See [[known-bugs]] for a genuine unfixed upstream bug: moving a window
+  onto a monitor that has an active fullscreen client leaves keyboard focus
+  stuck until a manual mouse click.
