@@ -9,7 +9,7 @@ Three ways to resize the focused window, plus a way to reset a window back to it
 default tiled size:
 
 1. `SUPER+R` enters a vim-style resize **submap** — while active, `h/j/k/l` resizes in
-   20px steps (hold to repeat), `Esc`/`Enter` exits back to normal.
+   20px steps (hold to repeat), `Esc`/`Enter`/`SUPER+R` again all exit back to normal.
 2. `SUPER+CTRL+SHIFT+h/j/k/l` resizes directly in 40px steps (hold to repeat) — no mode
    to enter/exit, for quick one-off resizes.
 3. `SUPER+SHIFT+R` resets the focused window's size back to its default tiled share, and
@@ -30,6 +30,7 @@ hl.define_submap("resize", "reset", function()
     hl.bind("J",      hl.dsp.window.resize({ x = 0,   y = 20, relative = true }), { repeating = true })
     hl.bind("escape", hl.dsp.submap("reset"))
     hl.bind("Return", hl.dsp.submap("reset"))
+    hl.bind(mainMod .. " + R", hl.dsp.submap("reset"))
 end)
 hl.bind(mainMod .. " + R", hl.dsp.submap("resize"))
 
@@ -49,6 +50,14 @@ hl.bind(mainMod .. " + SHIFT + R", reset_window_size)
 ```
 
 ## Notes
+- **2026-09-13:** added `SUPER+R` as a second way to exit the submap (was
+  `escape`/`Return` only), for parity with the equivalent Mango resize-mode
+  setup which uses a toggle-style enter/exit on the same key. Tested exiting
+  via the physical CapsLock key too (relevant since `caps:swapescape` is
+  active, see [[right-alt-as-super]]) but not yet confirmed working or
+  broken — Mango needed an extra `Caps_Lock`-named bind for the equivalent
+  case since its bind-matching didn't follow the XKB remap; Hyprland is more
+  mature and may not have the same issue, untested either way.
 - **API detail:** a dispatcher built inside a custom Lua function (as opposed to passed
   directly as `hl.bind`'s second argument) must be wrapped in `hl.dispatch(...)` to
   actually fire — `hl.dsp.window.move({...})` alone just constructs the dispatcher object,
