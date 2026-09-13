@@ -33,9 +33,6 @@ hl.bind(mainMod .. " + M", hl.dsp.layout("swapwithmaster"))
 ```
 
 ## Notes
-- **Superseded 2026-09-13** by [[scrolling-layout]] — global layout is now `scrolling`,
-  not `master`. Kept this entry for the dwindle→master reasoning history and the
-  resize/split notes below, some of which no longer apply under scrolling.
 - This is a **global** default (every workspace), not per-workspace. Hyprland supports
   per-workspace layout overrides via `hl.workspace_rule({ workspace = ..., layout = ... })`
   (see commented example in `~/.config/hypr/config/workspaces.lua`) if a mix is ever
