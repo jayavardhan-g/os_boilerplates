@@ -236,3 +236,7 @@ fi
   hook doesn't rerun on a plain `hyprctl reload`, same caveat as
   [[persistent-special-workspace-apps]]); the `windowrules.lua` changes apply
   immediately on `hyprctl reload`.
+- Ported to Mango too (2026-09-14) — see the portable `mango/xpad-workspace-and-monitor-persistence.md`.
+  That version uses tag 5, not tag 7: Mango's tags are a flat 1..N range (no
+  Hyprland-style arbitrary-named `special:7`), so the tag count there just went from 4
+  to 5 rather than importing this file's "7".
