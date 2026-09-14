@@ -23,11 +23,23 @@ bind was added after manual resize testing left two windows uneven — see Notes
 ## Change
 ```lua
 -- Submap: SUPER+R to enter, hjkl to resize, Esc/Enter to exit
+--
+-- window.resize was observed (via direct hyprctl dispatch testing, not just
+-- a user report) to sometimes silently kick the submap back to "default"
+-- after a single resize dispatch - not consistently reproducible, so the
+-- exact cause is unconfirmed (possibly layout/window-state dependent), but
+-- real. resize_and_stay() re-asserts the "resize" submap right after every
+-- dispatch as a defensive fix, regardless of root cause - a harmless no-op
+-- on the (apparently more common) case where the submap didn't need it.
+local function resize_and_stay(dx, dy)
+    hl.dispatch(hl.dsp.window.resize({ x = dx, y = dy, relative = true }))
+    hl.dispatch(hl.dsp.submap("resize"))
+end
 hl.define_submap("resize", "reset", function()
-    hl.bind("H",      hl.dsp.window.resize({ x = -20, y = 0,  relative = true }), { repeating = true })
-    hl.bind("L",      hl.dsp.window.resize({ x = 20,  y = 0,  relative = true }), { repeating = true })
-    hl.bind("K",      hl.dsp.window.resize({ x = 0,   y = -20, relative = true }), { repeating = true })
-    hl.bind("J",      hl.dsp.window.resize({ x = 0,   y = 20, relative = true }), { repeating = true })
+    hl.bind("H",      function() resize_and_stay(-20, 0) end, { repeating = true })
+    hl.bind("L",      function() resize_and_stay(20, 0) end, { repeating = true })
+    hl.bind("K",      function() resize_and_stay(0, -20) end, { repeating = true })
+    hl.bind("J",      function() resize_and_stay(0, 20) end, { repeating = true })
     hl.bind("escape", hl.dsp.submap("reset"))
     hl.bind("Return", hl.dsp.submap("reset"))
     hl.bind(mainMod .. " + R", hl.dsp.submap("reset"))
@@ -50,6 +62,17 @@ hl.bind(mainMod .. " + SHIFT + R", reset_window_size)
 ```
 
 ## Notes
+- **2026-09-14: fixed "have to press SUPER+R before every single h/j/k/l press."**
+  User reported the resize submap wasn't staying active — each resize needed a fresh
+  `SUPER+R`. Reproduced directly via `hyprctl dispatch` (no physical keypresses needed):
+  entered the `resize` submap, dispatched the exact `window.resize` action the `H` bind
+  uses, and `hyprctl submap` showed it had reverted to `default` after that one dispatch.
+  Retesting the same dispatch a few more times didn't reproduce it every time, so the
+  underlying mechanism is unconfirmed (no local Hyprland source to check, unlike Mango) —
+  but it's real, not user error. Fix: `resize_and_stay()` now re-dispatches
+  `submap("resize")` right after every resize call, confirmed via the same
+  `hyprctl dispatch` + `hyprctl submap` method to stay in `resize` across several
+  consecutive calls afterward.
 - **2026-09-13:** added `SUPER+R` as a second way to exit the submap (was
   `escape`/`Return` only), for parity with the equivalent Mango resize-mode
   setup which uses a toggle-style enter/exit on the same key. Tested exiting
