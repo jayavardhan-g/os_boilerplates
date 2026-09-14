@@ -34,3 +34,11 @@ kb_options = "caps:swapescape,altwin:swap_ralt_rwin",
   laptop behavior, not specific to Hyprland/CachyOS, and there's no software remap
   possible for a key the kernel never sees. Don't retry this without different
   hardware. Right Alt → Super stays as the only viable mapping.
+- Also checked whether a lower-level tool (`keyd`, `interception-tools`, `evremap` —
+  anything working on raw evdev instead of XKB) could catch it instead. Checked the
+  `KEY` capability bitmask for every device in `/proc/bus/input/devices`, including
+  this ASUS ROG's `N-KEY Device` and `Asus WMI hotkeys` devices (which do carry other
+  special-function keys). None declare `KEY_FN` (464) as supported — the kernel never
+  emits this event on *any* device, so evdev-level remappers are a dead end too, not
+  just XKB. Confirms there is no software layer at which Right Fn is interceptable on
+  this machine.
