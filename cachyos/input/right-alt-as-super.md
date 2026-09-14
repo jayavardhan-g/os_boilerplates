@@ -27,3 +27,10 @@ kb_options = "caps:swapescape,altwin:swap_ralt_rwin",
   can't supply the Alt half of a combo anymore since it emits Super. This is what made
   `SUPER+ALT+Space` (the original float-toggle bind) awkward to finger — see
   [[float-toggle]] for why it was moved off that combo entirely.
+- 2026-09-14: considered moving this mapping to the Right Fn key instead (since Fn is
+  used less often than Alt). Verified with `wev` that this keyboard's Right Fn key
+  produces **no Wayland/XKB event and no evdev keycode at all** — it's intercepted
+  entirely by the embedded controller/firmware before reaching Linux. This is normal
+  laptop behavior, not specific to Hyprland/CachyOS, and there's no software remap
+  possible for a key the kernel never sees. Don't retry this without different
+  hardware. Right Alt → Super stays as the only viable mapping.
