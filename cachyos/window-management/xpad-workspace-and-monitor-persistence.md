@@ -236,10 +236,12 @@ fi
   hook doesn't rerun on a plain `hyprctl reload`, same caveat as
   [[persistent-special-workspace-apps]]); the `windowrules.lua` changes apply
   immediately on `hyprctl reload`.
-- Partially ported to Mango (2026-09-14) — see the portable `mango/xpad-workspace-and-monitor-persistence.md`.
-  That version uses tag 5, not tag 7 (Mango's tags are a flat 1..N range, no
-  Hyprland-style arbitrary-named `special:7`), and only ported the *static* half of this
-  feature (tag exists, notes float there without being re-centered). The auto-launch and
-  auto-migrate-to-external-monitor automation was built and verified working there too,
-  but then deliberately reverted after it triggered an Xpad startup-race bug that briefly
-  corrupted saved note positions — Mango notes are opened and placed manually instead.
+- Attempted on Mango too (2026-09-14), fully reverted — see `mango/xpad-workspace-and-monitor-persistence.md`
+  for the full story. Auto-launch/auto-migrate automation was built and verified working,
+  but reverted after it triggered an Xpad startup-race bug that briefly corrupted saved
+  note positions; a manual-placement fallback (a dedicated tag 5, opened by hand) was
+  tried next but didn't work either — Xpad itself doesn't respect Mango's current focus
+  when creating an additional note from an already-running instance. Mango is back to
+  stock tag config with no Xpad-related changes at all. This Hyprland version is
+  unaffected and still works as documented above (Hyprland-Lua's `hl.on`/`hl.dispatch`
+  hooks don't have the same focus-tracking gap).
