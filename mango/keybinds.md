@@ -106,6 +106,26 @@ bindr = NONE, Print, spawn, noctalia msg screenshot-fullscreen
 bind = NONE, F6, spawn, noctalia msg screenshot-region
 ```
 
+**Master swap and relative-workspace arrow keys** (2026-09-14), matching two
+more Hyprland binds that had no Mango equivalent yet:
+```
+bind = SUPER, m, zoom,
+bind = SUPER+CTRL, Left, viewtoleft, 0
+bind = SUPER+CTRL, Right, viewtoright, 0
+```
+`zoom` is dwm's classic master-swap action (move focused window to the front
+of the client list) — the actual dispatcher name is `zoom`, not something
+Hyprland-style like `swapwithmaster`; found by grepping the dispatch table
+directly rather than guessing. Most meaningful on the `tile` (master-stack)
+layout, inert elsewhere — same as Hyprland's `SUPER+M` under its own
+non-master layouts. The arrow-key binds sit alongside the existing
+`SUPER+CTRL+h/l`, not replacing them.
+
+**Display mode menu** (2026-09-14) — see [[display-mode-menu]] for the new
+`SUPER+P` script, ported from Hyprland with one real limitation (no
+"Duplicate"/mirror mode — confirmed unsupported anywhere in Mango, not just
+a naming difference).
+
 ## Notes
 - **Mango's `keymode=`/`setkeymode` modal system**: put `keymode=<name>`
   before a group of `bind` lines and only those apply while in that mode;
@@ -152,3 +172,7 @@ bind = NONE, F6, spawn, noctalia msg screenshot-region
 - See [[known-bugs]] for a genuine unfixed upstream bug: moving a window
   onto a monitor that has an active fullscreen client leaves keyboard focus
   stuck until a manual mouse click.
+- Parity went the other direction too: Hyprland's session panel was only on
+  `SUPER+ALT+C` before; added `SUPER+SHIFT+Q` there as well (alongside, not
+  replacing it) to match Mango's own key for the same panel — see
+  `~/.config/hypr/config/binds.lua`.

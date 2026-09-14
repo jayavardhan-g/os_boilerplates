@@ -86,3 +86,6 @@ dmenu-style tool — wofi/rofi-wayland/zenity/kdialog — was installed on this 
 - Considered **kanshi** (auto-applies a saved layout profile on monitor connect/disconnect,
   no menu needed at all for a fixed desk setup) as a better long-term fit than a manual
   menu — not set up yet, still just this menu.
+- Ported to Mango too (2026-09-14) — see the portable `mango/display-mode-menu.md`.
+  That version is missing the "Duplicate" option entirely: Mango has no
+  mirror/clone monitor capability at all, confirmed by searching its full source tree.
