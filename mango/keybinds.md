@@ -168,9 +168,12 @@ a naming difference).
   source than expected.
 - Not ported from Hyprland: auto-relaunch apps (spotify/claude/labvpn/home
   terminals) into the special-tag on startup. Nothing wired up yet for this.
-  (The monitor-aware Xpad-workspace persistence setup **was** ported
-  2026-09-14 — see [[xpad-workspace-and-monitor-persistence]] — tag 5 here,
-  not tag 7 like Hyprland, since Mango's tags are a flat 1..N range.)
+  (Xpad got a dedicated tag 5 here, not tag 7 like Hyprland, since Mango's
+  tags are a flat 1..N range — see [[xpad-workspace-and-monitor-persistence]].
+  Only the static part was ported, though: tag 5 exists and floats notes
+  correctly, but the auto-launch/auto-migrate-to-external-monitor
+  automation was built, verified, then deliberately reverted after it
+  triggered an Xpad data-corruption bug — notes are opened manually here.)
 - See [[known-bugs]] for a genuine unfixed upstream bug: moving a window
   onto a monitor that has an active fullscreen client leaves keyboard focus
   stuck until a manual mouse click.
