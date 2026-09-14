@@ -10,7 +10,7 @@ copy-pasteable snippet — pick and choose which ones to reapply on a fresh setu
 | Title | Category | Summary | File |
 |---|---|---|---|
 | Tighter gaps + orange-only active border | appearance | `gaps_in`/`gaps_out` reduced; only the focused window shows a border (orange-to-transparent gradient), unfocused windows borderless | [appearance/window-decorations.md](appearance/window-decorations.md) |
-| Mango unfocused-window opacity matched to Hyprland | appearance | `unfocused_opacity = 0.85` in Mango (was unset, using a more-transparent compiled-in default); no `focused_opacity` equivalent exists in Mango | [appearance/mango-unfocused-opacity.md](appearance/mango-unfocused-opacity.md) |
+| Mango transparency reduced to match Hyprland's more solid look | appearance | `unfocused_opacity = 0.95` (was unset, then 0.85) plus neutralized blur brightness/contrast/saturation; no `focused_opacity` equivalent exists in Mango | [appearance/mango-unfocused-opacity.md](appearance/mango-unfocused-opacity.md) |
 | Scroll direction: Windows-style per device type | input | Mouse wheel traditional, touchpad natural — matches Windows defaults for each device | [input/scroll-direction.md](input/scroll-direction.md) |
 | Right Alt acts as Super | input | Swaps Right Alt ↔ Right Win via XKB so Right Alt sends Super | [input/right-alt-as-super.md](input/right-alt-as-super.md) |
 | Vim-style hjkl window navigation | keybindings | SUPER+hjkl focus, SUPER+SHIFT+hjkl move window | [keybindings/vim-navigation.md](keybindings/vim-navigation.md) |
