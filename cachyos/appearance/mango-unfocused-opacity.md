@@ -23,6 +23,11 @@ change" reason, but turned out to be a false alarm caused by testing only a subt
 change.
 
 ## Change
+Final pass: exact-mirrored every blur/opacity value Hyprland's `decorations.lua` either
+sets explicitly or leaves at a real (queried, not guessed) internal default —
+`hyprctl getoption` was run directly while logged into Hyprland to get the true live
+numbers for values `decorations.lua` never overrides itself.
+
 `~/.config/mango/cfg/appearance.conf`:
 ```
 # Mango's real compiled-in default is 1.0 (fully opaque) for both
@@ -33,22 +38,29 @@ change.
 # file but never re-applies opacity to windows already open, only to ones
 # opened afterward. Test any new value on a freshly-opened window, not an
 # existing one.
-unfocused_opacity = 0.75
+unfocused_opacity = 0.85
+focused_opacity = 0.95
 
 blur = 1
 blur_layer = 0
 blur_optimized = 0
-blur_params_num_passes = 3
+# num_passes/radius/brightness/contrast/noise mirror Hyprland's real live
+# defaults (queried via hyprctl getoption while logged into Hyprland,
+# since decorations.lua never overrides them itself):
+# decoration:blur:passes=4, size=5, brightness=1.0, contrast=0.8916,
+# noise=0.0117.
+blur_params_num_passes = 4
 blur_params_radius = 5
-blur_params_noise = 0.04
-# brightness/contrast/saturation neutralized (were 0.9/0.9/1.2) - the boosted
-# saturation was making whatever's behind a blurred window look more vivid
-# and "present", reading as more see-through than Hyprland's own blur
-# (size=5, passes=4) despite Mango's blur technically being weaker here.
-# Confirmed these are actually live (not dead config) by briefly setting
-# saturation=0 and seeing the blurred backdrop render in grayscale.
+blur_params_noise = 0.0117
 blur_params_brightness = 1.0
-blur_params_contrast = 1.0
+blur_params_contrast = 0.8916
+# No true Hyprland equivalent to mirror here: Hyprland uses a different
+# "vibrancy" algorithm (decoration:blur:vibrancy, default 0.1696) instead
+# of a flat saturation multiplier, on a different scale entirely (0 = no
+# effect there, vs 1.0 = no effect here) - left neutral rather than
+# guessing a translated number. Confirmed this key is live (not dead
+# config) by briefly setting it to 0 and seeing the blurred backdrop
+# render in grayscale.
 blur_params_saturation = 1.0
 ```
 
@@ -88,3 +100,11 @@ blur_params_saturation = 1.0
   the AUR/upstream if unavailable) over inferring behavior from `strings`/`nm` on the
   compiled binary alone — the binary-only approach produced two separate wrong
   conclusions in this same investigation before the source settled both.
+- **Still not an exact mirror — three things have no Mango equivalent at all:**
+  `fullscreen_opacity` (Hyprland: `1.0`, always fully opaque when fullscreened),
+  `dim_special` (Hyprland: `0.3`, dims everything else when the special/scratchpad
+  workspace is open), and `blur.special` (Hyprland: `true`, blurs only the scratchpad
+  backdrop specifically). None of these concepts exist as config keys in Mango.
+- **`border_size` still doesn't match** — Hyprland `general:border_size = 2`, Mango
+  `borderpx = 4` — flagged early on when first comparing the two configs and never
+  resolved; left alone here since it wasn't part of this blur/opacity pass.
