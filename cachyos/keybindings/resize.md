@@ -62,17 +62,26 @@ hl.bind(mainMod .. " + SHIFT + R", reset_window_size)
 ```
 
 ## Notes
-- **2026-09-14: fixed "have to press SUPER+R before every single h/j/k/l press."**
-  User reported the resize submap wasn't staying active — each resize needed a fresh
-  `SUPER+R`. Reproduced directly via `hyprctl dispatch` (no physical keypresses needed):
-  entered the `resize` submap, dispatched the exact `window.resize` action the `H` bind
-  uses, and `hyprctl submap` showed it had reverted to `default` after that one dispatch.
-  Retesting the same dispatch a few more times didn't reproduce it every time, so the
-  underlying mechanism is unconfirmed (no local Hyprland source to check, unlike Mango) —
-  but it's real, not user error. Fix: `resize_and_stay()` now re-dispatches
-  `submap("resize")` right after every resize call, confirmed via the same
-  `hyprctl dispatch` + `hyprctl submap` method to stay in `resize` across several
-  consecutive calls afterward.
+- **2026-09-14: KNOWN LIMITATION (not fixable from config) — "have to press SUPER+R
+  before every single h/j/k/l press."** User reported the resize submap wasn't staying
+  active. Root cause confirmed by polling `hyprctl submap` every 100ms in the background
+  for 60s while the user did real keypresses (physical presses only — virtual-keyboard
+  injected input via `wtype` does NOT trigger Hyprland's own keybinds at all, confirmed
+  separately; Hyprland ignores modifier state from synthetic input for its own shortcuts,
+  likely a deliberate security measure): **the submap reverts to `default` at the moment
+  an `H`/`L`/`K`/`J` key is *released*, every single time, with zero exceptions across
+  the whole sample.** Holding a key continuously (repeat keeps firing) stays in `resize`
+  perfectly — one hold ran 23+ seconds with no reversion. But the instant you let go,
+  you're back in `default`, so any next keypress (even the same key) starts fresh outside
+  the submap — this is why a second tap of `h` "just types h" instead of resizing.
+  This is release-triggered behavior internal to how this Hyprland build handles a
+  repeat-capable (`binde`) bind inside a submap — nothing in the `hl.bind`/submap API
+  exposes an on-release hook to override it, so `resize_and_stay()` (below) can't
+  actually fix it; kept anyway since it's a harmless no-op that doesn't hurt. Decided to
+  leave this as a known limitation rather than keep digging: **use a sustained hold, not
+  taps, when using the `SUPER+R` submap** (fully reliable per the data), and prefer
+  `SUPER+CTRL+SHIFT+h/j/k/l` (below, not submap-based, no revert issue) for resizing that
+  needs to tap between several directions.
 - **2026-09-13:** added `SUPER+R` as a second way to exit the submap (was
   `escape`/`Return` only), for parity with the equivalent Mango resize-mode
   setup which uses a toggle-style enter/exit on the same key. Tested exiting
