@@ -1,5 +1,10 @@
 # Config & decisions log
 
+See **[`KEYBINDS.md`](KEYBINDS.md)** for a single searchable list of every keybind on
+this machine (Hyprland, Mango, Vim, Neovim) — that file is a live reference of *what's
+currently bound*, kept in sync with the actual configs; everything else in this repo
+explains *why*/*when* a decision was made.
+
 Personal runbook of system/config decisions, split by scope:
 
 - **[`cachyos/`](cachyos/README.md)** — anything specific to *this* CachyOS + Hyprland
