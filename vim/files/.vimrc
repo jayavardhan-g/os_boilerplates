@@ -254,15 +254,17 @@ nnoremap <C-u> <C-u>zz
 nnoremap n nzzzv
 nnoremap N Nzzzv
 
-" Resize with arrows
-nnoremap <Up> :resize -2<CR>
-nnoremap <Down> :resize +2<CR>
-nnoremap <Left> :vertical resize -2<CR>
-nnoremap <Right> :vertical resize +2<CR>
+" Resize with arrows (Ctrl held - matches LazyVim's <C-Up/Down/Left/Right>,
+" bare arrows freed up for normal cursor movement)
+nnoremap <C-Up> :resize -2<CR>
+nnoremap <C-Down> :resize +2<CR>
+nnoremap <C-Left> :vertical resize -2<CR>
+nnoremap <C-Right> :vertical resize +2<CR>
 
-" Navigate buffers
-nnoremap <Tab> :bnext<CR>
-nnoremap <S-Tab> :bprevious<CR>
+" Navigate buffers - H/L, matching LazyVim's <S-h>/<S-l> (this sacrifices
+" H/L's default screen-top/bottom jump, same trade LazyVim makes)
+nnoremap H :bprevious<CR>
+nnoremap L :bnext<CR>
 nnoremap <leader>sb :buffers<CR>:buffer<Space>
 
 " increment/decrement numbers
@@ -270,10 +272,13 @@ nnoremap <leader>+ <C-a>
 nnoremap <leader>- <C-x>
 
 " window management
-nnoremap <leader>v <C-w>v
+" Vertical split matches LazyVim's <leader>|; horizontal split stays on
+" <leader>h (LazyVim's own <leader>- collides with increment/decrement
+" above, kept as-is on purpose - see [[vim-neovim-parity-pass]]).
+nnoremap <leader><Bar> <C-w>v
 nnoremap <leader>h <C-w>s
 nnoremap <leader>se <C-w>=
-nnoremap <leader>xs :close<CR>
+nnoremap <leader>wd :close<CR>
 
 " Navigate between splits
 nnoremap <C-k> :wincmd k<CR>
@@ -282,25 +287,26 @@ nnoremap <C-h> :wincmd h<CR>
 nnoremap <C-l> :wincmd l<CR>
 
 " Real Vim tabpages (separate window layouts - rarely needed now that files
-" use the buffer-based tabline instead, see BufferTabline above)
-nnoremap <leader>to :tabnew<CR>
-nnoremap <leader>tx :tabclose<CR>
-" Cycle the buffer-tabline (aliases of <Tab>/<S-Tab>) - <leader>tn/tp used to
-" be :tabn/:tabp, which stopped doing anything once everything moved into a
-" single tab (nothing left to cycle between); repointed at buffers so the
-" muscle memory actually matches what the tabline shows.
-nnoremap <leader>tn :bnext<CR>
-nnoremap <leader>tp :bprevious<CR>
+" use the buffer-based tabline instead, see BufferTabline above), under
+" LazyVim's <leader><tab> prefix instead of the old <leader>to/tx/tn/tp
+nnoremap <leader><tab><tab> :tabnew<CR>
+nnoremap <leader><tab>d :tabclose<CR>
+nnoremap <leader><tab>] :tabnext<CR>
+nnoremap <leader><tab>[ :tabprevious<CR>
+nnoremap <leader><tab>f :tabfirst<CR>
+nnoremap <leader><tab>l :tablast<CR>
 
 " Close this file's buffer without closing its window - plain :bdelete
 " closes the window itself when another window exists (confirmed even with
 " zero sidebar involved), which collapsed the file window and left netrw
 " filling the screen. vim-bbye's :Bdelete preserves window layout instead.
-nnoremap <leader>x :Bdelete<CR>
-nnoremap <leader>b :enew<CR>
+" Key matches LazyVim's native <leader>bd (mini.bufremove does the same job
+" there); new-buffer moved to <leader>bn to avoid clashing with it.
+nnoremap <leader>bd :Bdelete<CR>
+nnoremap <leader>bn :enew<CR>
 
-" toggle line wrapping
-nnoremap <leader>lw :set wrap!<CR>
+" toggle line wrapping - matches LazyVim's <leader>uw
+nnoremap <leader>uw :set wrap!<CR>
 
 " Toggle comment (Ctrl+/), via tpope/vim-commentary's gcc/gc - plain Vim has
 " no built-in equivalent to Neovim's core gcc/gc (that's Neovim-only, added
@@ -310,10 +316,6 @@ nmap <C-/> gcc
 nmap <C-_> gcc
 vmap <C-/> gc
 vmap <C-_> gc
-
-" Press jk fast to exit insert mode
-inoremap jk <ESC>
-inoremap kj <ESC>
 
 " Stay in indent mode
 " vnoremap < <gv

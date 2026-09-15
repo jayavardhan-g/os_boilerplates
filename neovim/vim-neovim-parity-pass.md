@@ -1,10 +1,16 @@
 # Vim/Neovim parity pass + leader timeout fix
 
-> **Superseded 2026-09-15 (Neovim side only)**: Neovim was migrated to LazyVim - see
+> **Superseded 2026-09-15 (Neovim side)**: Neovim was migrated to LazyVim - see
 > [[lazyvim-migration]]. Every Neovim-specific change below (the `confirm`/quit-flow
 > follow-ups, the buffer-tabline, bufferline.nvim/mini.bufremove) no longer describes the
-> live Neovim config; kept for the reasoning trail. The Vim-side changes throughout this
-> entry (`~/.vimrc`) are still current and unaffected.
+> live Neovim config; kept for the reasoning trail.
+>
+> **Partially superseded 2026-09-15 (Vim side)**: once Neovim's own keybindings changed
+> (LazyVim's defaults, not the hand-rolled ones this entry built to match), several
+> `~/.vimrc` keybinds that were originally set *to match Neovim* were re-pointed at
+> LazyVim's actual current keys instead - see the final follow-up section at the bottom.
+> Everything else in this entry (OSC52 yank, `timeoutlen`, `confirm`, auto-pairs, the
+> `:qa` smart-quit logic, the buffer-tabline itself) is unaffected and still current.
 
 **Date:** 2026-08-30
 **Category:** system
@@ -842,3 +848,78 @@ side by side again, exactly as before this bug.
   mapping with `$` appended, so it needs a **recursive** map (`nmap`/`remap = true`), not
   `noremap` - otherwise `<leader>` + `y` inside the RHS wouldn't resolve back to the
   OSCYank operator.
+
+## Follow-up: re-matched Vim keybinds to LazyVim's actual keys, dropped jk/kj (2026-09-15)
+
+**What**: since Neovim moved to LazyVim (see [[lazyvim-migration]]), the reason several
+`~/.vimrc` keybinds looked the way they did - "match what Neovim does" - no longer holds,
+because Neovim's own keys changed. Re-pointed the Vim side at LazyVim's *current* defaults
+instead of leaving it matching the old, now-dead hand-rolled Neovim config. Also dropped
+`jk`/`kj` to exit insert mode entirely (no replacement requested).
+
+**Why**: explicit request - keep OSC52 as-is, drop `jk`/`kj`, and bring the keybinds that
+were changed to mirror Neovim back in line with what Neovim actually does now.
+
+**Change** - `~/.vimrc`:
+```vim
+" Resize with arrows (Ctrl held - matches LazyVim's <C-Up/Down/Left/Right>,
+" bare arrows freed up for normal cursor movement)
+nnoremap <C-Up> :resize -2<CR>
+nnoremap <C-Down> :resize +2<CR>
+nnoremap <C-Left> :vertical resize -2<CR>
+nnoremap <C-Right> :vertical resize +2<CR>
+
+" Navigate buffers - H/L, matching LazyVim's <S-h>/<S-l> (this sacrifices
+" H/L's default screen-top/bottom jump, same trade LazyVim makes)
+nnoremap H :bprevious<CR>
+nnoremap L :bnext<CR>
+
+" window management
+" Vertical split matches LazyVim's <leader>|; horizontal split stays on
+" <leader>h (LazyVim's own <leader>- collides with increment/decrement,
+" kept as-is on purpose - see the Notes below).
+nnoremap <leader><Bar> <C-w>v
+nnoremap <leader>h <C-w>s
+nnoremap <leader>wd :close<CR>  " was <leader>xs
+
+" Real Vim tabpages, under LazyVim's <leader><tab> prefix instead of the old
+" <leader>to/tx/tn/tp
+nnoremap <leader><tab><tab> :tabnew<CR>
+nnoremap <leader><tab>d :tabclose<CR>
+nnoremap <leader><tab>] :tabnext<CR>
+nnoremap <leader><tab>[ :tabprevious<CR>
+nnoremap <leader><tab>f :tabfirst<CR>
+nnoremap <leader><tab>l :tablast<CR>
+
+" Key matches LazyVim's native <leader>bd (mini.bufremove did the same job
+" there before the migration); new-buffer moved off <leader>b to avoid
+" clashing with it.
+nnoremap <leader>bd :Bdelete<CR>  " was <leader>x
+nnoremap <leader>bn :enew<CR>     " was <leader>b
+
+" toggle line wrapping - matches LazyVim's <leader>uw
+nnoremap <leader>uw :set wrap!<CR>  " was <leader>lw
+```
+Removed entirely (no LazyVim equivalent kept, none requested):
+```vim
+inoremap jk <ESC>
+inoremap kj <ESC>
+```
+
+**Conflict surfaced and resolved by the user**: LazyVim's actual horizontal-split key is
+`<leader>-`, which collides with this config's own `<leader>-` (decrement number - added
+independently during the original parity pass above, not something LazyVim defines).
+Checked and confirmed LazyVim has no leader-based increment/decrement keybind at all (it
+just leaves Vim's native `<C-a>`/`<C-x>` alone), so there was no LazyVim convention being
+protected by keeping `<leader>-` for decrement - purely this config's own addition.
+Decision: **keep** `<leader>+`/`<leader>-` for increment/decrement unchanged, and leave
+horizontal split on its old `<leader>h` rather than moving it to the colliding
+`<leader>-`. Vertical split still moved to `<leader>|` (LazyVim's key, no conflict there).
+
+**Verified**: `vim -Nu ~/.vimrc -c 'echo "OK"' -c 'qa!'` sources with zero errors after all
+the above changes.
+
+**Not changed / out of scope**: `<leader>se` (equalize windows) and `<leader>sb` (buffer
+list) have no corresponding LazyVim-diff callout, left as-is. LazyVim's `<leader>cd` (line
+diagnostics) has no Vim equivalent (no LSP in plain Vim) - not ported, matches the existing
+`signcolumn=no`-in-Vim-vs-`yes`-in-Neovim divergence already noted above.
