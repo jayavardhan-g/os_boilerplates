@@ -15,6 +15,7 @@ inline snippets in each entry, so a fresh machine can overlay-copy them directly
 | Title | Category | Summary | File |
 |---|---|---|---|
 | Tighter gaps + orange-only active border | appearance | `gaps_in`/`gaps_out` reduced; only the focused window shows a border (orange-to-transparent gradient), unfocused windows borderless | [appearance/window-decorations.md](appearance/window-decorations.md) |
+| Mango cursor theme matched to Hyprland's | appearance | Mango shipped with the stock `capitaine-cursors` default; switched to `Bibata-Modern-Ice` size 24 to match Hyprland's real cursor (`~/.config/uwsm/env`) | [appearance/mango-cursor-theme.md](appearance/mango-cursor-theme.md) |
 | Scroll direction: Windows-style per device type | input | Mouse wheel traditional, touchpad natural — matches Windows defaults for each device | [input/scroll-direction.md](input/scroll-direction.md) |
 | Right Alt acts as Super | input | Swaps Right Alt ↔ Right Win via XKB so Right Alt sends Super | [input/right-alt-as-super.md](input/right-alt-as-super.md) |
 | Vim-style hjkl window navigation | keybindings | SUPER+hjkl focus, SUPER+SHIFT+hjkl move window | [keybindings/vim-navigation.md](keybindings/vim-navigation.md) |
