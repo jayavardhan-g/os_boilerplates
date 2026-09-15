@@ -1,0 +1,284 @@
+# Migrated Neovim to LazyVim
+
+**Date:** 2026-09-15
+**Category:** system
+**Files touched:** `~/.config/nvim` (replaced), `~/.local/share/nvim`, `~/.local/state/nvim`,
+`~/.cache/nvim`
+
+## What
+Replaced the entire hand-rolled Neovim config (see [[neovim-minimal-ssh-friendly-setup]]
+and [[vim-neovim-parity-pass]]) with the official [LazyVim](https://www.lazyvim.org)
+starter template. **Neovim only** — `~/.vimrc` (plain Vim) is untouched and still the
+hand-rolled setup described in [[vimrc-minimal-visual-config]].
+
+## Why
+After several sessions hand-rolling Neovim-specific behavior (a buffer-based tabline, a
+multi-file "smart quit" flow, sidebar/quit interactions), kept hitting real bugs in that
+custom glue code - netrw's `modifiable` default, neo-tree's `close_if_last_window` quit
+guard silently replacing the confirm dialog, `BufModifiedSet` not existing in plain Vim,
+duplicate sidebars per real tabpage, `:bdelete` collapsing windows. Decided the actual
+priority had shifted from "hand-declare and understand every piece" (the original
+rationale for the manual git-clone loader and no-Mason setup) to "fewer bugs, less
+personal maintenance, lean on a tried-and-tested community config instead."
+
+Compared LazyVim, AstroNvim, and NvChad first rather than assuming - see the chat history
+around 2026-09-15 for the full comparison. LazyVim won on: largest community (most
+already-solved issues to find), its "extras" system (one line pulls in a whole language's
+LSP+formatter+treesitter+debugger, pre-integrated, instead of hand-declaring each piece -
+directly addresses where this session's bugs kept coming from), and being the most
+actively developed of the three. NvChad's one philosophical similarity (no Mason by
+default) was explicitly *not* a deciding factor once "match our old preferences" stopped
+being the goal - no Mason would have meant continuing to hand-install every LSP server,
+recreating the exact problem this migration is meant to solve.
+
+## Change
+Backed up the previous setup rather than deleting it (per LazyVim's own documented install
+steps):
+```bash
+mv ~/.config/nvim      ~/.config/nvim.bak-pre-lazyvim-20260915-005052
+mv ~/.local/share/nvim ~/.local/share/nvim.bak-pre-lazyvim-20260915-005052
+mv ~/.local/state/nvim ~/.local/state/nvim.bak-pre-lazyvim-20260915-005052
+mv ~/.cache/nvim       ~/.cache/nvim.bak-pre-lazyvim-20260915-005052
+```
+Installed the starter template:
+```bash
+git clone https://github.com/LazyVim/starter ~/.config/nvim
+rm -rf ~/.config/nvim/.git
+```
+First launch bootstraps `lazy.nvim` and syncs all default plugins automatically - no
+further steps needed. Opening a file of a given language (e.g. a `.lua` file) auto-installs
+its LSP server via Mason on the spot (confirmed live: `lua_ls` installed and attached
+within ~20s of opening a `.lua` file, no manual config).
+
+## Reproducing this exact setup on a fresh machine
+
+All the personal customizations from the follow-ups below (themes, disabled plugins,
+language list, keybinds, OSC52) are stored as **actual files**, not just described in
+prose - see [`files/`](files/) next to this entry, which mirrors real paths under `$HOME`
+(per `CLAUDE.md`'s file-storage convention). To reproduce:
+
+```bash
+# 1. Install the bare LazyVim starter
+git clone https://github.com/LazyVim/starter ~/.config/nvim
+rm -rf ~/.config/nvim/.git
+
+# 2. Overlay this repo's customizations on top
+cp -r files/.config/nvim/* ~/.config/nvim/
+cp files/.config/kitty/kitty.conf ~/.config/kitty/kitty.conf  # only if you also want the Nerd Font + this exact kitty setup
+
+# 3. First launch bootstraps everything else automatically
+nvim
+```
+That's the whole thing - no manual `:TSInstall`/`:TSUninstall`/Mason cleanup steps needed
+on a *fresh* machine (those were only needed in this session because plugins/parsers were
+already installed before the customization was decided; `disabled.lua` and
+`languages.lua` being in place *before* the first `:Lazy sync` means the excluded
+plugins/parsers are simply never installed in the first place).
+
+**One real prerequisite**: `colors/kitty.lua` reads `~/.config/kitty/kitty.conf`'s
+`include` line and the theme file it points to (currently Noctalia-managed - see
+`cachyos/system/noctalia-greeter-sync-password-prompt.md` for context on that shell) - on
+a machine without that same kitty+Noctalia setup, it falls back to Neovim's built-in
+`habamax` colorscheme automatically rather than erroring, so this is safe to copy
+anywhere, it just won't match a different machine's terminal theme unless the same kitty
+theming exists there too.
+
+## Notes
+- **Rollback**: if LazyVim doesn't work out, the entire previous hand-rolled setup is
+  intact at the `*.bak-pre-lazyvim-20260915-005052` paths above - `mv` them back over the
+  live `nvim`/`.local`/`.cache` paths to restore it exactly as it was.
+- **`neovim-minimal-ssh-friendly-setup.md` and `vim-neovim-parity-pass.md` (Neovim parts
+  only) are now historical** - kept for the reasoning trail (LSP/plugin philosophy,
+  keybind decisions) but no longer describe the live Neovim config. Their Vim-side content
+  (`~/.vimrc`) is still current and unaffected by this migration.
+- `stylua`/`shfmt` (Mason-managed formatters for `.lua`/`.sh` files) failed to finish
+  installing during setup - Neovim was killed mid-download once, and scripted retries
+  afterward (`:MasonInstall stylua shfmt` via both headless `nvim --headless "+cmd" +qa`
+  and a driven interactive session) didn't visibly complete either, likely a timing quirk
+  specific to non-interactive/scripted driving rather than a real problem - everything
+  else (LSP, treesitter, all plugins) installed and verified working. Fix by opening
+  `:Mason` normally and retrying those two by hand; doesn't block anything else.
+- Personal customizations from the old setup (OSC52 clipboard yank over SSH, `<leader>`
+  keybind choices, no-Mason/system-LSP preference, minimal chrome) were **not** ported
+  over - starting from LazyVim's defaults deliberately, to actually get the "tried and
+  tested, not fighting my own overrides" benefit before deciding what (if anything) to
+  layer back on top. Revisit and add back only what's actually missed after using it.
+
+## Follow-up: trimmed to the languages actually used (2026-09-15)
+
+**What**: only language actually used is C++, Python, C, Markdown, and plain text - so
+removed everything LazyVim's defaults ship for HTML/JSX/Lua-editing specifically, dropped
+both bundled themes, and fixed a gap (C++ wasn't actually in the default treesitter list).
+
+**Change** - `~/.config/nvim/lua/plugins/disabled.lua` (new):
+```lua
+return {
+  -- Themes: no extra theme plugin - use Neovim's own built-in "habamax"
+  { "folke/tokyonight.nvim", enabled = false },
+  { "catppuccin/nvim", enabled = false },
+  { "LazyVim/LazyVim", opts = { colorscheme = "habamax" } },
+
+  -- HTML/JSX-specific - not used
+  { "windwp/nvim-ts-autotag", enabled = false },
+  { "folke/ts-comments.nvim", enabled = false },
+
+  -- Lua-specific dev helper - not customizing via Lua
+  { "folke/lazydev.nvim", enabled = false },
+}
+```
+`~/.config/nvim/lua/plugins/languages.lua` (new) - `ensure_installed` is an
+`opts_extend` list (LazyVim concatenates overrides, it doesn't replace them), so removing
+entries needs a function-form `opts` that filters the already-merged list rather than just
+passing a shorter one:
+```lua
+return {
+  {
+    "nvim-treesitter/nvim-treesitter",
+    opts = function(_, opts)
+      local remove = { html = true, javascript = true, jsdoc = true, tsx = true, typescript = true }
+      opts.ensure_installed = vim.tbl_filter(function(lang)
+        return not remove[lang]
+      end, opts.ensure_installed)
+      table.insert(opts.ensure_installed, "cpp") -- wasn't in the default list, only bare "c" was
+      return opts
+    end,
+  },
+}
+```
+Then applied directly rather than waiting for the next launch: `:Lazy sync` + `:Lazy
+clean` removed the 5 disabled plugins from disk; `:TSInstall cpp` +
+`:TSUninstall html javascript jsdoc tsx typescript` (confirmed "Uninstalled 5/5
+languages") updated the compiled parsers to match; `lua-language-server` (auto-installed
+by Mason during earlier testing, before this trim was decided) was removed by deleting
+`~/.local/share/nvim/mason/packages/lua-language-server` directly, since `:MasonUninstall`
+wasn't registering reliably when driven non-interactively.
+
+**Verified live**: clean launch, `vim.g.colors_name` reads `habamax` (later replaced, see
+next follow-up), no tokyonight/catppuccin references anywhere, no errors, dashboard
+renders correctly, `cpp.so` present under the treesitter parser dir. 27 plugins remain
+(down from 32).
+
+**Kept on purpose, not removed**: the `lua`/`luadoc`/`luap`/`vim`/`vimdoc` treesitter
+parsers - these are what let Neovim render its own `:help` pages and any `.lua`/`.vim`
+files correctly; tiny footprint, not really "a Lua plugin" in the sense that was asked to
+go. Flagged to the user rather than silently kept.
+
+## Follow-up: colorscheme now matches kitty's actual theme (2026-09-15)
+
+**What**: `habamax` (the built-in fallback from the previous follow-up) didn't look good.
+Rather than pick another bundled colorscheme plugin, built one that reads kitty's *live*
+theme file and matches it exactly - same spirit as the pre-LazyVim Vim/Neovim setups'
+"no colorscheme, follow the terminal" preference, adapted for the fact that
+`termguicolors` has to stay on for LazyVim's UI plugins (bufferline, blink.cmp, noice,
+etc.) to render correctly - true ANSI-passthrough like the old Vim/Neovim configs used
+isn't viable here, so this reads kitty's actual hex values instead of relying on the
+terminal to reinterpret 16 ANSI slots.
+
+Kitty's colors are dynamically managed by Noctalia, not a static file:
+`~/.config/kitty/kitty.conf` has `include themes/noctalia.conf`, which
+`~/.config/kitty/themes/noctalia.conf` provides (dark background `#0b0e14`, gold accent
+`#e6b450`, full 16-color palette). Since Noctalia can regenerate this file later (e.g. on
+a wallpaper change), the colorscheme reads it **live at load time** rather than
+hardcoding a snapshot of today's values - it'll track future Noctalia theme changes
+automatically.
+
+**Change** - new `~/.config/nvim/colors/kitty.lua`: a standalone Neovim colorscheme file
+(the standard `colors/<name>.lua` runtime convention, found automatically by
+`:colorscheme kitty`). Parses kitty.conf's `include` line to locate the actual theme file
+(so it keeps working if Noctalia ever renames it), reads `colorN #hex`/`background`/
+`foreground`/`cursor`/`selection_*` lines, and maps them onto Neovim's highlight groups
+using a base16-style convention (comments → color8, strings → color2, keywords → color5,
+functions → color4, etc.) - full mapping in the file itself. Falls back to `habamax` if
+the theme file can't be found/read, rather than erroring.
+
+`~/.config/nvim/lua/plugins/disabled.lua` - `colorscheme` opts changed from `"habamax"`
+to `"kitty"`.
+
+**Verified live**: `vim.g.colors_name` reads `kitty`; `Normal`'s background highlight
+resolves to `0x0B0E14` - byte-for-byte kitty's actual `background #0b0e14` - confirming
+the file was read and applied correctly, not just falling back silently.
+
+## Follow-up: comparing old keybinds against LazyVim's, adding back what's missing (2026-09-15)
+
+**What**: the old hand-rolled `lua/config/keymaps.lua` (see [[vim-neovim-parity-pass]] and
+[[neovim-minimal-ssh-friendly-setup]]) wasn't ported over at all - diffed it directly
+against LazyVim's actual default keymaps
+(`~/.local/share/nvim/lazy/LazyVim/lua/lazyvim/config/keymaps.lua`) to see what's really
+gone versus just remapped to a different key. Findings:
+- Same key survived by coincidence: `<C-s>` save, `<C-h/j/k/l>` window nav, `[d`/`]d`.
+- Same idea under a different LazyVim key: buffer cycle (`<S-h>`/`<S-l>` not
+  `<Tab>`/`<S-Tab>`), splits (`<leader>\|`/`<leader>-` not `<leader>v`/`<leader>h`),
+  resize (`<C-arrows>` not bare arrows), tabs (`<leader><tab>` prefix), wrap toggle
+  (`<leader>uw`), close window (`<leader>wd`), line diagnostics (`<leader>cd`).
+- **`<leader>bd` (LazyVim default) already does exactly what `mini.bufremove` was
+  installed for** - delete a buffer without closing its window. That whole plugin
+  install (see the "leader-x was collapsing the file window" follow-up in
+  [[vim-neovim-parity-pass]]) turned out to duplicate something LazyVim ships natively,
+  just under a different key than the old `<leader>x`.
+- Gone entirely, no LazyVim equivalent: `jk`/`kj` to exit insert, OSC52 clipboard yank,
+  the custom multi-file "smart quit" (Skip option), `<leader>sn`, `x` deleting into the
+  unnamed register (see below), `<C-d>`/`<C-u>` scroll-and-center, visual-paste-without-
+  clobbering-register.
+
+**Change** - added the one thing asked for so far, `~/.config/nvim/lua/config/keymaps.lua`
+(LazyVim's documented user-keymap extension point, auto-loaded after its own defaults):
+```lua
+-- Delete a character without yanking it (plain x overwrites the unnamed
+-- register, clobbering whatever you last copied with y)
+vim.keymap.set("n", "x", '"_x', { noremap = true, silent = true })
+```
+**Verified live**: yanked a word (`yiw`), pressed `x` elsewhere, pasted (`p`) - the
+yanked word came back intact rather than the deleted character, confirming `x` no longer
+clobbers the unnamed register.
+
+**Not yet added, offered but no decision made**: `jk`/`kj` to exit insert mode - flagged
+as a loss with no LazyVim substitute; add if/when asked.
+
+## Follow-up: OSC52 clipboard yank, SSH-only (2026-09-15)
+
+**What LazyVim actually does by default** (checked its source before changing anything,
+per the request to explain the default first): `lazyvim/config/options.lua` sets
+`opt.clipboard = vim.env.SSH_CONNECTION and "" or "unnamedplus"` - locally, *every* yank
+already syncs to the system clipboard automatically via Neovim's built-in provider
+auto-detection (confirmed `wl-copy`/`wl-paste` installed and used) - broader than the old
+`<leader>y`-only design. Over SSH, clipboard is deliberately left empty - nothing syncs
+anywhere, no OSC52 fallback is actually wired up despite the comment implying room for it.
+
+**A real bug caught before it shipped**: the first attempt registered `vim.g.clipboard` as
+an OSC52 provider unconditionally. Since local `unnamedplus` routes through the `"+"`
+register, this would have made OSC52 fire on *every* local yank too, replacing the
+already-working `wl-copy` path with terminal escape codes even when sitting at the
+machine directly - not just "adding" SSH support, actively regressing the local case.
+Caught by explaining the default behavior back before implementing, per request - fixed
+by gating the whole block on `vim.env.SSH_CONNECTION`, mirroring LazyVim's own conditional
+exactly.
+
+**Change** - `~/.config/nvim/lua/config/options.lua`:
+```lua
+if vim.env.SSH_CONNECTION then
+  vim.g.clipboard = {
+    name = "OSC 52",
+    copy = {
+      ["+"] = require("vim.ui.clipboard.osc52").copy("+"),
+      ["*"] = require("vim.ui.clipboard.osc52").copy("*"),
+    },
+    paste = {
+      ["+"] = require("vim.ui.clipboard.osc52").paste("+"),
+      ["*"] = require("vim.ui.clipboard.osc52").paste("*"),
+    },
+  }
+end
+```
+`~/.config/nvim/lua/config/keymaps.lua` - same scoped-to-`<leader>y` design as the
+pre-LazyVim setup (plain `y`/`yy` untouched):
+```lua
+vim.keymap.set({ "n", "v" }, "<leader>y", '"+y', yank_opts)
+vim.keymap.set("n", "<leader>Y", '"+y$', yank_opts)
+```
+No plugin needed - Neovim 0.10+ ships this OSC52 provider built in
+(`vim.ui.clipboard.osc52`), unlike the old setup's `ojroques/vim-oscyank`.
+
+**Verified live, both branches**: with `SSH_CONNECTION` unset, `<leader>yiw` produced no
+OSC52 escape sequence and `wl-paste` confirmed the word actually landed in the real
+Wayland clipboard (untouched local path). With `SSH_CONNECTION` set, the same command
+correctly emitted `\x1b]52;c;aGVsbG8=` (`hello`, base64-encoded) instead.

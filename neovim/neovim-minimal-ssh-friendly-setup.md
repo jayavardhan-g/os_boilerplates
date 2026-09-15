@@ -1,5 +1,10 @@
 # Neovim: minimal, manually-managed, SSH-friendly setup
 
+> **Superseded 2026-09-15**: Neovim was migrated to LazyVim - see
+> [[lazyvim-migration]]. This entry (and its follow-ups below) no longer describes the
+> live Neovim config; kept for the reasoning trail behind decisions made along the way.
+> `~/.vimrc` (plain Vim) is unaffected and still matches this entry's Vim-side content.
+
 **Date:** 2026-08-30
 **Category:** system
 **Files touched:** `~/.config/nvim/` (new), `~/.config/kitty/kitty.conf`

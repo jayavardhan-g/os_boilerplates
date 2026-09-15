@@ -13,12 +13,22 @@ Personal runbook of system/config decisions, split by scope:
 | Folder | What's in it |
 |---|---|
 | [`vim/`](vim/vimrc-minimal-visual-config.md) | `~/.vimrc` — minimal chrome, terminal-native colors |
-| [`neovim/`](neovim/neovim-minimal-ssh-friendly-setup.md) | `~/.config/nvim/` setup, plus the Vim/Neovim parity pass |
+| [`neovim/`](neovim/lazyvim-migration.md) | `~/.config/nvim/` — migrated to LazyVim 2026-09-15; older entries in this folder cover the pre-migration hand-rolled setup and the Vim-side parity decisions that are still current |
 | [`ssh/`](ssh/ssh-term-mismatch-fix.md) | `~/.ssh/config` fixes |
 | [`vpn/`](vpn/fortinet-vpn-client.md) | Fortinet SSL-VPN client (`openfortivpn` + a fish function) |
+| [`cloudflare-warp/`](cloudflare-warp/cloudflare-warp-client.md) | Cloudflare WARP (1.1.1.1) client — AUR build via `makepkg` (no repo/Flatpak package), `warp-svc` + `warp-cli` |
 | [`spotify/`](spotify/spotify-and-spotx.md) | Spotify (Flatpak) + SpotX ad-block patch |
 | [`limine/`](limine/windows-dual-boot-order-and-bitlocker.md) | Limine bootloader — Windows dual-boot NVRAM order + BitLocker chainload fix |
 | [`xpad/`](xpad/xpad-sticky-notes.md) | Xpad desktop sticky notes — install, `--no-new`/`--quit` flags, why `sticky` (x-apps) doesn't work here |
+| [`mpv/`](mpv/mpv-video-player.md) | mpv video player — plain repo install, no player was present by default |
+
+**Every folder above also has a `files/` subtree** holding actual copies of the real
+config files each entry touches, mirroring their real path under `$HOME` (e.g.
+`~/.vimrc` → `vim/files/.vimrc`, `~/.config/hypr/config/binds.lua` →
+`cachyos/files/.config/hypr/config/binds.lua`) — not just described in prose, so a fresh
+machine can literally overlay-copy them into place. A file containing a real secret
+(a password, a private IP tied to this setup) is stored redacted with a placeholder
+rather than skipped — check an entry's `Notes` if a stored file looks incomplete.
 
 See `CLAUDE.md` for the full rules on how entries are written and — critically — how a
 change gets classified into `cachyos/` vs. a tool folder, including how to split a change

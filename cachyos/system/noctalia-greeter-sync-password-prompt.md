@@ -1,8 +1,8 @@
-# Noctalia greeter-sync password prompt (unresolved, by choice)
+# Noctalia greeter-sync password prompt
 
-**Date:** 2026-08-29
+**Date:** 2026-08-29 (resolved 2026-09-13)
 **Category:** system
-**Files touched:** none — investigated and reverted, no config kept
+**Files touched:** `~/.config/noctalia/config.toml`
 
 ## What
 Every small settings change in Noctalia (wallpaper, theme, etc.) pops a password prompt.
@@ -43,10 +43,22 @@ That means temporarily overriding `polkit.service`'s `ExecStart` to add
 `--log-level=debug`, restarting it, reading `journalctl -u polkit`, then reverting the
 override — user decided this wasn't worth it for a cosmetic annoyance and stopped here.
 
+## Change
+```toml
+[shell.greeter_sync]
+auto_sync = false
+```
+Trades away automatic login/lock-screen background updates: run `noctalia msg
+greeter-sync` by hand whenever you actually want the greeter to match the current
+wallpaper/theme.
+
 ## Notes
-- If revisiting this later: start from the debug-logging step above rather than
-  re-deriving the whole "why doesn't unit==greetd.service work" chain again.
-- Workaround in the meantime: just enter the password, or turn off
-  `[shell.greeter_sync] auto_sync` entirely and run `noctalia msg greeter-sync` manually
-  only when you actually want the login screen updated (not attempted — user prefers
-  auto-sync to stay on and just eat the prompts).
+- Re-triggered by turning on 30-min wallpaper rotation (auto_sync fires on every
+  wallpaper/theme change, so 30-min rotation meant a prompt every 30 min).
+- If revisiting the "real" fix later (a properly scoped polkit rule instead of just
+  disabling auto_sync): start from the debug-logging step above (still not attempted)
+  rather than re-deriving the whole "why doesn't unit==greetd.service work" chain again.
+- Also considered but not chosen: a polkit rule granting
+  `org.freedesktop.systemd1.manage-units` password-free for this user — rejected because
+  it isn't scopable to just this command (transient unit name is random each call), so it
+  would skip the password check for any `run0`/transient-unit action, not just Noctalia's.

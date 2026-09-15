@@ -1,0 +1,17 @@
+# openfortivpn config — see `man openfortivpn` for the full option list.
+# Fill in your real values below. This file will hold your VPN password in
+# plaintext, so it's chmod 600 (only you can read it) — keep it that way.
+
+host = <vpn-gateway-host>
+port = 10443
+username = <username>
+password = <password>
+trusted-cert = <sha256-digest-from-first-connect>
+
+# After your first successful connect, openfortivpn will print a line like:
+#   Certificate validation failed, but matched --trusted-cert.
+# or on first-ever connect it will ask you to trust the gateway cert and
+# print its sha256 digest. Paste that digest below (uncomment) so future
+# `start` calls (which run detached, with no prompt) don't hang waiting
+# for you to answer that question.
+# trusted-cert = PASTE_DIGEST_HERE

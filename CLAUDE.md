@@ -113,6 +113,14 @@ follow-up decisions that superseded this one (link to that file instead of dupli
 
 **6. Superseded decisions**: if a later session changes something already recorded (e.g. a keybind gets moved again), update the existing entry's `Change` section to the new final state, and add a line under `Notes` describing what it used to be and why it changed, rather than leaving stale/contradictory info across two files.
 
+**7. Store an actual copy of every touched file, not just prose describing it.** Snippets in a `Change` section drift from reality over time; a real copy of the file doesn't.
+
+- **Where**: each top-level folder (a tool folder, or `cachyos/`) has one shared `files/` subtree that mirrors real paths — strip a leading `~/` and put the rest straight under `files/` (`~/.vimrc` → `vim/files/.vimrc`, `~/.config/hypr/config/inputs.lua` → `cachyos/files/.config/hypr/config/inputs.lua`); for a path that isn't under `$HOME` at all, keep it absolute minus the leading `/` (`/boot/limine.conf` → `limine/files/boot/limine.conf`). One tree per folder, not one per entry — multiple entries touching different files in the same folder all add to the same `files/` tree.
+- **When to copy**: in the same pass as writing or updating the entry (step 2 above), copy each touched file's current live state into `files/` — not as a separate afterthought pass.
+- **When to re-copy**: whenever a later session edits a file that already has a stored copy, re-copy the new live version over the stored one before the conversation ends — the same discipline as superseded decisions (rule 6), applied to the file's actual bytes, not just its prose description.
+- **Never store a secret this way.** Before copying any file, scan it against the "Never record secrets" rule above — a real dotfile is exactly where a stray API key, password, or private hostname is most likely to actually appear. If a file has one, copy it with that value replaced by a placeholder and say so in the entry's `Notes`, never skip storing the file entirely just because it needs redaction.
+- Cross-reference the stored path from the entry (in `Files touched` or `Change`) so a reader finds it without searching.
+
 Keep entries factual and terse — this is a reference for reproducing setup, not a narrative. No need to record failed experiments unless the failure itself is the useful lesson (e.g. "X doesn't work because Y" is worth keeping so it isn't retried).
 
 See the `better-os-question` skill for how to answer "is there a better OS than this?" if Jayavardhan asks.

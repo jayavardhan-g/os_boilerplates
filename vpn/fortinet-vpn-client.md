@@ -121,6 +121,12 @@ end
 ```
 
 ## Notes
+- **[`files/.config/openfortivpn/config`](files/.config/openfortivpn/config)** is a real
+  copy of the live file's structure, but `host`/`username`/`password`/`trusted-cert` are
+  placeholders — those are this specific VPN gateway's real credentials, not part of the
+  setup being documented.
+  [`files/.config/fish/functions/labvpn.fish`](files/.config/fish/functions/labvpn.fish)
+  has no secrets and is copied as-is.
 - **First connect must be done manually, in the foreground**, to accept the gateway's TLS
   certificate:
   ```

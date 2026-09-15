@@ -7,6 +7,11 @@ folders instead — see `../README.md` for the full repo map. See `../CLAUDE.md`
 this index is maintained. Each row links to an entry with the full rationale and a
 copy-pasteable snippet — pick and choose which ones to reapply on a fresh setup.
 
+Actual copies of the real files these entries touch live under
+[`files/`](files/.config/hypr/), mirroring their real path under `$HOME` (e.g.
+`~/.config/hypr/config/binds.lua` → `files/.config/hypr/config/binds.lua`) — not just the
+inline snippets in each entry, so a fresh machine can overlay-copy them directly.
+
 | Title | Category | Summary | File |
 |---|---|---|---|
 | Tighter gaps + orange-only active border | appearance | `gaps_in`/`gaps_out` reduced; only the focused window shows a border (orange-to-transparent gradient), unfocused windows borderless | [appearance/window-decorations.md](appearance/window-decorations.md) |
@@ -18,7 +23,8 @@ copy-pasteable snippet — pick and choose which ones to reapply on a fresh setu
 | Smart special-workspace (scratchpad) toggle | keybindings | SUPER+SHIFT+S sends to special or pulls back out, context-aware | [keybindings/special-workspace-toggle.md](keybindings/special-workspace-toggle.md) |
 | Finger mapping for modifier-heavy keybinds | keybindings | Which hand/finger presses what, so the vim-style binds habituate as one consistent pattern | [keybindings/finger-ergonomics.md](keybindings/finger-ergonomics.md) |
 | Float toggle rebind: SUPER+ALT+Space → SUPER+SHIFT+F | keybindings | Original combo needed two thumb-modifiers plus a thumb-region key (Space); moved to a clean 3-finger chord | [keybindings/float-toggle.md](keybindings/float-toggle.md) |
-| Noctalia greeter-sync password prompt (unresolved) | system | Why the password popup on every settings change can't easily be fixed via a scoped polkit rule (run0 uses random transient unit names) | [system/noctalia-greeter-sync-password-prompt.md](system/noctalia-greeter-sync-password-prompt.md) |
+| Noctalia greeter-sync password prompt | system | Disabled `greeter_sync.auto_sync` to stop the password popup on every wallpaper/settings change (a scoped polkit rule isn't feasible — run0 uses random transient unit names) | [system/noctalia-greeter-sync-password-prompt.md](system/noctalia-greeter-sync-password-prompt.md) |
+| Noctalia shell chrome shifting to light mode | system | Pinned `theme.shell_mode` (separate from `theme.mode`, wasn't in config.toml at all and had drifted to "follow") to `"dark"` — the bar/panels flipping light while apps stayed dark | [system/noctalia-shell-mode-vs-theme-mode.md](system/noctalia-shell-mode-vs-theme-mode.md) |
 | VSCode (official Microsoft build) + keyring | system | `visual-studio-code-bin` via AUR (needed for Remote-SSH/Marketplace) + gnome-keyring so Settings Sync works under Hyprland — kept here (not in a global vscode/ folder) since the actual problem and fix only exist because Hyprland isn't a Chromium-recognized desktop environment | [system/vscode-official-build.md](system/vscode-official-build.md) |
 | Master layout | window-management | One window takes half the screen, rest share the remainder; SUPER+M to swap master | [window-management/master-layout.md](window-management/master-layout.md) |
 | Auto-relaunch apps into the special workspace on every start | window-management | Spotify + 3 kitty terminals (claude, labvpn, home) autostart and route straight into the hidden scratchpad workspace | [window-management/persistent-special-workspace-apps.md](window-management/persistent-special-workspace-apps.md) |

@@ -66,6 +66,14 @@ with `efibootmgr -v` — typically literally `Windows Boot Manager`). No `limine
 or reinstall needed — Limine re-reads `limine.conf` straight from the ESP on every boot.
 
 ## Notes
+- **[`files/boot/limine.conf`](files/boot/limine.conf)** is a real copy (copied manually
+  via `sudo cp`, since this session can't read root-owned `/boot` itself). No secrets in
+  it — the `machine-id=`/`module_path`/`path` values are just systemd's install ID and
+  content-integrity hashes, and `root=UUID=...` is a partition identifier, not a
+  credential. Only the first ~14 lines (`timeout`/`default_entry`/`remember_last_entry`
+  plus the CachyOS theme block) are hand-relevant; the rest is `limine-entry-tool`'s
+  auto-generated kernel-entry boilerplate that changes on every kernel update — expect
+  this stored copy to drift there and not worry about re-syncing it for that part.
 - Root cause of the BitLocker prompt: chainloading `bootmgfw.efi` through any
   third-party bootloader (Limine, GRUB, etc.) changes the measured TCG/PCR7 boot event
   log, which BitLocker/TPM treats as tampering and forces recovery-key entry.

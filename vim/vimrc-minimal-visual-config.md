@@ -144,6 +144,13 @@ mid-word. `<leader>lw` already toggles this at runtime (`:set wrap!`) if wrap is
 wanted for a specific buffer/session.
 
 ## Notes
+- **Superseded (2026-09-14)**: `showtabline=0` above ("never show the top tabline") was
+  changed to `showtabline=1` (shown only when 2+ tabs are open) as part of a quit/tab
+  redesign that wanted a visual indicator of open files - see
+  [[vim-neovim-parity-pass]]'s "full quit/tab redesign" section. Everything else in this
+  entry (no colorscheme, no left gutter, single bottom statusline) is unchanged; this only
+  affects whether the tabline can appear at all, and only when actually using multiple
+  tabs day to day, which this setup didn't do before that redesign.
 - **Superseded (2026-09-03)**: the fold-level setting above used to be a flat
   `set foldlevel=99` / `set foldlevelstart=99`. That's a literal number, not the buffer's
   real fold depth — `zm` (which does `foldlevel -= 1`) had to be pressed ~95+ times before
