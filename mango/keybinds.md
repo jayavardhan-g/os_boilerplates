@@ -126,6 +126,32 @@ non-master layouts. The arrow-key binds sit alongside the existing
 "Duplicate"/mirror mode — confirmed unsupported anywhere in Mango, not just
 a naming difference).
 
+**Trackpad gestures and scroll-wheel tag switching** (2026-09-16) — Mango
+ships default `gesturebind`/`axisbind` lines in its stock config, but this
+config never sourced any; added them for the first time rather than porting
+an existing scheme (Hyprland has no equivalent binds to match):
+```
+# Scroll-wheel tag switching: SUPER+scroll moves to the adjacent tag that
+# actually has a client (skips empty tags).
+axisbind = SUPER, UP, viewtoleft_have_client
+axisbind = SUPER, DOWN, viewtoright_have_client
+
+# Trackpad gestures.
+# 3-finger swipe: directional focus (same as SUPER+hjkl/arrows).
+gesturebind = none, left, 3, focusdir, left
+gesturebind = none, right, 3, focusdir, right
+gesturebind = none, up, 3, focusdir, up
+gesturebind = none, down, 3, focusdir, down
+# 4-finger swipe: left/right = next/prev tag with a client, up/down =
+# enter/leave overview.
+gesturebind = none, right, 4, viewprev_have_client
+gesturebind = none, left, 4, viewnext_have_client
+gesturebind = none, up, 4, enteroverview
+gesturebind = none, down, 4, leaveoverview
+```
+Placed before the `keymode=resize` block (must stay last in the file — see
+Notes above).
+
 ## Notes
 - **Mango's `keymode=`/`setkeymode` modal system**: put `keymode=<name>`
   before a group of `bind` lines and only those apply while in that mode;

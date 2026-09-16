@@ -16,10 +16,11 @@ adjusted to 1.1) and a smaller, more manageable workspace count.
 
 ## Change
 
-`~/.config/mango/cfg/monitors.conf`:
+`~/.config/mango/cfg/monitors.conf` (current values, scale bumped to `1.2` on
+`eDP-1` since the table above, `HDMI-A-1` left at `1`):
 ```
-monitorrule = name:eDP-1, x:0, y:0, scale:1.1
-monitorrule = name:HDMI-A-1, x:1745, y:0, scale:1.1
+monitorrule = name:eDP-1, x:0, y:0, scale:1.2
+monitorrule = name:HDMI-A-1, x:1600, y:0, scale:1
 ```
 
 `~/.config/mango/cfg/layout.conf`:
@@ -78,6 +79,20 @@ monitor-focus convention was tried and abandoned.
   (`physical_width / scale`, confirmed against `mmsg get all-monitors`
   output each time). If scale changes again, position needs recomputing
   too - it does not self-correct.
+- **This bit again (2026-09-16), the opposite direction**: `eDP-1`'s scale
+  was later bumped from `1.1` to `1.2` but `HDMI-A-1`'s `x` offset was left
+  at `1745` (the value correct for `1.1`: `1920/1.1≈1745`), not recalculated
+  for `1.2` (`1920/1.2=1600`). This left a **146px dead zone** between the
+  two monitors where no output existed at all - moving the cursor slowly
+  toward the right edge of the laptop screen got stuck right at the real
+  edge (`x=1599`), while a fast flick's single pointer-motion event covered
+  more than 146px in one jump and landed past the gap onto the external
+  monitor. This was initially mistaken for a deliberate "slow stops, fast
+  crosses" WM feature rather than a stale-offset bug, until `mmsg get
+  all-monitors` showed the actual gap. Fixed by recalculating `HDMI-A-1`'s
+  `x` to `1600`. Lesson stands even more firmly now: **any scale change on
+  either monitor requires recalculating the other's position offset**, in
+  either direction.
 - **Tried and abandoned: matching Hyprland's exact `SUPER+1`/`SUPER+2` for
   monitor-focus and `SUPER+SHIFT+1`/`2` for move-to-monitor.** This
   collides directly with plain-digit workspace switching in Mango (unlike
