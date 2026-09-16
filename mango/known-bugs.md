@@ -93,22 +93,30 @@ not gated by any per-direction config - `config.focus_cross_monitor` is
 checked once in `focus_direction()` (`src/dispatch/bind.c`) before calling
 `focus_monitor()` for any of the four directions alike.
 
-## What would fix it (not implemented)
-Two real options surfaced, neither shipped:
+## What would fix a *per-direction* version of this (not implemented)
+Two options surfaced for keeping `left`/`right` crossing while dropping only
+`up`/`down`, neither shipped:
 1. A wrapper script bound to `SUPER+j`/`k` instead of a plain `focusdir`
    bind: dispatch the normal up/down focus move, check if the selected
    monitor changed, and if so `dispatch focusmon` back to the original one.
    Same class of "bounce" workaround as the fullscreen-focus bug above, with
    the same open risk - `warpcursor` is on by default, so this could cause a
-   visible cursor jump-and-return on every vertical edge press, not just the
-   layout this actually matters for.
+   visible cursor jump-and-return on every vertical edge press.
 2. Rebind `up`/`down` to Mango's own `focus_window_or_workspace` dispatcher
    instead of `focusdir` - it falls back to switching to the next/prev tag
    with a client instead of jumping monitors, no custom script needed. But
    this changes what happens at the edge (tag-shift) rather than making it a
-   true no-op, which isn't what was actually asked for.
-**Decided to leave `SUPER+j`/`k` as plain `focusdir` binds, unchanged** -
-neither option was worth the tradeoff (visible glitch risk vs. changed
-behavior) for what's a minor, occasional mis-press while using the
-`vertical_scroller` layout. Revisit if this comes up again or if Mango adds
-a per-direction `focus_cross_monitor` option upstream.
+   true no-op.
+
+## Actual resolution (2026-09-17)
+Since explicit monitor switching already existed on `SUPER+[`/`]`
+(`focusmon`/`tagmon`, unaffected by `focus_cross_monitor` entirely - see
+[[multi-monitor-setup]]), neither per-direction workaround above was needed
+in the end: `focus_cross_monitor` was just turned off globally
+(`0` in `misc.conf`), giving up `SUPER+h`/`l` monitor-crossing too, in
+exchange for zero scripting and zero risk of a cursor-bounce glitch.
+Confirmed via `mmsg`: `dispatch focusdir,right` no longer changes the
+focused monitor (checked against `get focusing-client`), while
+`dispatch focusmon,HDMI-A-1` still switches normally. Revisit the
+per-direction options above only if bracket-key-only monitor switching ever
+feels insufficient.

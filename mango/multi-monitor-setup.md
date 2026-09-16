@@ -6,8 +6,10 @@
 
 ## What
 UI scale matched to the Hyprland setup, workspace count reduced from the
-default 9 to 4, cross-monitor focus-follow enabled to match Hyprland, and a
-set of keybinds for focusing/moving windows to a specific monitor by name.
+default 9 to 4, and a set of keybinds for focusing/moving windows to a
+specific monitor by name. Cross-monitor focus-follow via `hjkl`/arrows
+(`focus_cross_monitor`) was enabled to match Hyprland initially, then turned
+back off on 2026-09-17 — see Notes.
 
 ## Why
 User wanted parity with the existing two-monitor Hyprland setup (laptop
@@ -30,9 +32,10 @@ tag_num = 4
 ```
 (with `tagrule` trimmed to just `id:1` through `id:4` — see [[keybinds]])
 
-`~/.config/mango/cfg/misc.conf`:
+`~/.config/mango/cfg/misc.conf` (current value — see Notes for the
+2026-09-17 flip from `1` to `0`):
 ```
-focus_cross_monitor = 1
+focus_cross_monitor = 0
 ```
 
 `~/.config/mango/cfg/keybinds.conf` — final monitor keybind scheme:
@@ -116,3 +119,17 @@ monitor-focus convention was tried and abandoned.
 - See [[known-bugs]] for a real, currently-unfixed upstream bug that
   surfaced during this testing: moving a window onto a monitor with an
   active fullscreen client leaves keyboard focus stuck.
+- **`focus_cross_monitor` turned back off (2026-09-17)**: after switching
+  tag 1 to `vertical_scroller`, `SUPER+j`/`k` started landing on `HDMI-A-1`
+  on every vertical edge press - confusing, since the monitors are laid out
+  horizontally, not vertically (see [[known-bugs]] for the full
+  `monitor_from_direction()` source-level explanation of why `up`/`down`
+  specifically triggered this). Since `focus_cross_monitor` is a single flag
+  covering all four directions with no per-direction option, and explicit
+  monitor switching already exists on `SUPER+[`/`]` (bound above,
+  unaffected by this flag - `focusmon`/`tagmon` don't go through
+  `focus_cross_monitor` at all), the flag was just turned off entirely
+  rather than attempting a partial/scripted fix. Confirmed via `mmsg`:
+  `dispatch focusdir,right` no longer changes `get focusing-client`'s
+  reported monitor, while `dispatch focusmon,HDMI-A-1` still switches
+  normally.
