@@ -37,9 +37,10 @@ snap_distance = 30
 ```
 
 `~/.config/mango/cfg/layout.conf` (added next to the existing
-`edge_scroller_pointer_focus = 1`):
+`edge_scroller_pointer_focus = 1`; started at `8`, raised to `20` the next
+day — see Notes):
 ```
-edge_scroller_focus_allow_speed = 8
+edge_scroller_focus_allow_speed = 20
 ```
 
 ## Notes
@@ -54,10 +55,22 @@ edge_scroller_focus_allow_speed = 8
   ever exactly `0` when the pointer doesn't move at all), so the gate was
   effectively disabled before this change. `8` was picked as a starting
   threshold - a slow, deliberate move is typically 1-3px/event, a fast flick
-  is 10px+/event - not an officially documented recommended value. Tune up
-  (stricter, needs a faster flick) or down (looser) if `8` doesn't feel
-  right; only takes a `reload_config` (`SUPER+F5`) to test, no relogin
-  needed.
+  is 10px+/event - not an officially documented recommended value; `8`
+  turned out to trigger too easily (felt like it fired on a slow move), so
+  it was raised to `20` (2026-09-17). Tune up (stricter, needs a faster
+  flick) or down (looser) if `20` still doesn't feel right; only takes a
+  `reload_config` (`SUPER+F5`) to test, no relogin needed.
+- **`SUPER`+scroll (`axisbind`) and the 4-finger left/right swipe
+  (`gesturebind`) looked broken but weren't** (2026-09-17): both call
+  `..._have_client` dispatch functions (`viewtoleft_have_client`,
+  `viewprev_have_client`, etc.), which intentionally skip to a tag only if
+  it actually has a client - they no-op if every other tag is empty.
+  Confirmed directly: `mmsg dispatch viewtoright_have_client` with tags 2-5
+  empty did nothing; after opening a throwaway window on tag 2 and dispatching
+  the same function again, the active tag actually changed. 4-finger up/down
+  (`enteroverview`/`leaveoverview`) don't depend on tag contents, which is
+  why those worked immediately while left/right appeared dead. Not a config
+  bug - matches [[keybinds]]'s existing binds using the same convention.
 - **`snap_distance = 30` is Mango's own compiled-in default** for
   `enable_floating_snap` - written explicitly here anyway for documentation
   clarity, even though only the `enable_floating_snap = 1` line actually

@@ -17,10 +17,11 @@ adjusted to 1.1) and a smaller, more manageable workspace count.
 ## Change
 
 `~/.config/mango/cfg/monitors.conf` (current values, scale bumped to `1.2` on
-`eDP-1` since the table above, `HDMI-A-1` left at `1`):
+`eDP-1` since the table above, `HDMI-A-1` left at `1`; `x:1670` is a
+deliberate ~70px gap, not true edge-to-edge — see Notes):
 ```
 monitorrule = name:eDP-1, x:0, y:0, scale:1.2
-monitorrule = name:HDMI-A-1, x:1600, y:0, scale:1
+monitorrule = name:HDMI-A-1, x:1670, y:0, scale:1
 ```
 
 `~/.config/mango/cfg/layout.conf`:
@@ -89,10 +90,14 @@ monitor-focus convention was tried and abandoned.
   more than 146px in one jump and landed past the gap onto the external
   monitor. This was initially mistaken for a deliberate "slow stops, fast
   crosses" WM feature rather than a stale-offset bug, until `mmsg get
-  all-monitors` showed the actual gap. Fixed by recalculating `HDMI-A-1`'s
-  `x` to `1600`. Lesson stands even more firmly now: **any scale change on
-  either monitor requires recalculating the other's position offset**, in
-  either direction.
+  all-monitors` showed the actual gap. First fixed to `x:1600` (true
+  edge-to-edge, gap removed entirely) — but the "stops slow, crosses fast"
+  feel turned out to be liked on its own merits once it was understood, so
+  it was reintroduced on purpose at roughly half the size: `x:1670`, a
+  ~70px gap. Lesson stands even more firmly now: **any scale change on
+  either monitor requires recalculating the other's position offset** (true
+  edge-to-edge is `x:1600` here) as the baseline, whether or not a
+  deliberate gap is then added on top.
 - **Tried and abandoned: matching Hyprland's exact `SUPER+1`/`SUPER+2` for
   monitor-focus and `SUPER+SHIFT+1`/`2` for move-to-monitor.** This
   collides directly with plain-digit workspace switching in Mango (unlike
