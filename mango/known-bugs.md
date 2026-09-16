@@ -62,3 +62,53 @@ manually when this happens.
 - This is unrelated to the [[version-bug-upgrade]] issues (those were
   missing-feature/stale-behavior bugs fixed by upgrading past 0.16.1) - this
   one is a genuine, currently-live logic bug in the latest code.
+
+# Known limitation: `focus_cross_monitor` can't be restricted to specific directions
+
+**Date:** 2026-09-17
+**Category:** mango (upstream limitation, not a config issue)
+**Version confirmed on:** 0.17.0
+
+## What
+`focus_cross_monitor = 1` (see [[multi-monitor-setup]]) is a single global
+flag covering all four `focusdir` directions - there's no config option to
+enable it for `left`/`right` only and disable it for `up`/`down`. After
+switching tag 1 to the `vertical_scroller` layout, `SUPER+j`/`k` (up/down
+focus, no more content in that direction on the current monitor) started
+jumping to `HDMI-A-1` - confusing, since the monitors are laid out
+horizontally (`eDP-1` left, `HDMI-A-1` right, see [[multi-monitor-setup]]),
+so "up"/"down" landing on the other monitor doesn't match the physical
+layout the way `SUPER+h`/`l` crossing does.
+
+## Why it happens
+Confirmed in `src/manage/monitor.c`, `monitor_from_direction()`: it first
+tries `wlr_output_layout_adjacent_output()` for the exact requested
+direction - correctly finds nothing for `up`/`down` (no monitor is
+physically above/below). It then falls back to
+`wlr_output_layout_farthest_output()` searching the *other three*
+directions (`dir` XORed out of the full direction mask) - with only two
+monitors, that fallback always finds `HDMI-A-1`, regardless of whether
+`up`/`down` was actually requested. This fallback is unconditional C logic,
+not gated by any per-direction config - `config.focus_cross_monitor` is
+checked once in `focus_direction()` (`src/dispatch/bind.c`) before calling
+`focus_monitor()` for any of the four directions alike.
+
+## What would fix it (not implemented)
+Two real options surfaced, neither shipped:
+1. A wrapper script bound to `SUPER+j`/`k` instead of a plain `focusdir`
+   bind: dispatch the normal up/down focus move, check if the selected
+   monitor changed, and if so `dispatch focusmon` back to the original one.
+   Same class of "bounce" workaround as the fullscreen-focus bug above, with
+   the same open risk - `warpcursor` is on by default, so this could cause a
+   visible cursor jump-and-return on every vertical edge press, not just the
+   layout this actually matters for.
+2. Rebind `up`/`down` to Mango's own `focus_window_or_workspace` dispatcher
+   instead of `focusdir` - it falls back to switching to the next/prev tag
+   with a client instead of jumping monitors, no custom script needed. But
+   this changes what happens at the edge (tag-shift) rather than making it a
+   true no-op, which isn't what was actually asked for.
+**Decided to leave `SUPER+j`/`k` as plain `focusdir` binds, unchanged** -
+neither option was worth the tradeoff (visible glitch risk vs. changed
+behavior) for what's a minor, occasional mis-press while using the
+`vertical_scroller` layout. Revisit if this comes up again or if Mango adds
+a per-direction `focus_cross_monitor` option upstream.
