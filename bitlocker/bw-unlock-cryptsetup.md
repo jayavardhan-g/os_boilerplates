@@ -1,6 +1,6 @@
 # Unlock BitLocker drives via Bitwarden + cryptsetup, no retyped passwords
 
-**Date:** 2026-09-20
+**Date:** 2026-09-20 (updated 2026-09-20 — `laptop` drive permanently decrypted)
 **Category:** bitlocker (portable — works on any Linux distro/WM, `cryptsetup` + `bw` CLI only)
 **Files touched:** `~/.local/bin/bw-unlock`, `~/.local/bin/bw-lock`, `~/.local/bin/bw-unlock-all`
 
@@ -18,7 +18,7 @@ Known drives (hardcoded in `bw-unlock`'s lookup table):
 
 | Name | Partition | Bitwarden item | Mount point |
 |---|---|---|---|
-| `laptop` | `/dev/nvme0n1p5` | `BitLocker - LAPTOP-ADN3BT6B New Volume` | `/mnt/laptop-newvolume` |
+| `laptop` | `/dev/nvme0n1p5` | *(none — unencrypted, plain mount)* | `/mnt/laptop-newvolume` |
 | `nani` | `/dev/nvme0n1p6` | `BitLocker - NANI New Volume` | `/mnt/nani-newvolume` |
 | `desktop-c` | `/dev/nvme0n1p3` | `BitLocker - DESKTOP-8PKDU07 C:` | `/mnt/desktop-c` |
 
@@ -57,12 +57,18 @@ single unlock, without ever writing the vault's session key to persistent disk.
 # and mount it read-write as the invoking user (not root).
 set -euo pipefail
 
+ENCRYPTED=1
+
 if [ "$#" -eq 1 ]; then
     case "$1" in
         laptop)
+            # Decrypted 2026-09-20 — Windows 10 Home can't re-enable BitLocker
+            # on a data volume (full BitLocker is Pro/Enterprise/Education
+            # only; Home only has TPM-gated Device Encryption for the OS
+            # drive). Left unencrypted on purpose. Plain mount, no bw/cryptsetup.
             PART="/dev/nvme0n1p5"
             LABEL="laptop-newvolume"
-            ITEM="BitLocker - LAPTOP-ADN3BT6B New Volume"
+            ENCRYPTED=0
             ;;
         nani)
             PART="/dev/nvme0n1p6"
@@ -89,36 +95,41 @@ else
     echo "   or: bw-unlock <partition> <label> <bitwarden-item-name>" >&2
     exit 1
 fi
-
-MAPPER="bitlocker-$LABEL"
 MOUNTPOINT="/mnt/$LABEL"
-SESSION_FILE="/run/user/$(id -u)/bw-cli-session"
 
-if [ -e "/dev/mapper/$MAPPER" ]; then
-    echo "already unlocked at /dev/mapper/$MAPPER" >&2
+if [ "$ENCRYPTED" -eq 0 ]; then
+    MOUNTDEV="$PART"
 else
-    # Reuse a cached session (tmpfs only, never touches disk, cleared on
-    # logout/reboot) if it's still valid; otherwise unlock fresh and cache it.
-    if [ -z "${BW_SESSION:-}" ] && [ -f "$SESSION_FILE" ]; then
-        BW_SESSION="$(cat "$SESSION_FILE")"
-    fi
-    if [ -z "${BW_SESSION:-}" ] || [ "$(bw status --session "$BW_SESSION" 2>/dev/null | jq -r '.status')" != "unlocked" ]; then
-        BW_SESSION="$(bw unlock --raw)"
-        install -m 600 /dev/null "$SESSION_FILE"
-        printf '%s' "$BW_SESSION" > "$SESSION_FILE"
-    fi
-    export BW_SESSION
+    MAPPER="bitlocker-$LABEL"
+    MOUNTDEV="/dev/mapper/$MAPPER"
+    SESSION_FILE="/run/user/$(id -u)/bw-cli-session"
 
-    PASSWORD="$(bw get password "$ITEM" --session "$BW_SESSION")"
-    printf '%s' "$PASSWORD" | sudo cryptsetup open --type bitlk --key-file=- "$PART" "$MAPPER"
-    unset PASSWORD
+    if [ -e "$MOUNTDEV" ]; then
+        echo "already unlocked at $MOUNTDEV" >&2
+    else
+        # Reuse a cached session (tmpfs only, never touches disk, cleared on
+        # logout/reboot) if it's still valid; otherwise unlock fresh and cache it.
+        if [ -z "${BW_SESSION:-}" ] && [ -f "$SESSION_FILE" ]; then
+            BW_SESSION="$(cat "$SESSION_FILE")"
+        fi
+        if [ -z "${BW_SESSION:-}" ] || [ "$(bw status --session "$BW_SESSION" 2>/dev/null | jq -r '.status')" != "unlocked" ]; then
+            BW_SESSION="$(bw unlock --raw)"
+            install -m 600 /dev/null "$SESSION_FILE"
+            printf '%s' "$BW_SESSION" > "$SESSION_FILE"
+        fi
+        export BW_SESSION
+
+        PASSWORD="$(bw get password "$ITEM" --session "$BW_SESSION")"
+        printf '%s' "$PASSWORD" | sudo cryptsetup open --type bitlk --key-file=- "$PART" "$MAPPER"
+        unset PASSWORD
+    fi
 fi
 
 sudo mkdir -p "$MOUNTPOINT"
 if mountpoint -q "$MOUNTPOINT"; then
     echo "already mounted at $MOUNTPOINT" >&2
 else
-    sudo mount -o uid="$(id -u)",gid="$(id -g)" "/dev/mapper/$MAPPER" "$MOUNTPOINT"
+    sudo mount -o uid="$(id -u)",gid="$(id -g)" "$MOUNTDEV" "$MOUNTPOINT"
     echo "mounted at $MOUNTPOINT"
 fi
 ```
@@ -194,19 +205,25 @@ into the password field, named to match the table above.
   Without Fast Startup off, resuming Windows after writing to shared NTFS partitions from
   Linux risks corruption from Windows' stale in-memory filesystem cache overwriting
   on-disk changes.
-- **Known issue, left unresolved on purpose:** the `laptop` drive (`/dev/nvme0n1p5`) throws
-  `WARNING: BitLocker volume size 269481934848 does not match the underlying device size
-  216046501888` on every unlock — BitLocker's header remembers an original ~251GiB size
-  from before this partition was resized/migrated down to its current 201.2GiB, without
-  going through a BitLocker-aware resize in Windows. `cryptsetup`/`ntfs3` already correctly
-  clamp to the real 201.2GiB (confirmed via `df` — filesystem reports the true smaller
-  size, existing 85G of data mounts and reads fine, nothing appears corrupted). `cryptsetup`
-  cannot write/repair BitLocker's own metadata (per its own man page, it doesn't use any
-  Windows BitLocker code) — the only fix would be decrypting and re-encrypting that volume
-  in Windows, which is slow (hours, proportional to data size) for a currently-cosmetic
-  problem. Decided to leave it as-is; revisit only if this volume ever needs to grow back
-  toward its original size, or if a future Windows-side BitLocker operation on it errors
-  out because of the stale metadata.
+- **Superseded — `laptop` drive is now permanently unencrypted, not just size-mismatched.**
+  Originally this drive (`/dev/nvme0n1p5`) threw `WARNING: BitLocker volume size
+  269481934848 does not match the underlying device size 216046501888` on every unlock
+  (BitLocker's header remembering an original ~251GiB size from before this partition was
+  resized/migrated down to its current 201.2GiB). `cryptsetup`/`ntfs3` handled it fine at
+  the time (confirmed via `df` — correctly clamped to the real 201.2GiB, existing 85G of
+  data mounted and read fine) and the plan was to leave it as cosmetic-only unless it ever
+  needed fixing.
+  Attempted the fix anyway on 2026-09-20 by decrypting (turning off BitLocker) in Windows,
+  intending to immediately re-encrypt to get fresh, correct size metadata. **Turned out
+  Windows 10 Home cannot re-enable BitLocker on a data volume at all** — full BitLocker
+  (the "Turn on BitLocker" wizard for arbitrary volumes) is Pro/Enterprise/Education only;
+  Home edition only has TPM-gated "Device Encryption" for the OS drive, which doesn't apply
+  here. The drive is now plain NTFS, decrypted, permanently — decided to keep it that way
+  rather than pursue a Windows edition upgrade just to re-encrypt one data volume.
+  `bw-unlock`'s `laptop` case now does a plain `mount`, no `bw`/`cryptsetup` involved at
+  all — see the `ENCRYPTED` flag in the script above. The old Bitwarden item
+  (`BitLocker - LAPTOP-ADN3BT6B New Volume`) is no longer used by this script; left in the
+  vault as a historical record rather than deleted, but its password is meaningless now.
 - **Dolphin can't unlock these via its own GUI prompt** — no polkit authentication agent is
   installed on this machine (only bare `polkitd`, no `polkit-kde-agent`/`polkit-gnome`/etc.),
   so udisks2's encrypted-unlock authorization request has nothing to render a dialog with
