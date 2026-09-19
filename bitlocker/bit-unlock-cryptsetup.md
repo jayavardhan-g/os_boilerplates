@@ -1,6 +1,6 @@
 # Unlock BitLocker drives via Bitwarden + cryptsetup, no retyped passwords
 
-**Date:** 2026-09-20 (updated 2026-09-20 — renamed `bw-*` → `bit-*`, consolidated to two scripts, `laptop` drive permanently decrypted)
+**Date:** 2026-09-20 (updated 2026-09-20 — renamed `bw-*` → `bit-*`, consolidated to two scripts, `laptop` drive permanently decrypted, added interactive menu)
 **Category:** bitlocker (portable — works on any Linux distro/WM, `cryptsetup` + `bw` CLI only)
 **Files touched:** `~/.local/bin/bit-unlock`, `~/.local/bin/bit-lock`
 
@@ -9,11 +9,14 @@ Two scripts to unlock and mount BitLocker-encrypted NTFS partitions from Linux u
 passphrase pulled live from Bitwarden, instead of retyping the BitLocker password/recovery
 key every time or storing it in a plaintext keyfile on disk.
 
-- `bit-unlock all` / `bit-unlock both` — unlock + mount every known drive.
+- `bit-unlock` (no arguments) — interactive numbered menu, pick one or more drives by
+  number (space-separated) or `a` for all.
+- `bit-unlock all` / `bit-unlock both` — unlock + mount every known drive, no prompt.
 - `bit-unlock <name> [<name>...]` — unlock + mount one or more specific drives (e.g.
-  `bit-unlock nani`, or `bit-unlock nani desktop-c`).
-- `bit-lock all` / `bit-lock both` / `bit-lock <name> [<name>...]` — same selection syntax,
-  cleanly unmounts and closes instead.
+  `bit-unlock nani`, or `bit-unlock nani desktop-c`), no prompt.
+- `bit-lock` / `bit-lock all` / `bit-lock both` / `bit-lock <name> [<name>...]` — same
+  selection syntax (including the interactive menu with no arguments), cleanly unmounts
+  and closes instead.
 
 Originally three scripts (`bw-unlock`, `bw-lock`, `bw-unlock-all`) — consolidated into two,
 renamed `bw-*` → `bit-*` (the tool is about BitLocker, not really about Bitwarden
@@ -64,15 +67,54 @@ single unlock, without ever writing the vault's session key to persistent disk.
 ```bash
 #!/usr/bin/env bash
 # Unlock (where still BitLocker-encrypted) and mount known drives.
+# With no arguments, shows an interactive menu to pick which drive(s).
 # Usage:
-#   bit-unlock all | both        unlock every known drive
+#   bit-unlock                     interactive menu
+#   bit-unlock all | both          unlock every known drive
 #   bit-unlock <name> [<name>...]  unlock one or more specific drives
 set -uo pipefail
 
+KNOWN_DRIVES=(laptop nani desktop-c)
+
 usage() {
-    echo "usage: bit-unlock <all|both>" >&2
+    echo "usage: bit-unlock [all|both]" >&2
     echo "   or: bit-unlock <name> [<name>...]   (laptop | nani | desktop-c)" >&2
+    echo "   with no arguments, shows an interactive menu" >&2
     exit 1
+}
+
+prompt_drives() {
+    echo "Which drive(s) to unlock?" >&2
+    local i=1
+    for d in "${KNOWN_DRIVES[@]}"; do
+        echo "  $i) $d" >&2
+        i=$((i + 1))
+    done
+    echo "  a) all" >&2
+    read -r -p "Enter numbers separated by spaces, or 'a' for all: " REPLY
+
+    local choice DRIVES=()
+    for choice in $REPLY; do
+        case "$choice" in
+            a|all|both)
+                DRIVES=("${KNOWN_DRIVES[@]}")
+                break
+                ;;
+            ''|*[!0-9]*)
+                echo "ignoring invalid choice '$choice'" >&2
+                ;;
+            *)
+                if [ "$choice" -ge 1 ] && [ "$choice" -le "${#KNOWN_DRIVES[@]}" ]; then
+                    DRIVES+=("${KNOWN_DRIVES[$((choice - 1))]}")
+                else
+                    echo "ignoring out-of-range choice '$choice'" >&2
+                fi
+                ;;
+        esac
+    done
+
+    [ "${#DRIVES[@]}" -gt 0 ] || { echo "nothing selected" >&2; exit 1; }
+    printf '%s\n' "${DRIVES[@]}"
 }
 
 unlock_one() {
@@ -144,16 +186,15 @@ unlock_one() {
     fi
 }
 
-[ "$#" -ge 1 ] || usage
-
-case "$1" in
-    all|both)
-        DRIVES=(laptop nani desktop-c)
-        ;;
-    *)
-        DRIVES=("$@")
-        ;;
-esac
+if [ "$#" -eq 0 ]; then
+    mapfile -t DRIVES < <(prompt_drives)
+elif [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+    usage
+elif [ "$1" = "all" ] || [ "$1" = "both" ]; then
+    DRIVES=("${KNOWN_DRIVES[@]}")
+else
+    DRIVES=("$@")
+fi
 
 STATUS=0
 for d in "${DRIVES[@]}"; do
@@ -168,15 +209,54 @@ exit "$STATUS"
 ```bash
 #!/usr/bin/env bash
 # Cleanly unmount and close drives previously opened with bit-unlock.
+# With no arguments, shows an interactive menu to pick which drive(s).
 # Usage:
-#   bit-lock all | both        close every known drive
+#   bit-lock                     interactive menu
+#   bit-lock all | both          close every known drive
 #   bit-lock <name> [<name>...]  close one or more specific drives
 set -uo pipefail
 
+KNOWN_DRIVES=(laptop nani desktop-c)
+
 usage() {
-    echo "usage: bit-lock <all|both>" >&2
+    echo "usage: bit-lock [all|both]" >&2
     echo "   or: bit-lock <name> [<name>...]   (laptop | nani | desktop-c)" >&2
+    echo "   with no arguments, shows an interactive menu" >&2
     exit 1
+}
+
+prompt_drives() {
+    echo "Which drive(s) to lock?" >&2
+    local i=1
+    for d in "${KNOWN_DRIVES[@]}"; do
+        echo "  $i) $d" >&2
+        i=$((i + 1))
+    done
+    echo "  a) all" >&2
+    read -r -p "Enter numbers separated by spaces, or 'a' for all: " REPLY
+
+    local choice DRIVES=()
+    for choice in $REPLY; do
+        case "$choice" in
+            a|all|both)
+                DRIVES=("${KNOWN_DRIVES[@]}")
+                break
+                ;;
+            ''|*[!0-9]*)
+                echo "ignoring invalid choice '$choice'" >&2
+                ;;
+            *)
+                if [ "$choice" -ge 1 ] && [ "$choice" -le "${#KNOWN_DRIVES[@]}" ]; then
+                    DRIVES+=("${KNOWN_DRIVES[$((choice - 1))]}")
+                else
+                    echo "ignoring out-of-range choice '$choice'" >&2
+                fi
+                ;;
+        esac
+    done
+
+    [ "${#DRIVES[@]}" -gt 0 ] || { echo "nothing selected" >&2; exit 1; }
+    printf '%s\n' "${DRIVES[@]}"
 }
 
 label_for() {
@@ -209,16 +289,15 @@ lock_one() {
     echo "closed $NAME"
 }
 
-[ "$#" -ge 1 ] || usage
-
-case "$1" in
-    all|both)
-        DRIVES=(laptop nani desktop-c)
-        ;;
-    *)
-        DRIVES=("$@")
-        ;;
-esac
+if [ "$#" -eq 0 ]; then
+    mapfile -t DRIVES < <(prompt_drives)
+elif [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+    usage
+elif [ "$1" = "all" ] || [ "$1" = "both" ]; then
+    DRIVES=("${KNOWN_DRIVES[@]}")
+else
+    DRIVES=("$@")
+fi
 
 STATUS=0
 for d in "${DRIVES[@]}"; do
@@ -283,6 +362,10 @@ into the password field, named to match the table above.
   password prompt Dolphin does show for them is just the Linux account password, a
   system-partition mount authorization check, not a BitLocker key — that one path does work
   without an agent, for reasons not fully resolved.)
+- **Interactive menu added on request** — running either script with no arguments now
+  prompts with a numbered list (space-separated numbers, or `a` for all) instead of
+  requiring drive names as command-line arguments. Direct arguments (`all`/`both`, or one
+  or more names) still work unprompted, for scripting/muscle-memory use.
 - **Future consideration, not yet decided or acted on:** thinking about using VeraCrypt
   instead of BitLocker for encrypting drives going forward — plausibly prompted by the two
   BitLocker limitations hit above (the unrepairable size-mismatch metadata, and Windows 10
