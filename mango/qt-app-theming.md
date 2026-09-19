@@ -1,8 +1,8 @@
 # Qt apps (Dolphin) not picking up the dark theme
 
-**Date:** 2026-09-14
+**Date:** 2026-09-14 (updated 2026-09-19)
 **Category:** mango
-**Files touched:** `~/.config/mango/cfg/env.conf`
+**Files touched:** `~/.config/mango/cfg/env.conf`, `~/.config/qt6ct/qt6ct.conf`
 
 ## What
 Dolphin (and any other Qt6 app) now renders with the dark "noctalia" color scheme and
@@ -26,6 +26,13 @@ env = QT_QPA_PLATFORMTHEME_QT6,qt6ct
 ```
 (previously present but commented out)
 
+`~/.config/qt6ct/qt6ct.conf` (2026-09-19 follow-up):
+```
+[Appearance]
+style=Breeze
+```
+(was `style=Fusion` — see Notes)
+
 ## Notes
 - **`env =` directives only apply at Mango's actual startup, not on `reload_config`** —
   confirmed live: after uncommenting and reloading, a freshly-launched Dolphin still had
@@ -37,3 +44,20 @@ env = QT_QPA_PLATFORMTHEME_QT6,qt6ct
 - If a Qt5 app ever shows the same problem, add `env = QT_QPA_PLATFORMTHEME_QT5,qt6ct`
   too — a `qt5ct` color config already exists at `~/.config/qt5ct/colors/noctalia.conf`
   but no `qt5ct.conf` itself, so that path isn't fully wired up yet.
+- **2026-09-19 follow-up:** even with the env vars fixed, Dolphin still rendered half
+  light / half dark — the base `QPalette` was dark, but KDE-specific custom-painted
+  chrome (Places sidebar, breadcrumb bar) is written against the **Breeze** widget
+  style specifically and falls back to unstyled (white) rendering under any other
+  style, including `Fusion` + a custom palette. `qt6ct.conf` had `style=Fusion` even
+  though the `breeze` Qt6 style plugin was already installed
+  (`/usr/lib/qt6/plugins/styles/breeze6.so`) — switched to `style=Breeze`, fixed it.
+  Requires killing and relaunching Dolphin (`killall dolphin`) to pick up; not a live
+  reload like the colors file.
+- This `style=` key is safe from Noctalia's own theme-switching: checked
+  `/usr/share/noctalia/assets/templates/qt/undo.sh` and it only ever touches
+  `~/.config/qt6ct/colors/noctalia.conf` (the palette file), never `qt6ct.conf`
+  itself. Switching wallpapers/color schemes in Noctalia won't revert this.
+- Oddly, `/etc/skel/.config/qt6ct/qt6ct.conf` (the `cachyos-mango-noctalia` package's
+  own shipped default) already has `style=Breeze` — this machine's live config had
+  drifted to `Fusion` before 2026-09-14 for an unknown reason, it wasn't something
+  either recorded session here changed.
