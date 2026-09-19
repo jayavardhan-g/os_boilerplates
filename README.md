@@ -26,6 +26,7 @@ Personal runbook of system/config decisions, split by scope:
 | [`xpad/`](xpad/xpad-sticky-notes.md) | Xpad desktop sticky notes — install, `--no-new`/`--quit` flags, why `sticky` (x-apps) doesn't work here |
 | [`noctalia/`](noctalia/theme-mode-pinned-dark.md) | Noctalia shell settings — Theme Mode pinned to Dark instead of time-of-day `Auto` |
 | [`mango/`](mango/keybinds.md) | MangoWM (tried alongside Hyprland) — keybinds/appearance/input matched to the Hyprland setup, the 0.16.1→0.17.0 AUR upgrade story |
+| [`bitlocker/`](bitlocker/bw-unlock-cryptsetup.md) | Unlock BitLocker drives via `cryptsetup` + Bitwarden CLI, no retyped passwords or plaintext keyfiles |
 
 See `CLAUDE.md` for the full rules on how entries are written and — critically — how a
 change gets classified into `cachyos/` vs. a tool folder, including how to split a change
