@@ -1,20 +1,30 @@
 # Unlock BitLocker drives via Bitwarden + cryptsetup, no retyped passwords
 
-**Date:** 2026-09-20 (updated 2026-09-20 — `laptop` drive permanently decrypted)
+**Date:** 2026-09-20 (updated 2026-09-20 — renamed `bw-*` → `bit-*`, consolidated to two scripts, `laptop` drive permanently decrypted)
 **Category:** bitlocker (portable — works on any Linux distro/WM, `cryptsetup` + `bw` CLI only)
-**Files touched:** `~/.local/bin/bw-unlock`, `~/.local/bin/bw-lock`, `~/.local/bin/bw-unlock-all`
+**Files touched:** `~/.local/bin/bit-unlock`, `~/.local/bin/bit-lock`
 
 ## What
-Three scripts to unlock and mount BitLocker-encrypted NTFS partitions from Linux using a
+Two scripts to unlock and mount BitLocker-encrypted NTFS partitions from Linux using a
 passphrase pulled live from Bitwarden, instead of retyping the BitLocker password/recovery
 key every time or storing it in a plaintext keyfile on disk.
 
-- `bw-unlock <known-drive>` or `bw-unlock <partition> <label> <bitwarden-item-name>` —
-  unlocks + mounts one drive.
-- `bw-lock <label>` — cleanly unmounts and closes it.
-- `bw-unlock-all` — runs `bw-unlock` for every known drive in turn.
+- `bit-unlock all` / `bit-unlock both` — unlock + mount every known drive.
+- `bit-unlock <name> [<name>...]` — unlock + mount one or more specific drives (e.g.
+  `bit-unlock nani`, or `bit-unlock nani desktop-c`).
+- `bit-lock all` / `bit-lock both` / `bit-lock <name> [<name>...]` — same selection syntax,
+  cleanly unmounts and closes instead.
 
-Known drives (hardcoded in `bw-unlock`'s lookup table):
+Originally three scripts (`bw-unlock`, `bw-lock`, `bw-unlock-all`) — consolidated into two,
+renamed `bw-*` → `bit-*` (the tool is about BitLocker, not really about Bitwarden
+specifically — especially now that one of the three known drives isn't secured via
+Bitwarden at all anymore, see `laptop` below), and `bw-unlock-all`'s "do every drive"
+behavior folded into `bit-unlock`/`bit-lock` as the `all`/`both` selector rather than being
+a separate script. The old `<partition> <label> <bitwarden-item-name>` explicit/custom form
+(for a one-off drive not in the table) was dropped for simplicity when adding
+multi-name selection — ask if that escape hatch needs to come back.
+
+Known drives (hardcoded in both scripts):
 
 | Name | Partition | Bitwarden item | Mount point |
 |---|---|---|---|
@@ -50,22 +60,29 @@ single unlock, without ever writing the vault's session key to persistent disk.
 
 ## Change
 
-`~/.local/bin/bw-unlock`:
+`~/.local/bin/bit-unlock`:
 ```bash
 #!/usr/bin/env bash
-# Unlock a BitLocker-encrypted partition using a passphrase stored in Bitwarden,
-# and mount it read-write as the invoking user (not root).
-set -euo pipefail
+# Unlock (where still BitLocker-encrypted) and mount known drives.
+# Usage:
+#   bit-unlock all | both        unlock every known drive
+#   bit-unlock <name> [<name>...]  unlock one or more specific drives
+set -uo pipefail
 
-ENCRYPTED=1
+usage() {
+    echo "usage: bit-unlock <all|both>" >&2
+    echo "   or: bit-unlock <name> [<name>...]   (laptop | nani | desktop-c)" >&2
+    exit 1
+}
 
-if [ "$#" -eq 1 ]; then
-    case "$1" in
+unlock_one() {
+    local NAME="$1" ENCRYPTED=1 PART LABEL ITEM
+
+    case "$NAME" in
         laptop)
             # Decrypted 2026-09-20 — Windows 10 Home can't re-enable BitLocker
             # on a data volume (full BitLocker is Pro/Enterprise/Education
-            # only; Home only has TPM-gated Device Encryption for the OS
-            # drive). Left unencrypted on purpose. Plain mount, no bw/cryptsetup.
+            # only). Left unencrypted on purpose. Plain mount, no bw/cryptsetup.
             PART="/dev/nvme0n1p5"
             LABEL="laptop-newvolume"
             ENCRYPTED=0
@@ -81,99 +98,133 @@ if [ "$#" -eq 1 ]; then
             ITEM="BitLocker - DESKTOP-8PKDU07 C:"
             ;;
         *)
-            echo "unknown drive '$1' — known: laptop, nani, desktop-c" >&2
-            echo "or use the explicit form: bw-unlock <partition> <label> <bitwarden-item-name>" >&2
-            exit 1
+            echo "unknown drive '$NAME' — known: laptop, nani, desktop-c" >&2
+            return 1
             ;;
     esac
-elif [ "$#" -eq 3 ]; then
-    PART="$1"
-    LABEL="$2"
-    ITEM="$3"
-else
-    echo "usage: bw-unlock <known-drive>  (laptop | nani | desktop-c)" >&2
-    echo "   or: bw-unlock <partition> <label> <bitwarden-item-name>" >&2
-    exit 1
-fi
-MOUNTPOINT="/mnt/$LABEL"
 
-if [ "$ENCRYPTED" -eq 0 ]; then
-    MOUNTDEV="$PART"
-else
-    MAPPER="bitlocker-$LABEL"
-    MOUNTDEV="/dev/mapper/$MAPPER"
-    SESSION_FILE="/run/user/$(id -u)/bw-cli-session"
+    local MOUNTPOINT="/mnt/$LABEL" MOUNTDEV
 
-    if [ -e "$MOUNTDEV" ]; then
-        echo "already unlocked at $MOUNTDEV" >&2
+    if [ "$ENCRYPTED" -eq 0 ]; then
+        MOUNTDEV="$PART"
     else
-        # Reuse a cached session (tmpfs only, never touches disk, cleared on
-        # logout/reboot) if it's still valid; otherwise unlock fresh and cache it.
-        if [ -z "${BW_SESSION:-}" ] && [ -f "$SESSION_FILE" ]; then
-            BW_SESSION="$(cat "$SESSION_FILE")"
-        fi
-        if [ -z "${BW_SESSION:-}" ] || [ "$(bw status --session "$BW_SESSION" 2>/dev/null | jq -r '.status')" != "unlocked" ]; then
-            BW_SESSION="$(bw unlock --raw)"
-            install -m 600 /dev/null "$SESSION_FILE"
-            printf '%s' "$BW_SESSION" > "$SESSION_FILE"
-        fi
-        export BW_SESSION
+        local MAPPER="bitlocker-$LABEL"
+        MOUNTDEV="/dev/mapper/$MAPPER"
+        local SESSION_FILE="/run/user/$(id -u)/bw-cli-session"
 
-        PASSWORD="$(bw get password "$ITEM" --session "$BW_SESSION")"
-        printf '%s' "$PASSWORD" | sudo cryptsetup open --type bitlk --key-file=- "$PART" "$MAPPER"
-        unset PASSWORD
+        if [ -e "$MOUNTDEV" ]; then
+            echo "[$NAME] already unlocked at $MOUNTDEV" >&2
+        else
+            # Reuse a cached session (tmpfs only, never touches disk, cleared
+            # on logout/reboot) if it's still valid; otherwise unlock fresh
+            # and cache it.
+            if [ -z "${BW_SESSION:-}" ] && [ -f "$SESSION_FILE" ]; then
+                BW_SESSION="$(cat "$SESSION_FILE")"
+            fi
+            if [ -z "${BW_SESSION:-}" ] || [ "$(bw status --session "$BW_SESSION" 2>/dev/null | jq -r '.status')" != "unlocked" ]; then
+                BW_SESSION="$(bw unlock --raw)"
+                install -m 600 /dev/null "$SESSION_FILE"
+                printf '%s' "$BW_SESSION" > "$SESSION_FILE"
+            fi
+            export BW_SESSION
+
+            local PASSWORD
+            PASSWORD="$(bw get password "$ITEM" --session "$BW_SESSION")"
+            printf '%s' "$PASSWORD" | sudo cryptsetup open --type bitlk --key-file=- "$PART" "$MAPPER"
+            unset PASSWORD
+        fi
     fi
-fi
 
-sudo mkdir -p "$MOUNTPOINT"
-if mountpoint -q "$MOUNTPOINT"; then
-    echo "already mounted at $MOUNTPOINT" >&2
-else
-    sudo mount -o uid="$(id -u)",gid="$(id -g)" "$MOUNTDEV" "$MOUNTPOINT"
-    echo "mounted at $MOUNTPOINT"
-fi
-```
+    sudo mkdir -p "$MOUNTPOINT"
+    if mountpoint -q "$MOUNTPOINT"; then
+        echo "[$NAME] already mounted at $MOUNTPOINT" >&2
+    else
+        sudo mount -o uid="$(id -u)",gid="$(id -g)" "$MOUNTDEV" "$MOUNTPOINT"
+        echo "[$NAME] mounted at $MOUNTPOINT"
+    fi
+}
 
-`~/.local/bin/bw-lock`:
-```bash
-#!/usr/bin/env bash
-# Cleanly unmount and close a partition previously opened with bw-unlock.
-set -euo pipefail
+[ "$#" -ge 1 ] || usage
 
-if [ "$#" -ne 1 ]; then
-    echo "usage: bw-lock <label>" >&2
-    echo "  e.g. bw-lock laptop-newvolume" >&2
-    exit 1
-fi
+case "$1" in
+    all|both)
+        DRIVES=(laptop nani desktop-c)
+        ;;
+    *)
+        DRIVES=("$@")
+        ;;
+esac
 
-LABEL="$1"
-MAPPER="bitlocker-$LABEL"
-MOUNTPOINT="/mnt/$LABEL"
-
-if mountpoint -q "$MOUNTPOINT" 2>/dev/null; then
-    sudo umount "$MOUNTPOINT"
-fi
-
-if [ -e "/dev/mapper/$MAPPER" ]; then
-    sudo cryptsetup close "$MAPPER"
-fi
-
-echo "closed $LABEL"
-```
-
-`~/.local/bin/bw-unlock-all`:
-```bash
-#!/usr/bin/env bash
-# Run bw-unlock for every known drive in turn.
-set -uo pipefail
-
-DRIVES=(laptop nani desktop-c)
-
-for drive in "${DRIVES[@]}"; do
-    echo "=== $drive ==="
-    bw-unlock "$drive"
+STATUS=0
+for d in "${DRIVES[@]}"; do
+    echo "=== $d ==="
+    unlock_one "$d" || STATUS=1
     echo
 done
+exit "$STATUS"
+```
+
+`~/.local/bin/bit-lock`:
+```bash
+#!/usr/bin/env bash
+# Cleanly unmount and close drives previously opened with bit-unlock.
+# Usage:
+#   bit-lock all | both        close every known drive
+#   bit-lock <name> [<name>...]  close one or more specific drives
+set -uo pipefail
+
+usage() {
+    echo "usage: bit-lock <all|both>" >&2
+    echo "   or: bit-lock <name> [<name>...]   (laptop | nani | desktop-c)" >&2
+    exit 1
+}
+
+label_for() {
+    case "$1" in
+        laptop) echo "laptop-newvolume" ;;
+        nani) echo "nani-newvolume" ;;
+        desktop-c) echo "desktop-c" ;;
+        *) return 1 ;;
+    esac
+}
+
+lock_one() {
+    local NAME="$1" LABEL
+    LABEL="$(label_for "$NAME")" || {
+        echo "unknown drive '$NAME' — known: laptop, nani, desktop-c" >&2
+        return 1
+    }
+
+    local MAPPER="bitlocker-$LABEL"
+    local MOUNTPOINT="/mnt/$LABEL"
+
+    if mountpoint -q "$MOUNTPOINT" 2>/dev/null; then
+        sudo umount "$MOUNTPOINT"
+    fi
+
+    if [ -e "/dev/mapper/$MAPPER" ]; then
+        sudo cryptsetup close "$MAPPER"
+    fi
+
+    echo "closed $NAME"
+}
+
+[ "$#" -ge 1 ] || usage
+
+case "$1" in
+    all|both)
+        DRIVES=(laptop nani desktop-c)
+        ;;
+    *)
+        DRIVES=("$@")
+        ;;
+esac
+
+STATUS=0
+for d in "${DRIVES[@]}"; do
+    lock_one "$d" || STATUS=1
+done
+exit "$STATUS"
 ```
 
 Both scripts are `chmod 755`; `~/.local/bin` is already on `PATH`.
@@ -205,14 +256,13 @@ into the password field, named to match the table above.
   Without Fast Startup off, resuming Windows after writing to shared NTFS partitions from
   Linux risks corruption from Windows' stale in-memory filesystem cache overwriting
   on-disk changes.
-- **Superseded — `laptop` drive is now permanently unencrypted, not just size-mismatched.**
-  Originally this drive (`/dev/nvme0n1p5`) threw `WARNING: BitLocker volume size
-  269481934848 does not match the underlying device size 216046501888` on every unlock
-  (BitLocker's header remembering an original ~251GiB size from before this partition was
-  resized/migrated down to its current 201.2GiB). `cryptsetup`/`ntfs3` handled it fine at
-  the time (confirmed via `df` — correctly clamped to the real 201.2GiB, existing 85G of
-  data mounted and read fine) and the plan was to leave it as cosmetic-only unless it ever
-  needed fixing.
+- **`laptop` drive is now permanently unencrypted, not just size-mismatched.** Originally
+  this drive (`/dev/nvme0n1p5`) threw `WARNING: BitLocker volume size 269481934848 does not
+  match the underlying device size 216046501888` on every unlock (BitLocker's header
+  remembering an original ~251GiB size from before this partition was resized/migrated down
+  to its current 201.2GiB). `cryptsetup`/`ntfs3` handled it fine at the time (confirmed via
+  `df` — correctly clamped to the real 201.2GiB, existing 85G of data mounted and read fine)
+  and the plan was to leave it as cosmetic-only unless it ever needed fixing.
   Attempted the fix anyway on 2026-09-20 by decrypting (turning off BitLocker) in Windows,
   intending to immediately re-encrypt to get fresh, correct size metadata. **Turned out
   Windows 10 Home cannot re-enable BitLocker on a data volume at all** — full BitLocker
@@ -220,8 +270,8 @@ into the password field, named to match the table above.
   Home edition only has TPM-gated "Device Encryption" for the OS drive, which doesn't apply
   here. The drive is now plain NTFS, decrypted, permanently — decided to keep it that way
   rather than pursue a Windows edition upgrade just to re-encrypt one data volume.
-  `bw-unlock`'s `laptop` case now does a plain `mount`, no `bw`/`cryptsetup` involved at
-  all — see the `ENCRYPTED` flag in the script above. The old Bitwarden item
+  `bit-unlock`'s `laptop` case does a plain `mount`, no `bw`/`cryptsetup` involved at all —
+  see the `ENCRYPTED` flag in the script above. The old Bitwarden item
   (`BitLocker - LAPTOP-ADN3BT6B New Volume`) is no longer used by this script; left in the
   vault as a historical record rather than deleted, but its password is meaningless now.
 - **Dolphin can't unlock these via its own GUI prompt** — no polkit authentication agent is
@@ -233,3 +283,11 @@ into the password field, named to match the table above.
   password prompt Dolphin does show for them is just the Linux account password, a
   system-partition mount authorization check, not a BitLocker key — that one path does work
   without an agent, for reasons not fully resolved.)
+- **Future consideration, not yet decided or acted on:** thinking about using VeraCrypt
+  instead of BitLocker for encrypting drives going forward — plausibly prompted by the two
+  BitLocker limitations hit above (the unrepairable size-mismatch metadata, and Windows 10
+  Home being unable to re-enable BitLocker on a data volume at all). VeraCrypt is
+  cross-platform and edition-independent, which would sidestep both. If this happens,
+  `bit-unlock`/`bit-lock` would need real changes, not just a new table row — they're built
+  specifically around `cryptsetup --type bitlk`, and VeraCrypt volumes aren't unlocked that
+  way (VeraCrypt has its own CLI/format, not handled by `cryptsetup`'s `bitlk` support).
