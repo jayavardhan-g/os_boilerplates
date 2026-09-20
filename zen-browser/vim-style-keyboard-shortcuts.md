@@ -42,6 +42,30 @@ Deliberately left unchanged: restore-closed-tab (stayed Ctrl+Shift+T only, decli
 Ctrl+U), and all 10 workspace-switch-N slots (stayed unbound — no real vim analog, and
 Ctrl+1-9 was already claimed by an earlier tab-switching customization).
 
+**Second pass, same day — compact mode / sidebar / split-view cleanup:**
+
+| Action | Before | After |
+|---|---|---|
+| Compact mode toggle | Ctrl+Alt+C | **Alt+C** |
+| Legacy generic sidebar toggle (`toggleSidebarKb`, pre-dates Zen's own sidebar concept) | Ctrl+Alt+Z | **disabled** (redundant with `zen-toggle-sidebar` = Ctrl+B) |
+| Split view: close/unsplit | Ctrl+/ | **Alt+/** |
+| Split view: new empty split | Ctrl+Shift+* | **Alt+N** |
+
+The new-empty-split key deliberately avoided `Alt+\` even though it was free — that would
+have shared a physical key with the existing `Alt+|` (= Alt+Shift+\\) vertical-split
+binding, differing only by whether Shift is held. Technically valid (Firefox treats
+Shift-state as part of the chord, same mechanism already used by its own default
+Ctrl+=/Ctrl+Shift+= zoom bindings), but too easy to mis-press in practice — picked `Alt+N`
+(free, no shared key, mnemonic "New") instead.
+
+Also surveyed the full sidebar-related shortcut family before deciding what (not) to
+touch: `zen-toggle-sidebar` (Ctrl+B, main sidebar), `key_gotoHistory` (Ctrl+H, history
+sidebar), and `viewBookmarksSidebarKb` (Ctrl+Alt+B, bookmarks sidebar) were all left
+alone — already coherent from the first pass. `viewGenaiChatSidebarKb` (Ctrl+Alt+X, AI
+chat sidebar) was suggested a move to Ctrl+Alt+A but not decided on yet. `viewOpenTabsSidebarKb`
+(a vertical-tabs-style sidebar) is disabled/unbound by default in stock Zen — noted as a
+real dead feature, not yet enabled either way.
+
 Applied via a small Python script editing the shortcuts JSON directly (Zen was fully
 closed at the time — profile lock/`.parentlock` checked clear first), then verified by
 launching `-P Nani --new-instance` and confirming a real process tree spawned (systemd
