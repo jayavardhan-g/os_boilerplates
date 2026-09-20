@@ -72,6 +72,26 @@ launching `-P Nani --new-instance` and confirming a real process tree spawned (s
 journal showed `1.5G memory peak`, `13.2s CPU / 6s wall` — a genuine full startup, not a
 crash) before mirroring the result into `~/dotfiles` and pushing.
 
+**Third pass, same day — propagating to Nightmare/Study/Fake.** All testing above was
+against Nani only. Jayavardhan then tested in the **Study** profile and found none of the
+changes present — each of the four imported profiles has its own fully independent
+`zen-keyboard-shortcuts.json`; editing Nani's file never touches the other three.
+
+Before fixing this, diffed Nightmare/Study/Fake against each other and found they were
+**not** on stock Windows defaults either — each already had its own divergent
+customizations, different from both the Zen defaults *and* from each other (e.g. Study's
+original file already had `zen-split-view-horizontal` on `Alt+-` and `goBackKb` on
+`Alt+h`, coincidentally close to but not identical with today's Nani choices — most likely
+prior independent experimentation on Windows, given the profile names Nightmare/Study/Fake
+read as test/throwaway profiles versus Nani as the real daily driver). Flagged this to
+Jayavardhan before touching anything since overwriting would discard whatever was actually
+in there — confirmed **overwrite anyway**, since these three were being treated as
+disposable. Copied Nani's finished `zen-keyboard-shortcuts.json` over all three verbatim
+(profile lock checked clear on all four first), then verified each with a real
+`-P <name> --new-instance` launch before closing. `~/dotfiles` still only tracks Nani's
+copy — matches the Windows-side `sync.ps1`'s own single-profile scope (see that repo's
+README), so Nightmare/Study/Fake's shortcuts exist on disk only, not mirrored to git.
+
 ## Notes
 - **Collision-checked at both layers before committing to anything:**
   - *Zen-internal*: `zen-glance-expand` already defaults to Ctrl+O, which blocked an
