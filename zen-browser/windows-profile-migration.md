@@ -9,7 +9,8 @@ Copied all 4 Zen Browser profiles (Windows profile names: Nani, Nightmare, Study
 from a BitLocker-encrypted Windows install into the CachyOS flatpak install of Zen
 (`app.zen_browser.zen`), registered them as launchable profiles, made one (Nani) the
 default, and added per-profile app-launcher entries. The pre-existing Linux Zen profile
-was left untouched — this was an additive import, not a merge/overwrite.
+was initially left untouched (an additive import, not a merge/overwrite) and later
+deleted outright the same day once Nani was confirmed sufficient — see Notes.
 
 ## Why
 Wanted browsing history, bookmarks, logins, and Zen's own "Spaces" carried over from the
@@ -169,6 +170,14 @@ noctalia-based setup — omit `StartupWMClass` on any `.desktop` file meant to b
   Manager) and password export/import via CSV (`about:logins` → "⋯" menu) — both
   additive/non-destructive, no natively-supported way to merge `places.sqlite` history
   across profiles.
+- **Update, same day:** the pre-existing Linux profile (`6kha6tir.Default (release)`,
+  1.1G) was deleted outright once Nani was confirmed as a full replacement — no merge
+  ended up happening. Deleted after confirming no running process had it open (checked
+  `lock` symlink + `/proc/<pid>/fd` across all running `zen` PIDs), then removed its
+  `[Profile0]` block from `profiles.ini` and confirmed neither `Profile Groups/*.sqlite`
+  DB referenced its path. The still-present `xbt3gnri.Default Profile` (`[Profile1]`,
+  ~4K, effectively empty) was left alone — not the profile in question, and trivial to
+  delete later the same way if it's ever unwanted.
 - Only profiles actually needed were imported this way; if Zen is ever reinstalled fresh,
   repeat steps 2–4 minimum (3, 5–7 optional) per profile to bring than back.
 - This whole procedure is Zen/Firefox-profile-format-specific, not Hyprland/CachyOS-caused
