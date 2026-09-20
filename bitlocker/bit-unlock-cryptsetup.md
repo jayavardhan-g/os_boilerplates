@@ -286,10 +286,12 @@ done
 exit "$STATUS"
 ```
 
-`/etc/fstab` (appended line, for `laptop`):
+`/etc/fstab` (appended line, for `laptop`, now labeled `Data`):
 ```
-UUID=5AAAE353AAE32A69  /mnt/laptop-newvolume  ntfs3  uid=1000,gid=1000,nofail  0  0
+UUID=5AAAE353AAE32A69 /mnt/data ntfs3 uid=1000,gid=1000,nofail 0 0
 ```
+Confirmed working: `findmnt --verify` reports success, mounted read-write at `/mnt/data`
+owned by the invoking user, auto-mounts on boot with no interaction needed.
 
 Both scripts are `chmod 755`; `~/.local/bin` is already on `PATH`.
 
@@ -334,7 +336,7 @@ into the password field, named to match the table above.
   for one data volume.
   Since there's no secret to protect anymore, it doesn't need an interactive unlock step at
   all — moved to a plain `/etc/fstab` entry (see Change above), always mounted at
-  `/mnt/laptop-newvolume` from boot, `nofail` so boot doesn't hang if it's ever missing.
+  `/mnt/data` from boot, `nofail` so boot doesn't hang if it's ever missing.
   Its NTFS UUID changed after decryption (was a different value under the BitLocker
   container) and its volume label changed from `New Volume` to `Data` at some point — the
   `fstab` line uses the new UUID (`5AAAE353AAE32A69`), confirmed via `lsblk`. The old
