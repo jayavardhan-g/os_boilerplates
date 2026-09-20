@@ -178,6 +178,19 @@ noctalia-based setup — omit `StartupWMClass` on any `.desktop` file meant to b
   DB referenced its path. The still-present `xbt3gnri.Default Profile` (`[Profile1]`,
   ~4K, effectively empty) was left alone — not the profile in question, and trivial to
   delete later the same way if it's ever unwanted.
+- **Gotcha found from the above:** deleting `[Profile0]` without renumbering the
+  remaining `[ProfileN]` sections broke *every* launch path (CLI `-P <name>`, the app
+  launchers, and any WM keybind pointing at the app) — all of them fell through to
+  Zen/Firefox's classic Profile Manager dialog showing a completely **empty** profile
+  list, as if `profiles.ini` had no profiles at all. Cause: the toolkit profile-manager
+  parser reads `Profile0`, `Profile1`, `Profile2`, … as a strictly sequential,
+  zero-indexed scan and stops at the first missing number — it does not skip gaps or
+  scan by section name. Fix: whenever a `[ProfileN]` section is removed, renumber every
+  remaining `[ProfileN]` section so they run `0, 1, 2, …` with no gaps (matching the new
+  live state in
+  [`files/.var/app/app.zen_browser.zen/.zen/profiles.ini`](files/.var/app/app.zen_browser.zen/.zen/profiles.ini)).
+  Verified fixed by launching `flatpak run app.zen_browser.zen -P Nani --new-instance`
+  and confirming real content processes spawn instead of the Profile Manager dialog.
 - Only profiles actually needed were imported this way; if Zen is ever reinstalled fresh,
   repeat steps 2–4 minimum (3, 5–7 optional) per profile to bring than back.
 - This whole procedure is Zen/Firefox-profile-format-specific, not Hyprland/CachyOS-caused
