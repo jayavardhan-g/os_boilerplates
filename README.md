@@ -19,6 +19,7 @@ Personal runbook of system/config decisions, split by scope:
 | [`cloudflare-warp/`](cloudflare-warp/cloudflare-warp-client.md) | Cloudflare WARP (1.1.1.1) client — AUR build via `makepkg` (no repo/Flatpak package), `warp-svc` + `warp-cli` |
 | [`spotify/`](spotify/spotify-and-spotx.md) | Spotify (Flatpak) + SpotX ad-block patch |
 | [`limine/`](limine/windows-dual-boot-order-and-bitlocker.md) | Limine bootloader — Windows dual-boot NVRAM order + BitLocker chainload fix |
+| [`bitlocker/`](bitlocker/bit-unlock-script.md) | `bit-unlock` — unlocks/mounts the dual-boot BitLocker partitions via `cryptsetup --type bitlk`, passphrase from Bitwarden CLI |
 | [`xpad/`](xpad/xpad-sticky-notes.md) | Xpad desktop sticky notes — install, `--no-new`/`--quit` flags, why `sticky` (x-apps) doesn't work here |
 | [`mpv/`](mpv/mpv-video-player.md) | mpv video player — plain repo install, no player was present by default |
 
