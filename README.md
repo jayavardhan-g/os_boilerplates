@@ -22,7 +22,7 @@ Personal runbook of system/config decisions, split by scope:
 | [`xpad/`](xpad/xpad-sticky-notes.md) | Xpad desktop sticky notes — install, `--no-new`/`--quit` flags, why `sticky` (x-apps) doesn't work here |
 | [`mpv/`](mpv/mpv-video-player.md) | mpv video player — plain repo install, no player was present by default |
 | [`noctalia/`](noctalia/palette-source-not-persisting.md) | Noctalia shell — wallpaper-based palette source not persisting to settings.toml |
-| [`zen-browser/`](zen-browser/windows-profile-migration.md) | Zen Browser (Flatpak) — migrating profiles from a Windows install: `profiles.ini`, the in-app profile-switcher DB, and per-profile app launchers |
+| [`zen-browser/`](zen-browser/windows-profile-migration.md) | Zen Browser (Flatpak) — migrating profiles from a Windows install (`profiles.ini`, profile-switcher DB, app launchers) and [vim-flavored keyboard shortcuts](zen-browser/vim-style-keyboard-shortcuts.md) (the actual shortcut file lives in the separate `~/dotfiles` repo, not here) |
 
 **Every folder above also has a `files/` subtree** holding actual copies of the real
 config files each entry touches, mirroring their real path under `$HOME` (e.g.
