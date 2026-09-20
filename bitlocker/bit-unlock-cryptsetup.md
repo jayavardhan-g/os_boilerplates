@@ -356,11 +356,18 @@ into the password field, named to match the table above.
   prompts with a numbered list (space-separated numbers, or `a` for all) instead of
   requiring drive names as command-line arguments. Direct arguments (`all`/`both`, or one
   or more names) still work unprompted, for scripting/muscle-memory use.
-- **Future consideration, not yet decided or acted on:** thinking about using VeraCrypt
-  instead of BitLocker for encrypting drives going forward — plausibly prompted by the two
-  BitLocker limitations hit above (the unrepairable size-mismatch metadata, and Windows 10
-  Home being unable to re-enable BitLocker on a data volume at all). VeraCrypt is
-  cross-platform and edition-independent, which would sidestep both. If this happens,
-  `bit-unlock`/`bit-lock` would need real changes, not just a new table row — they're built
-  specifically around `cryptsetup --type bitlk`, and VeraCrypt volumes aren't unlocked that
-  way (VeraCrypt has its own CLI/format, not handled by `cryptsetup`'s `bitlk` support).
+- **Future plan, not yet decided/scheduled — may decrypt `nani` and `desktop-c` too and
+  migrate to VeraCrypt.** Thinking about using VeraCrypt instead of BitLocker for
+  encrypting drives going forward — plausibly prompted by the two BitLocker limitations hit
+  above (the unrepairable size-mismatch metadata, and Windows 10 Home being unable to
+  re-enable BitLocker on a data volume at all, which is what led to `laptop`/`Data` staying
+  unencrypted). VeraCrypt is cross-platform and edition-independent, which would sidestep
+  both. As of 2026-09-20, the plan if this happens: decrypt `nani` (`/dev/nvme0n1p6`) and
+  `desktop-c` (`/dev/nvme0n1p3`) — the two remaining BitLocker drives — and re-encrypt them
+  with VeraCrypt instead, "if necessary" (not committed to a timeline). If/when this
+  happens, `bit-unlock`/`bit-lock` would need real changes, not just a new table row —
+  they're built specifically around `cryptsetup --type bitlk`, and VeraCrypt volumes aren't
+  unlocked that way (VeraCrypt has its own CLI/format, not handled by `cryptsetup`'s
+  `bitlk` support). `desktop-c` is the live Windows OS partition, not just a data volume —
+  worth extra care/planning if it's ever actually decrypted, unlike the two data-only
+  drives.
