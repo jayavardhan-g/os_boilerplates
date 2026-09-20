@@ -21,6 +21,7 @@ Personal runbook of system/config decisions, split by scope:
 | [`limine/`](limine/windows-dual-boot-order-and-bitlocker.md) | Limine bootloader — Windows dual-boot NVRAM order + BitLocker chainload fix |
 | [`xpad/`](xpad/xpad-sticky-notes.md) | Xpad desktop sticky notes — install, `--no-new`/`--quit` flags, why `sticky` (x-apps) doesn't work here |
 | [`mpv/`](mpv/mpv-video-player.md) | mpv video player — plain repo install, no player was present by default |
+| [`wezterm/`](wezterm/wezterm-terminal-setup.md) | Wezterm terminal — trialing as a possible Kitty replacement, config mirrors Kitty's font/opacity/padding |
 
 **Every folder above also has a `files/` subtree** holding actual copies of the real
 config files each entry touches, mirroring their real path under `$HOME` (e.g.
