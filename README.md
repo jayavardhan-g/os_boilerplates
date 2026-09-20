@@ -23,6 +23,7 @@ Personal runbook of system/config decisions, split by scope:
 | [`mpv/`](mpv/mpv-video-player.md) | mpv video player — plain repo install, no player was present by default |
 | [`noctalia/`](noctalia/palette-source-not-persisting.md) | Noctalia shell — wallpaper-based palette source not persisting to settings.toml |
 | [`zen-browser/`](zen-browser/windows-profile-migration.md) | Zen Browser (Flatpak) — migrating profiles from a Windows install (`profiles.ini`, profile-switcher DB, app launchers) and [vim-flavored keyboard shortcuts](zen-browser/vim-style-keyboard-shortcuts.md) (the actual shortcut file lives in the separate `~/dotfiles` repo, not here) |
+| [`obsidian/`](obsidian/vault-setup-and-migration.md) | Obsidian — [migrating the existing vault](obsidian/vault-setup-and-migration.md) from Windows (clone from its own git remote, not a file copy) and [nvim-flavored `.obsidian.vimrc` keybindings](obsidian/vimrc-keybindings.md), including real `codemirror-vim` dispatcher gotchas (the vault itself lives in the separate `~/notes` repo, not here) |
 
 **Every folder above also has a `files/` subtree** holding actual copies of the real
 config files each entry touches, mirroring their real path under `$HOME` (e.g.
