@@ -8,7 +8,24 @@ local HOME = os.getenv("HOME")
 ---------------------------
 
 -- Window manipulation
-hl.bind(mainMod .. " + Escape", hl.dsp.exec_cmd("hyprctl kill"))
+-- Force-kill picker: the cursor becomes a crosshair, then you click the window
+-- to kill. Escape cancels the mode.
+--
+-- It CANNOT be bound to any chord containing Escape, which is what SUPER+Escape
+-- used to be. Escape is kill mode's own cancel key, and the check runs on key
+-- RELEASE as well as press (KeybindManager.cpp, handleInternalKeybinds):
+--
+--     if (g_pInputManager->getClickMode() == CLICKMODE_KILL) {
+--         if (keysym == XKB_KEY_Escape) {
+--             g_pInputManager->setClickMode(CLICKMODE_DEFAULT);
+--
+-- exec_cmd is async, so the sequence was: press fires the bind -> hyprctl kill
+-- turns kill mode on a few ms later -> the release of that same Escape key
+-- cancels it immediately. The crosshair appeared and vanished in one press.
+--
+-- SUPER+ALT+Q pairs with SUPER+Q (close window): same letter, more force. The
+-- extra modifier is deliberate - this kills without asking the app to save.
+hl.bind(mainMod .. " + ALT + Q", hl.dsp.exec_cmd("hyprctl kill"))
 hl.bind(mainMod .. " + Q", hl.dsp.window.close())
 hl.bind(mainMod .. " + SHIFT + F", hl.dsp.window.float({ action = "toggle" }))
 hl.bind(mainMod .. " + D", hl.dsp.window.fullscreen({ mode = 1 }))
