@@ -32,7 +32,8 @@ hl.bind(mainMod .. " + SHIFT + J", hl.dsp.window.move({ direction = "d" }))
   - `SUPER+J` (dwindle "togglesplit") → moved to `SUPER+CTRL+J`
   - `SUPER+L` (session lock) → moved to `SUPER+ALT+L` (via `SUPER+CTRL+L` — see
     [[workspace-switching]] for why), then moved again to its current home
-    `SUPER+ALT+X` — see [[floating-window-nudge]]
+    `SUPER+ALT+X`, and is now gone entirely — lock lives in the `SUPER+SHIFT+Q` session
+    panel, with no dedicated bind. See [[floating-window-nudge]]
 - See [[resize]] for the vim-style resize submap (`SUPER+R` then hjkl), and
   [[master-layout]] which these binds continue to work correctly under.
 - See [[finger-ergonomics]] for which hand/finger presses what across all these binds.

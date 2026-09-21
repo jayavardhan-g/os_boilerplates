@@ -19,10 +19,9 @@ hl.bind(mainMod .. " + CONTROL + H", hl.dsp.focus({ workspace = "m-1" }))
 hl.bind(mainMod .. " + CONTROL + L", hl.dsp.focus({ workspace = "m+1" }))
 ```
 
-Session lock (which collided with `SUPER+CTRL+L` from an earlier change) lives at:
-```lua
-hl.bind(mainMod .. " + ALT + X", hl.dsp.exec_cmd(noctCall .. "session lock"))
-```
+Session lock collided with `SUPER+CTRL+L` during this change and was bumped along. It no
+longer has a dedicated bind at all — it's reached through the session panel on
+`SUPER+SHIFT+Q`. See [[floating-window-nudge]] for the full history.
 
 ## Notes / history
 1. First attempt: plain `CTRL+ALT+H/L` (no Super) — global regardless of Hyprland's mod
@@ -33,6 +32,6 @@ hl.bind(mainMod .. " + ALT + X", hl.dsp.exec_cmd(noctCall .. "session lock"))
    [[right-alt-as-super]] makes Right Alt send Super, `SUPER+CTRL+H/L` can be pressed as
    **Right Alt + Left Ctrl + h/l** — entirely on the left hand / home row, no reach to the
    physical Super key. This bumped session-lock off `SUPER+CTRL+L` (where it had briefly
-   lived, see [[vim-navigation]]) to `SUPER+ALT+L`. It has since moved once more, to its
-   current home at `SUPER+ALT+X`, to free the `l` slot for the floating-window nudge —
+   lived, see [[vim-navigation]]) to `SUPER+ALT+L`. It moved once more to `SUPER+ALT+X`
+   to free the `l` slot for the floating-window nudge, and was then dropped altogether —
    see [[floating-window-nudge]].

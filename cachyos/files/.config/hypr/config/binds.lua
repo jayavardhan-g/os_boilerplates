@@ -123,7 +123,17 @@ hl.bind(mainMod .. " + F5", hl.dsp.exec_cmd("hyprctl reload"))
 hl.bind(mainMod .. " + U", hl.dsp.layout("colresize +conf"))
 hl.bind(mainMod .. " + SHIFT + E", hl.dsp.layout("colresize 0.95"))
 
--- Change focus
+-- Change focus.
+--
+-- These do NOT cross to the other monitor at the screen edge, and making them
+-- do so was tried and abandoned on 2026-09-21 — see [[monitor-gap-blocks-
+-- directional-focus]] in the configs repo for the full reasoning. Short
+-- version: the 100px dead zone in monitors.lua is 50x Hyprland's 2px adjacency
+-- threshold, so its built-in binds:window_direction_monitor_fallback can never
+-- see a window on the far screen; and a Lua fallback can't detect the edge
+-- either, because the scrolling layout WRAPS focus to the first column instead
+-- of refusing to move. Use SUPER+bracketleft / SUPER+bracketright to change
+-- monitor deliberately.
 hl.bind(mainMod .. " + Left", hl.dsp.focus({ direction = "left" }))
 hl.bind(mainMod .. " + Right", hl.dsp.focus({ direction = "right" }))
 hl.bind(mainMod .. " + Up", hl.dsp.focus({ direction = "up" }))
@@ -260,21 +270,29 @@ hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(launchPrefix .. FILE_MANAGER))
 hl.bind(mainMod .. " + T", hl.dsp.exec_cmd(launchPrefix .. TERMINAL .. " -e " .. EDITOR))
 hl.bind(mainMod .. " + C", hl.dsp.exec_cmd(launchPrefix .. CALCULATOR))
 hl.bind("XF86Calculator", hl.dsp.exec_cmd(launchPrefix .. CALCULATOR))
-hl.bind(mainMod .. " + W", hl.dsp.exec_cmd(launchPrefix .. BROWSER))
+-- Browser is on B only. SUPER+W used to be a second browser bind; W now means
+-- Wallpaper (moved here from SUPER+SHIFT+W), which is the more obvious mnemonic
+-- and costs nothing since B already covers the browser.
 hl.bind(mainMod .. " + B", hl.dsp.exec_cmd(launchPrefix .. BROWSER))
+hl.bind(mainMod .. " + W", hl.dsp.exec_cmd(noctCall .. "panel-toggle wallpaper"))
 hl.bind("CONTROL + SHIFT + Escape", hl.dsp.exec_cmd(launchPrefix .. TERMINAL .. " -e btop"))
 hl.bind(mainMod .. " + Z", hl.dsp.exec_cmd(noctCall .. "settings-toggle"))
 hl.bind(mainMod .. " + X", hl.dsp.exec_cmd(noctCall .. "panel-toggle control-center"))
 hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd(noctCall .. "panel-toggle launcher"))
 hl.bind(mainMod .. " + period", hl.dsp.exec_cmd(noctCall .. "panel-toggle launcher /emo"))
--- Session lock. NOT on SUPER+L (the Windows spot): SUPER+L is vim focus-right
--- and is used constantly — see [[vim-navigation]], which is why lock was moved
--- off SUPER+L in the first place. Hyprland runs EVERY matching bind rather than
--- letting a later one override, so double-binding SUPER+L would focus right AND
--- lock the screen on the same press. Moved off SUPER+ALT+L so the floating-window
--- nudge above can have the full SUPER+ALT+hjkl set.
-hl.bind(mainMod .. " + ALT + X", hl.dsp.exec_cmd(noctCall .. "session lock"))
-hl.bind(mainMod .. " + ALT + C", hl.dsp.exec_cmd(noctCall .. "panel-toggle session"))
+-- There is deliberately NO dedicated lock bind. Lock is reached through the
+-- session panel on SUPER+SHIFT+Q, which is now the single way in.
+--
+-- History, so this doesn't get "helpfully" re-added: lock lived on SUPER+L,
+-- then SUPER+CTRL+L, then SUPER+ALT+L, then briefly SUPER+ALT+X. It can't go
+-- back to the Windows-style SUPER+L, because that's vim focus-right and
+-- Hyprland runs EVERY matching bind rather than letting a later one override —
+-- SUPER+L would focus right AND lock on the same press. SUPER+ALT+X was worse
+-- than it looked: Right Alt sends Super, so the ALT has to be the LEFT Alt, and
+-- X is a left-hand key too, making it a cramped same-hand claw (the same reason
+-- ALT+X was abandoned for the scroller preset bind).
+-- Removed: SUPER+ALT+C, a second bind for the same session panel already on
+-- SUPER+SHIFT+Q. One way in is enough. SUPER+ALT+C is free.
 hl.bind(mainMod .. " + SHIFT + Q", hl.dsp.exec_cmd(noctCall .. "panel-toggle session"))
 hl.bind(
 	mainMod .. " + P",
@@ -315,7 +333,8 @@ hl.bind(mainMod .. " + Print", hl.dsp.exec_cmd(noctCall .. "screenshot-region"))
 hl.bind("F6", hl.dsp.exec_cmd(noctCall .. "screenshot-region"))
 
 -- Theming and Wallpaper
-hl.bind(mainMod .. " + SHIFT + W", hl.dsp.exec_cmd(noctCall .. "panel-toggle wallpaper"))
+-- The wallpaper picker moved to plain SUPER+W (see the LAUNCHER section) once
+-- W was freed up by dropping the duplicate browser bind. SUPER+SHIFT+W is free.
 
 -- Toggle laptop panel refresh rate between 144Hz and 60Hz
 hl.bind(mainMod .. " + ALT + R", hl.dsp.exec_cmd(HOME .. "/.config/hypr/scripts/refresh-rate.sh toggle"))

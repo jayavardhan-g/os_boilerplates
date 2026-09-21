@@ -6,8 +6,9 @@
 
 ## What
 `SUPER+ALT+h/j/k/l` and `SUPER+ALT+arrows` nudge a **floating** window by 50px
-(hold to repeat). To free the `l` slot, session lock moved from `SUPER+ALT+L` to
-`SUPER+ALT+X`.
+(hold to repeat). Session lock, which held `SUPER+ALT+L`, was moved out of the way to
+free the `l` slot — and then **dropped entirely**: there is no dedicated lock bind any
+more, lock is reached via the session panel on `SUPER+SHIFT+Q`.
 
 Tiled windows ignore these — they're positioned by the layout. Use `SUPER+SHIFT+hjkl`
 to move those within the layout instead.
@@ -37,8 +38,8 @@ hl.bind(mainMod .. " + ALT + Right", hl.dsp.window.move({ x = 50, y = 0, relativ
 hl.bind(mainMod .. " + ALT + Up", hl.dsp.window.move({ x = 0, y = -50, relative = true }), { repeating = true })
 hl.bind(mainMod .. " + ALT + Down", hl.dsp.window.move({ x = 0, y = 50, relative = true }), { repeating = true })
 
--- Session lock, moved off SUPER+ALT+L to free the nudge's `l` slot
-hl.bind(mainMod .. " + ALT + X", hl.dsp.exec_cmd(noctCall .. "session lock"))
+-- No dedicated lock bind. The old SUPER+ALT+L line was deleted, not relocated;
+-- lock lives in the session panel (SUPER+SHIFT+Q).
 ```
 
 ## Notes
@@ -50,9 +51,15 @@ hl.bind(mainMod .. " + ALT + X", hl.dsp.exec_cmd(noctCall .. "session lock"))
   `SUPER+L` would focus right *and* lock the screen on a single press. Verified in
   `KeybindManager.cpp`: on a match the loop sets `found = true` and keeps iterating; only
   a `submap` handler breaks out early.
-- **Lock bind history:** `SUPER+L` → `SUPER+CTRL+L` → `SUPER+ALT+L` → `SUPER+ALT+X`
-  (this change). Each move was caused by a vim-key bind wanting the letter back; see
-  [[vim-navigation]] and [[workspace-switching]] for the first two.
+- **Lock bind history, now ended:** `SUPER+L` → `SUPER+CTRL+L` → `SUPER+ALT+L` →
+  `SUPER+ALT+X` → **removed**. Each move was caused by a vim-key bind wanting the letter
+  back; see [[vim-navigation]] and [[workspace-switching]] for the first two. `SUPER+ALT+X`
+  lasted only minutes: it repeated a mistake already recorded in
+  [[scroller-proportion-preset-remap]] — Right Alt sends Super, so the ALT must be the
+  **left** Alt, and `X` is a left-hand letter too, making it a cramped same-hand claw.
+  Rather than hunt for a fifth home, the dedicated bind was dropped: the session panel on
+  `SUPER+SHIFT+Q` already offers lock alongside logout/reboot/shutdown, and locking is
+  infrequent enough not to need its own chord. **Don't re-add one without reading this.**
 - **Fingering:** [[right-alt-as-super]] makes Right Alt send Super, so `SUPER+ALT+...`
   needs the **left** Alt key — press it as Right Alt (Super) + Left Alt + the letter.
   Same two-thumb shape as the `SUPER+ALT+F` fake-fullscreen bind. This is the one cost of
@@ -62,5 +69,7 @@ hl.bind(mainMod .. " + ALT + X", hl.dsp.exec_cmd(noctCall .. "session lock"))
   shortcut being swallowed is permanent.
 - Both `hjkl` and arrows are bound to the same action on purpose — the focus and
   move-window binds already do this, so it matches house style rather than duplicating.
-- `SUPER+ALT` now holds: `C` (session panel), `F` (fake fullscreen), `R` (refresh-rate
-  toggle), `X` (lock), `hjkl` + arrows (nudge). `CTRL+ALT` is now completely unused.
+- `SUPER+ALT` now holds only: `F` (fake fullscreen), `R` (refresh-rate toggle), and
+  `hjkl` + arrows (nudge). `X` (lock) and `C` (a duplicate session-panel bind) were both
+  removed on the same day; `SUPER+ALT+C`, `SUPER+ALT+X` and the whole of `CTRL+ALT` are
+  free.

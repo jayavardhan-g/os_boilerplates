@@ -5,7 +5,12 @@ hl.on("hyprland.start", function ()
     hl.exec_cmd("dbus-update-activation-environment --systemd --all")
     hl.exec_cmd("gnome-keyring-daemon --start --components=pkcs11,secrets")
     hl.exec_cmd("noctalia")
-    hl.exec_cmd("xhost +SI:localuser:root")
+    -- Removed: hl.exec_cmd("xhost +SI:localuser:root") — CachyOS boilerplate
+    -- that grants the local root account access to the X (XWayland) display, so
+    -- that root GUI apps like `sudo gparted` don't fail with "cannot open
+    -- display". xhost was never installed here, so the line failed silently at
+    -- every login — proof it was never needed. Removing it only tightens access,
+    -- never loosens it. If a root GUI app is ever needed, use pkexec instead.
     -- Hyprland doesn't run XDG autostart (/etc/xdg/autostart/*.desktop) on its
     -- own, so limine-snapper-sync's own "you booted a snapshot, restore now?"
     -- notification (normally launched that way) never fires. Launching it
@@ -18,10 +23,20 @@ hl.on("hyprland.start", function ()
     hl.exec_cmd(
         "bash -c 'for i in $(seq 1 30); do busctl --user list 2>/dev/null | grep -q org.freedesktop.Notifications && break; sleep 0.5; done; exec limine-snapper-restore --notify'"
     )
-    -- See scripts/xpad-launch.sh: forces XWayland (needed for Xpad to
-    -- actually persist pad positions) and cleans up its occasional spurious
-    -- blank pad on login.
-    hl.exec_cmd("~/.config/hypr/scripts/xpad-launch.sh")
+    -- Xpad is deliberately NOT auto-started any more — it's launched by hand,
+    -- only when notes are actually wanted. scripts/xpad-launch.sh still exists
+    -- and is still the only correct way to start it (it forces XWayland, which
+    -- is what makes pad positions persist at all — see the script's own header),
+    -- so the launcher entry at ~/.local/share/applications/xpad.desktop points
+    -- at that script rather than at the bare `xpad` binary. That override
+    -- shadows the system /usr/share/applications/xpad.desktop, whose plain
+    -- `Exec=xpad` would start it as a native Wayland client and silently save
+    -- every pad's position as x=0 y=0.
+    --
+    -- To restore auto-start, just uncomment the line below; nothing else here
+    -- depends on it (the hotplug gate and the shutdown hook both no-op when
+    -- Xpad isn't running).
+    -- hl.exec_cmd("~/.config/hypr/scripts/xpad-launch.sh")
 
     -- Xpad notes are floating and keep an absolute global-space position
     -- that doesn't get re-projected when their workspace moves monitors (see

@@ -1,0 +1,88 @@
+# The 100px monitor gap blocks directional focus between screens
+
+**Date:** 2026-09-21
+**Category:** window-management
+**Files touched:** none (investigated, attempted fix reverted — `~/.config/hypr/config/binds.lua` carries a pointer comment)
+
+## What
+`SUPER+L` / `SUPER+H` (and the arrow equivalents) do **not** move focus to the other
+monitor when you're on the last window at a screen edge. This is a consequence of the
+deliberate 100px dead zone configured in `~/.config/hypr/config/monitors.lua` (which
+carries its own long comment on why the gap exists and how to re-derive it), not a bug. An
+attempt to work around it in Lua was written, tested and **reverted** — it cannot work.
+Use `SUPER+bracketleft` / `SUPER+bracketright` to change monitor deliberately.
+
+## Why it happens
+Hyprland has `binds:window_direction_monitor_fallback` for exactly this, and it is
+already `true` (verified with `hyprctl getoption`). It never fires because of how
+Hyprland decides which windows are candidates — `isAdjacent()` in
+`src/desktop/state/WindowQuery.cpp`:
+
+```cpp
+constexpr double STICK_THRESHOLD = 2.0;
+const double delta = aEdge - bEdge;
+if (std::abs(delta) < STICK_THRESHOLD) return true;  // touching
+if (delta >= 0) return false;                        // a real gap -> not adjacent
+```
+
+The tolerance is **2 logical px**. The live geometry:
+
+| monitor | logical span | scale |
+|---|---|---|
+| eDP-1 | 0 → 1600 (1920/1.2) | 1.2 |
+| HDMI-A-1 | 1700 → 3620 | 1 |
+
+That is a **100px gap — 50x the threshold**, so no window on the far screen is ever a
+candidate and the fallback has nothing to fall back to. Reproduced live in both
+directions by dispatching `hl.dsp.focus({direction=...})` repeatedly and watching
+`hyprctl monitors`: focus moved within the monitor, then stopped or wrapped, never
+crossing.
+
+## Why the Lua workaround can't work
+The obvious fix is a wrapper: dispatch focus, check whether the focused window changed,
+and if it didn't, focus the nearest monitor in that direction by position. It was written
+and it loads fine, but the edge-detection premise is false:
+
+**The scrolling layout WRAPS focus instead of refusing to move.** Measured on eDP-1 ws1
+with two windows, pressing focus-right repeatedly:
+
+```
+press 1 -> addr 0x…029450  x [803, 5]
+press 2 -> addr 0x…d5d170  x [6, 5]     <- wrapped back to the first column
+press 3 -> addr 0x…029450  x [803, 5]
+press 4 -> addr 0x…d5d170  x [6, 5]
+```
+
+The focused window changes on *every* press, so "focus didn't move" is never true and the
+fallback branch is unreachable. Detecting the edge would mean comparing window
+*positions* to spot a backwards jump, plus restoring focus when there turns out to be no
+monitor to cross to — more machinery and more edge cases (floating windows, the other
+three layouts, `scrolling` with `direction = down`) than the problem is worth. Reverted.
+
+## Decision (2026-09-21): keep the dead zone
+Presented as a straight trade — cross-monitor `hjkl` focus, or the pointer dead zone, not
+both. **Chose to keep the dead zone**, so `SUPER+hjkl` deliberately stops at the screen
+edge and changing monitor is an explicit `SUPER+bracketleft` / `SUPER+bracketright`.
+No config change was made; this entry exists to explain why the behaviour is what it is.
+
+To reverse the decision later it is one line in `monitors.lua` — close the gap and
+Hyprland's own `binds:window_direction_monitor_fallback` starts working with no custom
+code at all:
+```lua
+position = "1600x0",   -- instead of "1700x0"
+```
+The cost of that is the dead zone, whose whole purpose is stopping the pointer drifting
+onto the external screen by accident. The focus behaviour is downstream of that trade,
+not a separate problem to solve.
+
+## Notes
+- `focus({ monitor = "+1" / "-1" })` works but **wraps by monitor index** — from the
+  rightmost monitor, `+1` returns to the laptop. Not usable as a directional fallback.
+  Verified live.
+- `focus({ monitor = "l" })` / `"r"` is **not supported** by the Lua API — it returns
+  `hl.focus.monitor: monitor not found`. Only monitor names and relative `+n`/`-n` work.
+- `hl.notify` does not exist in this Hyprland's Lua API, which is worth knowing when
+  trying to debug a keybind from `hyprctl dispatch`.
+- A `local function` in `binds.lua` is **not reachable** from `hyprctl dispatch` — that
+  runs in the global scope, so testing a bind's helper that way gives
+  `attempt to call a nil value`, which looks like a broken helper but isn't.
