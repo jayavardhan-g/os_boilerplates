@@ -39,7 +39,7 @@ modifier on the **right** hand instead (using Right Alt, which sends Super — s
 | `SUPER+h/j/k/l` (focus) | left thumb | right: index (h), index (j), middle (k), ring (l) |
 | `SUPER+SHIFT+h/j/k/l` (move window) | left thumb + ring | same right-hand fingers |
 | `SUPER+CTRL+h/l` (workspace switch) | left thumb + pinky | right index (h) / ring (l) |
-| `SUPER+CTRL+SHIFT+h/j/k/l` (direct resize) | left thumb + pinky + ring | same right-hand fingers |
+| `SUPER+ALT+h/j/k/l` (nudge floating window) | right thumb (Right Alt = Super) + left thumb (Left Alt) | same right-hand fingers |
 | `SUPER+R` (resize submap) | right thumb (Right Alt) | left index |
 | `SUPER+M` (swap master) | left thumb | right index |
 | `SUPER+S` (toggle special visible) | right thumb (Right Alt) | left ring |

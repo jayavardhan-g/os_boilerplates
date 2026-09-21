@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Zen (Nani)
+Comment=Zen Browser — Nani profile
+Exec=/home/jayavardhan/.local/bin/zen-nani %u
+Icon=app.zen_browser.zen
+Type=Application
+Categories=Network;WebBrowser;
+StartupNotify=true
+Terminal=false
+X-MultipleArgs=false

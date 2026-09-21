@@ -21,7 +21,7 @@ hl.bind(mainMod .. " + CONTROL + L", hl.dsp.focus({ workspace = "m+1" }))
 
 Session lock (which collided with `SUPER+CTRL+L` from an earlier change) lives at:
 ```lua
-hl.bind(mainMod .. " + ALT + L", hl.dsp.exec_cmd(noctCall .. "session lock"))
+hl.bind(mainMod .. " + ALT + X", hl.dsp.exec_cmd(noctCall .. "session lock"))
 ```
 
 ## Notes / history
@@ -33,4 +33,6 @@ hl.bind(mainMod .. " + ALT + L", hl.dsp.exec_cmd(noctCall .. "session lock"))
    [[right-alt-as-super]] makes Right Alt send Super, `SUPER+CTRL+H/L` can be pressed as
    **Right Alt + Left Ctrl + h/l** — entirely on the left hand / home row, no reach to the
    physical Super key. This bumped session-lock off `SUPER+CTRL+L` (where it had briefly
-   lived, see [[vim-navigation]]) to its current home at `SUPER+ALT+L`.
+   lived, see [[vim-navigation]]) to `SUPER+ALT+L`. It has since moved once more, to its
+   current home at `SUPER+ALT+X`, to free the `l` slot for the floating-window nudge —
+   see [[floating-window-nudge]].

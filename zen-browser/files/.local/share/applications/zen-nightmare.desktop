@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Zen (Nightmare)
+Comment=Zen Browser — Nightmare profile
+Exec=/home/jayavardhan/.local/bin/zen-nightmare %u
+Icon=app.zen_browser.zen
+Type=Application
+Categories=Network;WebBrowser;
+StartupNotify=true
+Terminal=false
+X-MultipleArgs=false

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Zen (Study)
+Comment=Zen Browser — Study profile
+Exec=/home/jayavardhan/.local/bin/zen-study %u
+Icon=app.zen_browser.zen
+Type=Application
+Categories=Network;WebBrowser;
+StartupNotify=true
+Terminal=false
+X-MultipleArgs=false

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Zen (Fake)
+Comment=Zen Browser — Fake profile
+Exec=/home/jayavardhan/.local/bin/zen-fake %u
+Icon=app.zen_browser.zen
+Type=Application
+Categories=Network;WebBrowser;
+StartupNotify=true
+Terminal=false
+X-MultipleArgs=false

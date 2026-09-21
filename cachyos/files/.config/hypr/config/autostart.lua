@@ -6,6 +6,18 @@ hl.on("hyprland.start", function ()
     hl.exec_cmd("gnome-keyring-daemon --start --components=pkcs11,secrets")
     hl.exec_cmd("noctalia")
     hl.exec_cmd("xhost +SI:localuser:root")
+    -- Hyprland doesn't run XDG autostart (/etc/xdg/autostart/*.desktop) on its
+    -- own, so limine-snapper-sync's own "you booted a snapshot, restore now?"
+    -- notification (normally launched that way) never fires. Launching it
+    -- here is limine-snapper-sync's own documented workaround for WMs like
+    -- this one; it no-ops immediately if the current boot isn't a snapshot.
+    -- Waits for noctalia's own org.freedesktop.Notifications service (started
+    -- by the "noctalia" exec_cmd just above, but not synchronously ready) —
+    -- confirmed on a real snapshot boot that firing this immediately races
+    -- noctalia's startup and the popup silently never appears.
+    hl.exec_cmd(
+        "bash -c 'for i in $(seq 1 30); do busctl --user list 2>/dev/null | grep -q org.freedesktop.Notifications && break; sleep 0.5; done; exec limine-snapper-restore --notify'"
+    )
     -- See scripts/xpad-launch.sh: forces XWayland (needed for Xpad to
     -- actually persist pad positions) and cleans up its occasional spurious
     -- blank pad on login.

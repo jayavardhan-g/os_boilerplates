@@ -8,162 +8,297 @@ local HOME = os.getenv("HOME")
 ---------------------------
 
 -- Window manipulation
-hl.bind(mainMod .. " + Escape",      hl.dsp.exec_cmd("hyprctl kill"))
-hl.bind(mainMod .. " + Q",           hl.dsp.window.close())
-hl.bind(mainMod .. " + SHIFT + F",   hl.dsp.window.float({ action = "toggle" }))
-hl.bind(mainMod .. " + D",           hl.dsp.window.fullscreen({ mode = 1 }))
-hl.bind(mainMod .. " + F",           hl.dsp.window.fullscreen())
+hl.bind(mainMod .. " + Escape", hl.dsp.exec_cmd("hyprctl kill"))
+hl.bind(mainMod .. " + Q", hl.dsp.window.close())
+hl.bind(mainMod .. " + SHIFT + F", hl.dsp.window.float({ action = "toggle" }))
+hl.bind(mainMod .. " + D", hl.dsp.window.fullscreen({ mode = 1 }))
+hl.bind(mainMod .. " + F", hl.dsp.window.fullscreen())
+
+-- Fake fullscreen, ported from Mango's SUPER+ALT+F (togglefakefullscreen):
+-- tell the application it is fullscreen without actually making it so, which
+-- gets a video player or game to switch to its fullscreen UI while the window
+-- stays a normal tile. internal = 0 keeps Hyprland's own state unchanged;
+-- client = 2 is the fullscreen state reported to the app.
+--
+-- action = "toggle" is REQUIRED, not optional: without it the dispatcher only
+-- ever sets the state, so repeated presses leave fullscreen_client pinned at 2
+-- with no way to clear it (verified — three presses in a row all read
+-- fsClient=2, and only the toggle form brought it back to 0).
+--
+-- Two things that make this look broken when it isn't:
+--   * It needs the LEFT Alt key. kb_options has altwin:swap_ralt_rwin, so Right
+--     Alt sends Super and this chord collapses to plain SUPER+F.
+--   * It changes no geometry at all — the window keeps its exact size. Apps
+--     that don't re-render when told they're fullscreen (terminals, file
+--     managers) show no visible change whatsoever. Test it on mpv or a video.
+hl.bind(mainMod .. " + ALT + F", hl.dsp.window.fullscreen_state({ internal = 0, client = 2, action = "toggle" }))
+
+-- Show the focused window on every workspace, ported from Mango's SUPER+G
+-- (toggleglobal). Hyprland's pin is the equivalent and is a toggle.
+-- Caveat: pin only applies to FLOATING windows — on a tiled window it's a
+-- no-op, so pair it with SUPER+SHIFT+F if the window isn't floating yet.
+hl.bind(mainMod .. " + G", hl.dsp.window.pin())
+
+-- Nudge a floating window by 50px, ported from Mango's CTRL+SHIFT+arrows
+-- (movewin +/-50).
+--
+-- Deliberately NOT on bare CTRL+SHIFT+arrows like Mango had it: that chord is
+-- word-selection in terminals, browsers and editors, and a global bind would
+-- swallow it everywhere — the same reason bare middle-click was freed from
+-- togglemaximizescreen.
+--
+-- Also deliberately NOT on bare CTRL+ALT+hjkl (which this briefly used): the
+-- same swallowing problem in weaker form (CTRL+ALT+Left/Right is back/forward
+-- in JetBrains IDEs, workspace switching in GNOME/KDE), plus it breaks the
+-- SUPER-is-the-base-modifier convention every other bind here follows. Super
+-- is grabbed by the compositor, so SUPER+... can never collide with an app.
+--
+-- Fingering note: kb_options has altwin:swap_ralt_rwin, so Right Alt sends
+-- Super — press these as Right Alt (Super) + LEFT Alt + hjkl. Two thumbs,
+-- same as SUPER+ALT+F.
+--
+-- Tiled windows ignore this (they're positioned by the layout); use
+-- SUPER+SHIFT+hjkl to move those within the layout instead.
+hl.bind(mainMod .. " + ALT + h", hl.dsp.window.move({ x = -50, y = 0, relative = true }), { repeating = true })
+hl.bind(mainMod .. " + ALT + l", hl.dsp.window.move({ x = 50, y = 0, relative = true }), { repeating = true })
+hl.bind(mainMod .. " + ALT + k", hl.dsp.window.move({ x = 0, y = -50, relative = true }), { repeating = true })
+hl.bind(mainMod .. " + ALT + j", hl.dsp.window.move({ x = 0, y = 50, relative = true }), { repeating = true })
+hl.bind(mainMod .. " + ALT + Left", hl.dsp.window.move({ x = -50, y = 0, relative = true }), { repeating = true })
+hl.bind(mainMod .. " + ALT + Right", hl.dsp.window.move({ x = 50, y = 0, relative = true }), { repeating = true })
+hl.bind(mainMod .. " + ALT + Up", hl.dsp.window.move({ x = 0, y = -50, relative = true }), { repeating = true })
+hl.bind(mainMod .. " + ALT + Down", hl.dsp.window.move({ x = 0, y = 50, relative = true }), { repeating = true })
 hl.bind(mainMod .. " + CONTROL + J", hl.dsp.layout("togglesplit"))
-hl.bind(mainMod .. " + M",           hl.dsp.layout("swapwithmaster"))
+hl.bind(mainMod .. " + M", hl.dsp.layout("swapwithmaster"))
 
--- Cycle the active layout engine: master -> dwindle -> scrolling -> master
-local LAYOUTS = { "master", "dwindle", "scrolling" }
-local function cycle_layout()
-    local current = hl.get_config("general:layout")
-    local idx = 1
-    for i, name in ipairs(LAYOUTS) do
-        if name == current then idx = i end
-    end
-    hl.config({ general = { layout = LAYOUTS[(idx % #LAYOUTS) + 1] } })
-end
-hl.bind(mainMod .. " + N", cycle_layout)
+-- Cycle the CURRENT WORKSPACE's layout, remembering the choice across restarts.
+-- Matches Mango's SUPER+N (circle_layout + switch-layout-persist.sh).
+--
+-- The implementation lives in config/workspaces.lua, next to the workspace
+-- rules it mutates. It's called through a closure rather than passed directly
+-- because hyprland.lua requires THIS file before workspaces.lua — at load time
+-- WS_CYCLE_LAYOUT doesn't exist yet, but by the time a key is pressed it does.
+--
+-- Replaces an earlier version that cycled the global general:layout (changing
+-- every workspace at once) and forgot the choice on restart.
+hl.bind(mainMod .. " + N", function()
+	WS_CYCLE_LAYOUT()
+end)
 
+-- Reload the config, matching Mango's SUPER+F5 (reload_config). There's no
+-- reload dispatcher in Hyprland's Lua API, so this shells out to hyprctl.
+--
+-- Largely a convenience: misc:disable_autoreload is off, so Hyprland already
+-- reloads whenever a config file is saved. This forces one WITHOUT touching a
+-- file — e.g. to discard runtime-only changes made through hyprctl eval, or to
+-- re-read the persisted workspace-layout state file after editing it by hand.
+hl.bind(mainMod .. " + F5", hl.dsp.exec_cmd("hyprctl reload"))
+
+-- Scrolling-layout column width, matching Mango's SUPER+U
+-- (switch_proportion_preset) and SUPER+SHIFT+E (set_proportion 1.0).
+--
+-- Both are native layoutmsgs — no glue needed:
+--   colresize +conf  steps to the next width in scrolling:explicit_column_widths
+--                    and wraps at the end
+--   colresize 0.95   sets the focused column to an absolute proportion of the
+--                    monitor. Any float works (0.5, 0.8, ...)
+--
+-- 0.95 rather than 1.0 reproduces Mango's scroller_structs = 40: the column
+-- stops just short of the screen edges and the layout centres it, so the
+-- columns either side stay visible as a thin strip and you can tell there's
+-- more to scroll to. Measured symmetric peek per side, confirming it centres:
+--   0.85 -> 144px   0.90 -> 96px   0.95 -> 48px   1.00 -> 0px   (on 1920 logical)
+-- On the 1600-logical laptop 0.95 works out to exactly 40px a side — the same
+-- number Mango used. Drop to 0.90 if the strip is too thin to notice.
+--
+-- For genuinely full width there's already SUPER+D (window.fullscreen mode 1),
+-- which is the equivalent of Mango's togglemaximizescreen.
+--
+-- The preset list is Hyprland's default, 0.333 / 0.5 / 0.667 / 1.0 — four stops
+-- rather than Mango's three (0.5 / 0.8 / 1.0). Verified live on eDP-1 (1600px
+-- logical): the cycle produced 525 -> 791 -> 1057 -> 1588 px. To match Mango
+-- exactly instead, set scrolling.explicit_column_widths = "0.5, 0.8, 1.0".
+--
+-- These are harmless on master/dwindle workspaces: a layout that doesn't
+-- understand the message just ignores it, so the keys simply do nothing there.
+hl.bind(mainMod .. " + U", hl.dsp.layout("colresize +conf"))
+hl.bind(mainMod .. " + SHIFT + E", hl.dsp.layout("colresize 0.95"))
 
 -- Change focus
-hl.bind(mainMod .. " + Left",  hl.dsp.focus({ direction = "left" }))
+hl.bind(mainMod .. " + Left", hl.dsp.focus({ direction = "left" }))
 hl.bind(mainMod .. " + Right", hl.dsp.focus({ direction = "right" }))
-hl.bind(mainMod .. " + Up",    hl.dsp.focus({ direction = "up" }))
-hl.bind(mainMod .. " + Down",  hl.dsp.focus({ direction = "down" }))
+hl.bind(mainMod .. " + Up", hl.dsp.focus({ direction = "up" }))
+hl.bind(mainMod .. " + Down", hl.dsp.focus({ direction = "down" }))
 -- vim-style focus movement
 hl.bind(mainMod .. " + H", hl.dsp.focus({ direction = "left" }))
 hl.bind(mainMod .. " + L", hl.dsp.focus({ direction = "right" }))
 hl.bind(mainMod .. " + K", hl.dsp.focus({ direction = "up" }))
 hl.bind(mainMod .. " + J", hl.dsp.focus({ direction = "down" }))
-hl.bind("ALT + Tab",           hl.dsp.window.cycle_next())
-hl.bind(mainMod .. " + Tab",   hl.dsp.exec_cmd(noctCall .. "window-switcher"))
+hl.bind("ALT + Tab", hl.dsp.window.cycle_next())
+hl.bind(mainMod .. " + Tab", hl.dsp.exec_cmd(noctCall .. "window-switcher"))
 
 -- Move active window around workspaces & monitors
-hl.bind(mainMod .. " + SHIFT + Up",                   hl.dsp.window.move({ direction = "u" }))
-hl.bind(mainMod .. " + SHIFT + Right",                hl.dsp.window.move({ direction = "r" }))
-hl.bind(mainMod .. " + SHIFT + Left",                 hl.dsp.window.move({ direction = "l" }))
-hl.bind(mainMod .. " + SHIFT + Down",                 hl.dsp.window.move({ direction = "d" }))
+hl.bind(mainMod .. " + SHIFT + Up", hl.dsp.window.move({ direction = "u" }))
+hl.bind(mainMod .. " + SHIFT + Right", hl.dsp.window.move({ direction = "r" }))
+hl.bind(mainMod .. " + SHIFT + Left", hl.dsp.window.move({ direction = "l" }))
+hl.bind(mainMod .. " + SHIFT + Down", hl.dsp.window.move({ direction = "d" }))
 -- vim-style window movement
 hl.bind(mainMod .. " + SHIFT + H", hl.dsp.window.move({ direction = "l" }))
 hl.bind(mainMod .. " + SHIFT + L", hl.dsp.window.move({ direction = "r" }))
 hl.bind(mainMod .. " + SHIFT + K", hl.dsp.window.move({ direction = "u" }))
 hl.bind(mainMod .. " + SHIFT + J", hl.dsp.window.move({ direction = "d" }))
-hl.bind(mainMod .. " + SHIFT + mouse_up",             hl.dsp.window.move({ monitor   = "-1" }))
-hl.bind(mainMod .. " + SHIFT + mouse_down",           hl.dsp.window.move({ monitor   = "+1" }))
-hl.bind(mainMod .. " + CONTROL + SHIFT + Right",      hl.dsp.window.move({ workspace = "m+1" }))
-hl.bind(mainMod .. " + CONTROL + SHIFT + Left",       hl.dsp.window.move({ workspace = "m-1" }))
-hl.bind(mainMod .. " + CONTROL + SHIFT + mouse_up",   hl.dsp.window.move({ workspace = "m-1" }))
+hl.bind(mainMod .. " + SHIFT + mouse_up", hl.dsp.window.move({ monitor = "-1" }))
+hl.bind(mainMod .. " + SHIFT + mouse_down", hl.dsp.window.move({ monitor = "+1" }))
+hl.bind(mainMod .. " + CONTROL + SHIFT + Right", hl.dsp.window.move({ workspace = "m+1" }))
+hl.bind(mainMod .. " + CONTROL + SHIFT + Left", hl.dsp.window.move({ workspace = "m-1" }))
+hl.bind(mainMod .. " + CONTROL + SHIFT + mouse_up", hl.dsp.window.move({ workspace = "m-1" }))
 hl.bind(mainMod .. " + CONTROL + SHIFT + mouse_down", hl.dsp.window.move({ workspace = "m+1" }))
 for i = 1, NUM_WPM do
-    local key = i % 10
-    hl.bind(mainMod .. " + SHIFT + CONTROL + " .. key, hl.dsp.window.move({ workspace = "m~" .. i }))
+	local key = i % 10
+	hl.bind(mainMod .. " + SHIFT + CONTROL + " .. key, hl.dsp.window.move({ workspace = "m~" .. i }))
 end
 
 -- Move & Resize with mouse
 hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag())
 hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize())
 
--- vim-style resize submap: SUPER+R to enter, hjkl to resize, Esc/Enter to exit
+-- vim-style resize submap: SUPER+R to enter, hjkl to resize as many times as
+-- you like, Esc/Enter/SUPER+R to leave. The mode is sticky - it stays until
+-- you explicitly exit it.
 --
--- window.resize was observed (via direct hyprctl dispatch testing, not just
--- a user report) to sometimes silently kick the submap back to "default"
--- after a single resize dispatch - not consistently reproducible, so the
--- exact cause is unconfirmed (possibly layout/window-state dependent), but
--- real. resize_and_stay() re-asserts the "resize" submap right after every
--- dispatch as a defensive fix, regardless of root cause - a harmless no-op
--- on the (apparently more common) case where the submap didn't need it.
-local function resize_and_stay(dx, dy)
-    hl.dispatch(hl.dsp.window.resize({ x = dx, y = dy, relative = true }))
-    hl.dispatch(hl.dsp.submap("resize"))
-end
-hl.define_submap("resize", "reset", function()
-    hl.bind("H",      function() resize_and_stay(-20, 0) end, { repeating = true })
-    hl.bind("L",      function() resize_and_stay(20, 0) end, { repeating = true })
-    hl.bind("K",      function() resize_and_stay(0, -20) end, { repeating = true })
-    hl.bind("J",      function() resize_and_stay(0, 20) end, { repeating = true })
-    hl.bind("escape", hl.dsp.submap("reset"))
-    hl.bind("Return", hl.dsp.submap("reset"))
-    hl.bind(mainMod .. " + R", hl.dsp.submap("reset"))
+-- The second argument to hl.define_submap is NOT a formality: it sets the
+-- submap's `reset` field, and Hyprland reads that as "the submap to jump to
+-- after any non-submap bind in here fires", i.e. it makes the whole submap
+-- ONE-SHOT. Passing "reset" (as this used to) is what made the first h/j/k/l
+-- press resize once and then drop straight back to default. KeybindManager,
+-- right after running a bind's dispatcher:
+--
+--     if (k->handler != "submap" && !k->submap.reset.empty()) {
+--         auto submapAfter = Config::Actions::state()->m_currentSubmap;
+--         if (submapBefore == submapAfter)
+--             Config::Actions::setSubmap(k->submap.reset);
+--     }
+--
+-- Note what that implies about the previous attempted workaround (a handler
+-- that re-dispatched `submap resize` after each resize): it can't work. The
+-- check compares the submap name before and after the dispatch, so
+-- re-asserting the SAME name leaves them equal and the auto-reset fires
+-- anyway. Omitting the reset argument entirely is the actual fix - with
+-- submap.reset empty the branch never runs.
+--
+-- Also verified, contrary to the old comment here: window.resize does not
+-- drop the submap on its own. Dispatching it by hand from hyprctl while in
+-- the submap leaves `hyprctl submap` reading "resize" across repeated calls.
+hl.define_submap("resize", function()
+	hl.bind("H", hl.dsp.window.resize({ x = -20, y = 0, relative = true }), { repeating = true })
+	hl.bind("L", hl.dsp.window.resize({ x = 20, y = 0, relative = true }), { repeating = true })
+	hl.bind("K", hl.dsp.window.resize({ x = 0, y = -20, relative = true }), { repeating = true })
+	hl.bind("J", hl.dsp.window.resize({ x = 0, y = 20, relative = true }), { repeating = true })
+	hl.bind("escape", hl.dsp.submap("reset"))
+	-- kb_options has caps:swapescape, so the physical Esc key emits Caps_Lock
+	-- and only the CapsLock-position key emits Escape. Bind both so whichever
+	-- key you reach for actually leaves the mode.
+	hl.bind("Caps_Lock", hl.dsp.submap("reset"))
+	hl.bind("Return", hl.dsp.submap("reset"))
+	hl.bind(mainMod .. " + R", hl.dsp.submap("reset"))
 end)
 hl.bind(mainMod .. " + R", hl.dsp.submap("resize"))
 
--- Quick resize without entering a submap: hold and tap, no mode to exit
-hl.bind(mainMod .. " + CONTROL + SHIFT + H", hl.dsp.window.resize({ x = -40, y = 0,   relative = true }), { repeating = true })
-hl.bind(mainMod .. " + CONTROL + SHIFT + L", hl.dsp.window.resize({ x = 40,  y = 0,   relative = true }), { repeating = true })
-hl.bind(mainMod .. " + CONTROL + SHIFT + K", hl.dsp.window.resize({ x = 0,   y = -40, relative = true }), { repeating = true })
-hl.bind(mainMod .. " + CONTROL + SHIFT + J", hl.dsp.window.resize({ x = 0,   y = 40,  relative = true }), { repeating = true })
+-- SUPER+CONTROL+SHIFT+hjkl used to be a second, submap-free way to resize in
+-- 40px steps. It only existed because the submap above was accidentally
+-- one-shot and therefore useless for more than a single nudge. Now that the
+-- submap is sticky, a three-modifier chord for the same job isn't worth the
+-- finger contortion, so it's gone. SUPER+CONTROL+SHIFT+hjkl is free again -
+-- note the Left/Right members of that same chord family are still live above
+-- as move-window-to-ADJACENT-WORKSPACE (m-1/m+1), not move-to-monitor.
+-- Moving a window between monitors is SUPER+SHIFT+bracketleft/bracketright.
 
 -- Reset the focused window's size back to its default tiled share, and
 -- reset the master/stack ratio back to Hyprland's default (0.55)
 local function reset_window_size()
-    hl.dispatch(hl.dsp.window.float({ action = "toggle" }))
-    hl.dispatch(hl.dsp.window.float({ action = "toggle" }))
-    hl.dispatch(hl.dsp.layout("mfact exact 0.55"))
+	hl.dispatch(hl.dsp.window.float({ action = "toggle" }))
+	hl.dispatch(hl.dsp.window.float({ action = "toggle" }))
+	hl.dispatch(hl.dsp.layout("mfact exact 0.55"))
 end
 hl.bind(mainMod .. " + SHIFT + R", reset_window_size)
 
 -- Zoom
 local function zoomfunction(value)
-    local zoomvalue = hl.get_config("cursor:zoom_factor")
-    if (zoomvalue + value) > 3.0 then
-        hl.config({ cursor = { zoom_factor = 3.0 } })
-    elseif (zoomvalue + value) < 1.0 then
-        hl.config({ cursor = { zoom_factor = 1.0 } })
-    else
-        hl.config({ cursor = { zoom_factor = zoomvalue + value } })
-    end
+	local zoomvalue = hl.get_config("cursor:zoom_factor")
+	if (zoomvalue + value) > 3.0 then
+		hl.config({ cursor = { zoom_factor = 3.0 } })
+	elseif (zoomvalue + value) < 1.0 then
+		hl.config({ cursor = { zoom_factor = 1.0 } })
+	else
+		hl.config({ cursor = { zoom_factor = zoomvalue + value } })
+	end
 end
-hl.bind(mainMod .. " + Minus", function() zoomfunction(-0.3) end, { repeating = true})
-hl.bind(mainMod .. " + Plus", function() zoomfunction(0.3) end, { repeating = true })
+hl.bind(mainMod .. " + Minus", function()
+	zoomfunction(-0.3)
+end, { repeating = true })
+hl.bind(mainMod .. " + Plus", function()
+	zoomfunction(0.3)
+end, { repeating = true })
 
 --# Zoom with keypad
-hl.bind(mainMod .. " + code:82", function() zoomfunction(-0.3) end, { repeating = true })
-hl.bind(mainMod .. " + code:86", function() zoomfunction(0.3) end, { repeating = true })
-
+hl.bind(mainMod .. " + code:82", function()
+	zoomfunction(-0.3)
+end, { repeating = true })
+hl.bind(mainMod .. " + code:86", function()
+	zoomfunction(0.3)
+end, { repeating = true })
 
 ------------------
 ---- LAUNCHER ----
 ------------------
 
-hl.bind(mainMod .. " + Return",     hl.dsp.exec_cmd(launchPrefix .. TERMINAL))
-hl.bind(mainMod .. " + E",          hl.dsp.exec_cmd(launchPrefix .. FILE_MANAGER))
-hl.bind(mainMod .. " + T",          hl.dsp.exec_cmd(launchPrefix .. EDITOR))
-hl.bind(mainMod .. " + C",          hl.dsp.exec_cmd(launchPrefix .. CALCULATOR))
-hl.bind("XF86Calculator",           hl.dsp.exec_cmd(launchPrefix .. CALCULATOR))
-hl.bind(mainMod .. " + W",          hl.dsp.exec_cmd(launchPrefix .. BROWSER))
-hl.bind(mainMod .. " + B",          hl.dsp.exec_cmd(launchPrefix .. BROWSER))
+hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd(launchPrefix .. TERMINAL))
+hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(launchPrefix .. FILE_MANAGER))
+-- EDITOR is a terminal program (nvim), so it needs TERMINAL to draw in - same
+-- shape as the btop bind below. Previously this was `launchPrefix .. EDITOR`,
+-- which handed the bare command to uwsm with no terminal: nvim started, had
+-- nowhere to render, and exited immediately, so the bind did nothing visible.
+hl.bind(mainMod .. " + T", hl.dsp.exec_cmd(launchPrefix .. TERMINAL .. " -e " .. EDITOR))
+hl.bind(mainMod .. " + C", hl.dsp.exec_cmd(launchPrefix .. CALCULATOR))
+hl.bind("XF86Calculator", hl.dsp.exec_cmd(launchPrefix .. CALCULATOR))
+hl.bind(mainMod .. " + W", hl.dsp.exec_cmd(launchPrefix .. BROWSER))
+hl.bind(mainMod .. " + B", hl.dsp.exec_cmd(launchPrefix .. BROWSER))
 hl.bind("CONTROL + SHIFT + Escape", hl.dsp.exec_cmd(launchPrefix .. TERMINAL .. " -e btop"))
-hl.bind(mainMod .. " + Z",          hl.dsp.exec_cmd(noctCall .. "settings-toggle"))
-hl.bind(mainMod .. " + X",          hl.dsp.exec_cmd(noctCall .. "panel-toggle control-center"))
-hl.bind(mainMod .. " + Space",      hl.dsp.exec_cmd(noctCall .. "panel-toggle launcher"))
-hl.bind(mainMod .. " + period",     hl.dsp.exec_cmd(noctCall .. "panel-toggle launcher /emo"))
-hl.bind(mainMod .. " + ALT + L",    hl.dsp.exec_cmd(noctCall .. "session lock"))
-hl.bind(mainMod .. " + ALT + C",    hl.dsp.exec_cmd(noctCall .. "panel-toggle session"))
-hl.bind(mainMod .. " + SHIFT + Q",  hl.dsp.exec_cmd(noctCall .. "panel-toggle session"))
-hl.bind(mainMod .. " + P",          hl.dsp.exec_cmd(launchPrefix .. os.getenv("HOME") .. "/.config/hypr/scripts/display-mode.sh"))
+hl.bind(mainMod .. " + Z", hl.dsp.exec_cmd(noctCall .. "settings-toggle"))
+hl.bind(mainMod .. " + X", hl.dsp.exec_cmd(noctCall .. "panel-toggle control-center"))
+hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd(noctCall .. "panel-toggle launcher"))
+hl.bind(mainMod .. " + period", hl.dsp.exec_cmd(noctCall .. "panel-toggle launcher /emo"))
+-- Session lock. NOT on SUPER+L (the Windows spot): SUPER+L is vim focus-right
+-- and is used constantly — see [[vim-navigation]], which is why lock was moved
+-- off SUPER+L in the first place. Hyprland runs EVERY matching bind rather than
+-- letting a later one override, so double-binding SUPER+L would focus right AND
+-- lock the screen on the same press. Moved off SUPER+ALT+L so the floating-window
+-- nudge above can have the full SUPER+ALT+hjkl set.
+hl.bind(mainMod .. " + ALT + X", hl.dsp.exec_cmd(noctCall .. "session lock"))
+hl.bind(mainMod .. " + ALT + C", hl.dsp.exec_cmd(noctCall .. "panel-toggle session"))
+hl.bind(mainMod .. " + SHIFT + Q", hl.dsp.exec_cmd(noctCall .. "panel-toggle session"))
+hl.bind(
+	mainMod .. " + P",
+	hl.dsp.exec_cmd(launchPrefix .. os.getenv("HOME") .. "/.config/hypr/scripts/display-mode.sh")
+)
 
 ---------------------------
 ---- HARDWARE CONTROLS ----
 ---------------------------
 
 -- Audio
-hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd(noctCall .. "volume-up"),   { locked = true, repeating = true })
+hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd(noctCall .. "volume-up"), { locked = true, repeating = true })
 hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd(noctCall .. "volume-down"), { locked = true, repeating = true })
-hl.bind("XF86AudioMute",        hl.dsp.exec_cmd(noctCall .. "volume-mute"), { locked = true })
-hl.bind("XF86AudioMicMute",     hl.dsp.exec_cmd(noctCall .. "mic-mute"),    { locked = true })
+hl.bind("XF86AudioMute", hl.dsp.exec_cmd(noctCall .. "volume-mute"), { locked = true })
+hl.bind("XF86AudioMicMute", hl.dsp.exec_cmd(noctCall .. "mic-mute"), { locked = true })
 
 -- Media
-hl.bind("XF86AudioPlay",  hl.dsp.exec_cmd(noctCall .. "media toggle"),   { locked = true })
-hl.bind("XF86AudioPause", hl.dsp.exec_cmd(noctCall .. "media toggle"),   { locked = true })
-hl.bind("XF86AudioNext",  hl.dsp.exec_cmd(noctCall .. "media next"),     { locked = true })
-hl.bind("XF86AudioPrev",  hl.dsp.exec_cmd(noctCall .. "media previous"), { locked = true })
+hl.bind("XF86AudioPlay", hl.dsp.exec_cmd(noctCall .. "media toggle"), { locked = true })
+hl.bind("XF86AudioPause", hl.dsp.exec_cmd(noctCall .. "media toggle"), { locked = true })
+hl.bind("XF86AudioNext", hl.dsp.exec_cmd(noctCall .. "media next"), { locked = true })
+hl.bind("XF86AudioPrev", hl.dsp.exec_cmd(noctCall .. "media previous"), { locked = true })
 
 -- Brightness
-hl.bind("XF86MonBrightnessUp",   hl.dsp.exec_cmd(noctCall .. "brightness-up"),   { locked = true, repeating = true })
+hl.bind("XF86MonBrightnessUp", hl.dsp.exec_cmd(noctCall .. "brightness-up"), { locked = true, repeating = true })
 hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd(noctCall .. "brightness-down"), { locked = true, repeating = true })
 
 -------------------
@@ -171,10 +306,13 @@ hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd(noctCall .. "brightness-down"),
 -------------------
 
 -- Screen Capture
-hl.bind(mainMod .. " + SHIFT + P", hl.dsp.exec_cmd("hyprpicker -a -n"))
-hl.bind("Print",               hl.dsp.exec_cmd(noctCall .. "screenshot-fullscreen"))
+-- SUPER+SHIFT+P used to run `hyprpicker -a -n` (a Wayland colour picker), but
+-- hyprpicker was never installed, so the bind had always been dead. Removed
+-- rather than installing it - no need for a colour picker here.
+-- SUPER+SHIFT+P is now free.
+hl.bind("Print", hl.dsp.exec_cmd(noctCall .. "screenshot-fullscreen"))
 hl.bind(mainMod .. " + Print", hl.dsp.exec_cmd(noctCall .. "screenshot-region"))
-hl.bind("F6",                  hl.dsp.exec_cmd(noctCall .. "screenshot-region"))
+hl.bind("F6", hl.dsp.exec_cmd(noctCall .. "screenshot-region"))
 
 -- Theming and Wallpaper
 hl.bind(mainMod .. " + SHIFT + W", hl.dsp.exec_cmd(noctCall .. "panel-toggle wallpaper"))
@@ -194,58 +332,64 @@ hl.bind(mainMod .. " + A", hl.dsp.exec_cmd(noctCall .. "panel-toggle control-cen
 
 -- Focus/move to monitor (bracketleft = eDP-1 laptop, bracketright = HDMI-A-1
 -- external, matching the physical left-right arrangement)
-hl.bind(mainMod .. " + bracketleft",  hl.dsp.focus({ monitor = MONITOR1 }))
+hl.bind(mainMod .. " + bracketleft", hl.dsp.focus({ monitor = MONITOR1 }))
 hl.bind(mainMod .. " + bracketright", hl.dsp.focus({ monitor = MONITOR2 }))
-hl.bind(mainMod .. " + SHIFT + bracketleft",  hl.dsp.window.move({ monitor = MONITOR1 }))
+hl.bind(mainMod .. " + SHIFT + bracketleft", hl.dsp.window.move({ monitor = MONITOR1 }))
 hl.bind(mainMod .. " + SHIFT + bracketright", hl.dsp.window.move({ monitor = MONITOR2 }))
 
 -- Focus on workspace number
 -- Absolute (NUM_WPM per monitor; MONITOR1 and MONITOR2 are both in use, so cover both ranges)
 for i = 1, NUM_WPM * 2 do
-    local key = i % 10
-    hl.bind(mainMod .. " + " .. key, hl.dsp.focus({ workspace = i }))
+	local key = i % 10
+	hl.bind(mainMod .. " + " .. key, hl.dsp.focus({ workspace = i }))
 end
 -- Move active window to a workspace number (absolute, same numbering as above)
 for i = 1, NUM_WPM * 2 do
-    local key = i % 10
-    hl.bind(mainMod .. " + SHIFT + " .. key, hl.dsp.window.move({ workspace = tostring(i) }))
+	local key = i % 10
+	hl.bind(mainMod .. " + SHIFT + " .. key, hl.dsp.window.move({ workspace = tostring(i) }))
 end
 -- Relative
 for i = 1, NUM_WPM do
-    local key = i % 10
-    hl.bind(mainMod .. " + CONTROL + " .. key, hl.dsp.focus({ workspace = "m~" .. i }))
+	local key = i % 10
+	hl.bind(mainMod .. " + CONTROL + " .. key, hl.dsp.focus({ workspace = "m~" .. i }))
 end
 
--- Extra workspace 7 (Xpad notes), outside the NUM_WPM*2 grid above
+-- Extra workspace 7 (Xpad notes), outside the NUM_WPM*2 grid above. Needs both
+-- halves spelled out by hand: the loops above only cover 1..NUM_WPM*2, so
+-- without the SHIFT line workspace 7 would be the one workspace you could jump
+-- to but couldn't send a window to.
 hl.bind(mainMod .. " + 7", hl.dsp.focus({ workspace = 7 }))
+hl.bind(mainMod .. " + SHIFT + 7", hl.dsp.window.move({ workspace = "7" }))
 
 -- Move to adjacent workspaces and next empty on a given monitor
-hl.bind(mainMod .. " + CONTROL + Right",       hl.dsp.focus({ workspace = "m+1" }))
-hl.bind(mainMod .. " + CONTROL + Left",        hl.dsp.focus({ workspace = "m-1" }))
-hl.bind(mainMod .. " + CONTROL + Down",        hl.dsp.focus({ workspace = "emptym" }))
+hl.bind(mainMod .. " + CONTROL + Right", hl.dsp.focus({ workspace = "m+1" }))
+hl.bind(mainMod .. " + CONTROL + Left", hl.dsp.focus({ workspace = "m-1" }))
+hl.bind(mainMod .. " + CONTROL + Down", hl.dsp.focus({ workspace = "emptym" }))
 hl.bind(mainMod .. " + CONTROL + H", hl.dsp.focus({ workspace = "m-1" }))
 hl.bind(mainMod .. " + CONTROL + L", hl.dsp.focus({ workspace = "m+1" }))
 
 -- Scroll through existing workspaces & monitors
-hl.bind(mainMod .. " + mouse_down",           hl.dsp.focus({ workspace = "m-1" }))
-hl.bind(mainMod .. " + mouse_up",             hl.dsp.focus({ workspace = "m+1" }))
-hl.bind(mainMod .. " + CONTROL + mouse_up",   hl.dsp.focus({ workspace = "m-1" }))
+hl.bind(mainMod .. " + mouse_down", hl.dsp.focus({ workspace = "m-1" }))
+hl.bind(mainMod .. " + mouse_up", hl.dsp.focus({ workspace = "m+1" }))
+hl.bind(mainMod .. " + CONTROL + mouse_up", hl.dsp.focus({ workspace = "m-1" }))
 hl.bind(mainMod .. " + CONTROL + mouse_down", hl.dsp.focus({ workspace = "m+1" }))
 
 -- Special workspace (scratchpad)
 -- SHIFT+S sends the focused window to special, or pulls it back to its monitor's
 -- current normal workspace if it's already sitting in special.
 local function toggle_window_special()
-    local win = hl.get_active_window()
-    if not win or not win.workspace then return end
-    if win.workspace.special then
-        local target = win.monitor and win.monitor.active_workspace
-        if target then
-            hl.dispatch(hl.dsp.window.move({ workspace = target.id }))
-        end
-    else
-        hl.dispatch(hl.dsp.window.move({ workspace = "special" }))
-    end
+	local win = hl.get_active_window()
+	if not win or not win.workspace then
+		return
+	end
+	if win.workspace.special then
+		local target = win.monitor and win.monitor.active_workspace
+		if target then
+			hl.dispatch(hl.dsp.window.move({ workspace = target.id }))
+		end
+	else
+		hl.dispatch(hl.dsp.window.move({ workspace = "special" }))
+	end
 end
 hl.bind(mainMod .. " + SHIFT + S", toggle_window_special)
-hl.bind(mainMod .. " + S",         hl.dsp.workspace.toggle_special())
+hl.bind(mainMod .. " + S", hl.dsp.workspace.toggle_special())

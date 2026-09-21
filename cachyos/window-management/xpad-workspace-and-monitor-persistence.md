@@ -10,7 +10,9 @@ wired into Hyprland as workspace 7: a dedicated workspace for sticky notes that 
 the external monitor (`MONITOR2`/HDMI-A-1) when connected, and automatically falls back
 to the laptop screen (`MONITOR1`/eDP-1) when it isn't — same mechanism workspaces 4-6
 already use. Notes float freely (arranged like a corkboard, not tiled) and stay put
-across reboots and monitor connect/disconnect cycles. `SUPER+ALT+7` jumps to it.
+across reboots and monitor connect/disconnect cycles. `SUPER+7` jumps to it and
+`SUPER+SHIFT+7` sends the focused window there (the latter was missing until
+2026-09-21 — see [[dead-bind-cleanup]]).
 
 ## Why
 User wants notes to "stay on a workspace and survive reboot," specifically following

@@ -1,0 +1,149 @@
+config_version = 14
+
+[accessibility]
+ui_scale = 1.0000000074505806
+
+[bar.default]
+background_opacity = 0.89999997988343239
+center = [ "clock" ]
+end = [ "workspaces", "media", "spacer_1", "tray", "notifications", "bluetooth", "network", "volume", "battery", "session" ]
+reserve_space = false
+shadow = false
+smart_auto_hide = true
+start = [ "group:g1", "active_window" ]
+
+[dock]
+magnification_scale = 1.2000000029802322
+
+[lockscreen_widgets]
+enabled = false
+schema_version = 2
+widget_order = [ "lockscreen-login-box@HDMI-A-1", "lockscreen-login-box@eDP-1" ]
+
+    [lockscreen_widgets.grid]
+    cell_size = 16
+    major_interval = 4
+    visible = true
+
+    [lockscreen_widgets.widget."lockscreen-login-box@HDMI-A-1"]
+    box_height = 196.0
+    box_width = 810.0
+    cx = 959.999755859375
+    cy = 715.99981689453125
+    output = "HDMI-A-1"
+    placement_height = 1080.0
+    placement_width = 1920.0
+    rotation = 0.0
+    type = "login_box"
+
+        [lockscreen_widgets.widget."lockscreen-login-box@HDMI-A-1".settings]
+        background_color = "surface_variant"
+        background_opacity = 0.88
+        background_radius = 12.0
+        center_password_text = false
+        input_opacity = 1.0
+        input_radius = 6.0
+        layout = "regular"
+        show_caps_lock = true
+        show_keyboard_layout = true
+        show_login_button = true
+        show_media = true
+        show_session_buttons = true
+        show_unlock_hint = true
+        show_weather = true
+
+    [lockscreen_widgets.widget."lockscreen-login-box@eDP-1"]
+    box_height = 196.0
+    box_width = 810.0
+    cx = 800.00018310546875
+    cy = 672.4998779296875
+    output = "eDP-1"
+    placement_height = 900.0
+    placement_width = 1600.0
+    rotation = 0.0
+    type = "login_box"
+
+        [lockscreen_widgets.widget."lockscreen-login-box@eDP-1".settings]
+        background_color = "surface_variant"
+        background_opacity = 0.88
+        background_radius = 12.0
+        center_password_text = false
+        input_opacity = 1.0
+        input_radius = 6.0
+        layout = "regular"
+        show_caps_lock = true
+        show_keyboard_layout = true
+        show_login_button = true
+        show_media = true
+        show_session_buttons = true
+        show_unlock_hint = true
+        show_weather = true
+
+[shell]
+settings_show_advanced = false
+
+    [shell.panel]
+    shadow = false
+
+[theme]
+builtin = "Ayu"
+community_palette = "Ayu Blue"
+mode = "dark"
+shell_mode = "dark"
+source = "wallpaper"
+wallpaper_scheme = "m3-fruit-salad"
+
+[wallpaper]
+directory = "/home/jayavardhan/Downloads/wallpapers"
+transition = []
+
+    [wallpaper.automation]
+    enabled = true
+
+    [wallpaper.default]
+    path = "/home/jayavardhan/Downloads/wallpapers/Sunlight_room_anime.jpg"
+
+    [wallpaper.last]
+    path = "/home/jayavardhan/Downloads/wallpapers/Sunlight_room_anime.jpg"
+
+    [wallpaper.monitors.HDMI-A-1]
+    path = "/home/jayavardhan/Downloads/wallpapers/Sunlight_room_anime.jpg"
+
+    [wallpaper.monitors.eDP-1]
+    path = "/home/jayavardhan/Downloads/wallpapers/Sunlight_room_anime.jpg"
+
+    [[wallpaper.favorite]]
+    palette_source = "wallpaper"
+    path = "/home/jayavardhan/Downloads/wallpapers/wallhaven-k8d7j7.jpg"
+    theme_mode = "dark"
+    wallpaper_scheme = "m3-fruit-salad"
+
+    [[wallpaper.favorite]]
+    builtin_palette = "Ayu"
+    palette_source = "builtin"
+    path = "/home/jayavardhan/Downloads/wallpapers/wallhaven-k8d851.jpg"
+    theme_mode = "dark"
+
+    [[wallpaper.favorite]]
+    builtin_palette = "Ayu"
+    palette_source = "builtin"
+    path = "/home/jayavardhan/Downloads/wallpapers/Sunset_sky_anime.webp"
+    theme_mode = "dark"
+
+[widget.clock]
+format = "{:%H:%M %A %d/%m/%y}"
+
+[widget.launcher]
+enabled = false
+
+[widget.media]
+album_art_only = true
+
+[widget.network]
+show_label = false
+
+[widget.sysmon_2]
+enabled = false
+
+[widget.temp]
+enabled = false

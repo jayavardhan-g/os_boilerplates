@@ -30,9 +30,9 @@ hl.bind(mainMod .. " + SHIFT + J", hl.dsp.window.move({ direction = "d" }))
 ## Notes
 - This required relocating two pre-existing binds that collided with `J` and `L`:
   - `SUPER+J` (dwindle "togglesplit") → moved to `SUPER+CTRL+J`
-  - `SUPER+L` (session lock) → moved to `SUPER+ALT+L`
-    (later moved again — see [[workspace-switching]] for why, current lock bind lives
-    at `SUPER+ALT+L`)
+  - `SUPER+L` (session lock) → moved to `SUPER+ALT+L` (via `SUPER+CTRL+L` — see
+    [[workspace-switching]] for why), then moved again to its current home
+    `SUPER+ALT+X` — see [[floating-window-nudge]]
 - See [[resize]] for the vim-style resize submap (`SUPER+R` then hjkl), and
   [[master-layout]] which these binds continue to work correctly under.
 - See [[finger-ergonomics]] for which hand/finger presses what across all these binds.
