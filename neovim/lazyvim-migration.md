@@ -394,3 +394,63 @@ normalizes bool opts into closures internally) - called it directly, returns `fa
 `{}`?). Revisit once a concrete repro is given - LazyVim's current `mini.pairs` defaults
 are documented in `lazyvim/plugins/coding.lua` (`skip_next`, `skip_ts = {"string"}`,
 `skip_unbalanced`) as the starting point.
+
+## Follow-up: root-caused indent/autopairs complaint, added an autocomplete toggle (2026-09-22)
+
+**What**:
+1. The original "auto brackets and indentation ... very bad" turned out to be **unnamed
+   buffers only** (`:enew`/no file opened) - no filetype means no filetype-specific
+   `commentstring`/indent/treesitter-parser context. `.cpp`/`.py` files were already fine.
+   No fix needed - behavior is correct, just hadn't been noticed that the bad case never
+   happened on a real file.
+2. Autocomplete (blink.cmp) "gets in my way" - added a runtime on/off toggle rather than
+   disabling anything permanently.
+
+**Why**: (1) is standard Neovim behavior, not a bug - flagging it here mainly so a future
+session doesn't re-investigate the same non-issue. (2) - a full toggle (not just muting
+ghost text, already handled in the previous follow-up) covers wanting the LSP dropdown
+gone entirely sometimes (e.g. fast typing in prose-like contexts) while keeping it
+available on demand elsewhere, without editing config every time.
+
+**Change** - `~/.config/nvim/lua/config/keymaps.lua`, appended:
+```lua
+vim.g.blink_cmp_enabled = true
+Snacks.toggle({
+  name = "Autocomplete",
+  get = function() return vim.g.blink_cmp_enabled ~= false end,
+  set = function(state)
+    vim.g.blink_cmp_enabled = state
+    if not state then
+      pcall(function() require("blink.cmp").hide() end)
+    end
+  end,
+}):map("<leader>uo")
+```
+`~/.config/nvim/lua/plugins/completion.lua` - added alongside the existing `ghost_text`
+override:
+```lua
+enabled = function()
+  return vim.g.blink_cmp_enabled ~= false
+end,
+```
+
+**A real gotcha hit while building this**: first attempt bound the toggle to
+`<leader>uC` - looked free from grepping `lazyvim/config/keymaps.lua` alone, but that
+file doesn't contain every default keymap. `<leader>uC` was already LazyVim's
+colorscheme-picker keymap, registered elsewhere (plugin `keys` spec, not the imperative
+keymaps.lua file) - `vim.keymap.set` silently overwrites on collision, no error, so this
+only surfaced by checking the **live**, fully-merged keymap table
+(`nvim_get_keymap`) rather than trusting a static grep. Moved to `<leader>uo`, confirmed
+free the same way. General lesson: always verify a new leader-key binding against
+`nvim_get_keymap('n')` after `VeryLazy`, not just against `keymaps.lua`'s own contents.
+
+**Also discovered while auditing `<leader>u*`**: `<leader>up` is already a LazyVim
+built-in - "Toggle Mini Pairs" (autopairs on/off). Relevant if the still-open autopairs
+complaint above turns out to just be "I want it off sometimes" rather than a real
+misbehavior - that's already one keypress away, no config change needed.
+
+**Verified live**: headless Neovim, forced `VeryLazy`. Confirmed `<leader>uo` registers
+with `desc = "Toggle Autocomplete"` (not colliding with anything, per the live keymap
+dump). Simulated the keypress: `require('blink.cmp.config').enabled()` flips `true` ->
+`false`, notification `Disabled **Autocomplete**` fires, `vim.g.blink_cmp_enabled`
+matches. Re-pressing flips it back to `true`.
