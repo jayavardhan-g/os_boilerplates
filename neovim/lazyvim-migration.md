@@ -718,3 +718,22 @@ appears in `require('lazy').plugins()`.
 **Flagged, not yet acted on**: C++ has zero LSP (`clangd`) set up - no diagnostics,
 go-to-definition, or hover for C/C++ at all currently. This is a separate, bigger
 decision than the linter question - revisit if/when C++ tooling depth becomes a priority.
+
+## Follow-up: plugin review - noice/bufferline kept, trouble.nvim disabled (2026-09-22)
+
+- `bufferline.nvim` (tab-style open-buffers bar) - tested live, **kept**, no changes.
+- `noice.nvim` (floating cmdline/messages/popup UI) - tested live, **kept**, no changes.
+- `grug-far.nvim` (project-wide search/replace UI) - discussed the built-in
+  quickfix-based alternative (`:grep` + `:cfdo s///g | update` - `rg` already installed
+  and wired as `grepprg`, confirmed live), which needs no plugin but has no live preview.
+  **Kept** grug-far for the preview.
+- `trouble.nvim` (diagnostics/symbols/references panel) - tested live, **not needed,
+  disabled**.
+
+**Change** - `~/.config/nvim/lua/plugins/disabled.lua`, appended:
+```lua
+{ "folke/trouble.nvim", enabled = false },
+```
+
+**Verified live**: headless Neovim, forced `VeryLazy`. Confirmed `trouble.nvim` no
+longer appears in `require('lazy').plugins()`.

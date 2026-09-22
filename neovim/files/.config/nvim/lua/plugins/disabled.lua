@@ -29,4 +29,8 @@ return {
   -- formatter) and surfaces its own lint diagnostics inline, making this
   -- redundant there anyway. Decided not needed.
   { "mfussenegger/nvim-lint", enabled = false },
+
+  -- Diagnostics/symbols/references list panel - tried live, decided not
+  -- needed.
+  { "folke/trouble.nvim", enabled = false },
 }
