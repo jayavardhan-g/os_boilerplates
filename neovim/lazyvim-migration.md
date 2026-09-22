@@ -1304,3 +1304,38 @@ replaced with a clangd entry covering `<lead>ch`, the `--clang-tidy` behaviour, 
 `compile_commands.json` caveat (CMake's `-DCMAKE_EXPORT_COMPILE_COMMANDS=ON`; without it
 clangd falls back to weaker single-file analysis). Also added a "Language servers"
 section to the customizations summary. Coverage re-checked: 279/283, no regression.
+
+## Follow-up: cheatsheet moved from g? to <leader>h (2026-09-23)
+
+**What**: asked to move the cheatsheet off `g?`. Tried `??` first; reported as not
+working - `?` still opened backward-search instantly. No mechanism for that was ever
+found (`?` has no competing mapping, `timeout` is on, `timeoutlen` is 300ms, and the
+`??` mapping registered correctly), and the symptom matches Neovim not having reloaded
+the config, since keymap changes need a restart. Moved to **`<leader>h`** instead.
+
+**A probe bug worth recording, because it produced a confidently wrong answer**: several
+of these availability checks used `nvim_replace_termcodes("<lead>...")`. **`<lead>` is
+not a real keycode** - it passes through as the literal string `"<lead>h"`, so *every*
+leader key it tested came back "free", including ones that are definitely taken. That is
+what made `<leader>?` appear unclaimed on a re-check and briefly contradict the earlier,
+correct finding that it is LazyVim's "Buffer Keymaps (which-key)" binding. The correct
+spelling is `<leader>`, which resolves to a literal space:
+
+```text
+  nvim_replace_termcodes("<lead>h")   ->  "<lead>h"   (unresolved, useless)
+  nvim_replace_termcodes("<leader>h") ->  " h"        (correct)
+```
+
+Re-verified with the right spelling: `<leader>?` is **taken** (Buffer Keymaps),
+`<leader>h` is **free**, and nothing is nested under `<leader>h`. Also grepped LazyVim's
+source directly rather than relying on the runtime probe alone: core binds nothing under
+`<leader>h`; only the `harpoon2` **extra** uses it, and that extra is not enabled here.
+Noted in the keymap comment as the one thing that would force a move later.
+
+**Change** - `~/.config/nvim/lua/config/keymaps.lua`: `g?` -> `<leader>h`. The comment
+now records the full key history (why not `?`, `<leader>?`, `g?`, `??`) so this doesn't
+get relitigated. Cheatsheet content updated in both places it named the key.
+
+**Verified live**: `<leader>h` resolves to `desc = "Cheatsheet"`, feeding the keys opens
+the picker (5 floating windows), and `g?` / `??` are both released - `g?` is back to
+native ROT13. 142 entries still parse.

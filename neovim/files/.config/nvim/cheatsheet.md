@@ -1572,7 +1572,7 @@ the last one **counts** without changing anything.
   new  <lead>ac    toggle autocomplete
   new  <lead>ghP   focused hunk popup
   new  <lead>y/Y   clipboard yank (OSC 52 over SSH)
-  new  g?          this cheatsheet (native g? is ROT13, unused)
+  new  <lead>h     this cheatsheet
   new  <lead>ch    switch C/C++ source <-> header (clangd)
 ```
 
@@ -1618,7 +1618,12 @@ matches it, so Neovim tracks your terminal colours automatically.
 ## This cheatsheet
 
 ### How to use it
-- `g?` - open it
+- `<lead>h` - open it
+
+`<lead>h` was chosen because it is genuinely unclaimed - no custom mapping,
+nothing nested under it, and no native Vim command displaced. Bare `?`
+stays as backward-search, and `<lead>?` is LazyVim's buffer-local keymaps
+popup, so neither was taken.
 - Type to fuzzy-search entry titles; the right pane previews the selection
 - `<CR>` - open that one entry on its own
 - `<Esc>` - close · `<BS>` from a single entry goes back to the list

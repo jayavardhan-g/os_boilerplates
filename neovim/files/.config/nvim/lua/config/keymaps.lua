@@ -46,10 +46,16 @@ Snacks.toggle({
 }):map("<leader>ac")
 
 -- Searchable cheatsheet - see lua/cheatsheet.lua for the implementation.
--- Bound to g? (native g? is ROT13-a-motion, essentially unused) rather than
--- bare ? (native backward-search, used constantly) or <leader>? (already
--- LazyVim's "buffer-local keymaps" popup) - both checked live and rejected
--- before landing here.
-vim.keymap.set("n", "g?", function()
+--
+-- Key history, so this doesn't get relitigated: bare `?` is native
+-- backward-search and stays. `<leader>?` looks free in a headless probe but
+-- is claimed by LazyVim (editor.lua, "Buffer Keymaps") - it's a lazy `keys`
+-- spec, so the mapping only materialises once which-key loads. `g?` worked
+-- fine but was swapped out on request. `??` also works but makes `?` a
+-- mapping prefix. `<leader>h` is genuinely unclaimed: no custom mapping, no
+-- sub-mappings under it, and no native command lost. Only LazyVim's
+-- harpoon2 extra wants `<leader>h`, and that extra isn't enabled here - if
+-- it ever is, this is the one that would need moving.
+vim.keymap.set("n", "<leader>h", function()
   require("cheatsheet").open()
 end, { desc = "Cheatsheet" })
