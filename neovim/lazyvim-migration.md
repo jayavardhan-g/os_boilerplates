@@ -639,3 +639,59 @@ camelCase-segment as a text object) - tested live, decided not needed. Unrelated
 
 **Verified live**: headless Neovim, forced `VeryLazy`. Confirmed `mini.ai` no longer
 appears in `require('lazy').plugins()`.
+
+## Follow-up: wired up real formatters for C/C++/Python (2026-09-22)
+
+**What**: testing `conform.nvim` revealed LazyVim's defaults only configure formatters
+for `lua`/`fish`/`sh` - zero for C/C++/Python/Markdown, since those come from
+language "extras" this setup deliberately skipped. `<leader>cf`/format-on-save were
+silently no-ops for every language actually in use. Installed and wired up real
+formatters rather than leaving the plugin as dead weight.
+
+**Decisions** (asked rather than picked unilaterally, per the standing "ask before
+subjective calls" rule):
+- Python: **ruff format** over black - fast (Rust), black-compatible output, and since
+  `nvim-lint` also has zero Python linters configured, ruff can cover both jobs later
+  from one already-installed tool instead of adding two.
+- Markdown: **skipped** - the standard tool (prettier) needs npm/Node, which this setup
+  has deliberately avoided pulling in (HTML/JS/TS treesitter parsers were already
+  removed for the same reason - see the very first follow-up above).
+- C/C++: `clang-format` - not really a decision, it's the standard tool and was **already
+  installed system-wide** (`/usr/bin/clang-format`, part of the `clang` package) -
+  nothing new to install, just wire it up.
+
+**Change** - `~/.config/nvim/lua/plugins/formatting.lua` (new):
+```lua
+return {
+  {
+    "stevearc/conform.nvim",
+    opts = {
+      formatters_by_ft = {
+        cpp = { "clang-format" },
+        c = { "clang-format" },
+        python = { "ruff_format" },
+      },
+    },
+  },
+}
+```
+
+**Installed**: `ruff` via Mason (`require('mason-registry'):get_package('ruff'):install()`,
+driven directly through the Lua API rather than the `:MasonInstall` ex-command - that
+command isn't registered yet right after forcing `VeryLazy` in a scripted headless
+session, same class of headless-Mason friction noted in the original migration entry
+above). Confirmed installed: `ruff 0.16.8` at
+`~/.local/share/nvim/mason/bin/ruff`.
+
+**Not auto-installed on a fresh machine**: unlike LSP servers (auto-installed by
+`mason-lspconfig.nvim` when a matching filetype is opened), conform's formatters have no
+such auto-install bridge in this setup (would need `mason-tool-installer.nvim`, not
+installed - one tool didn't justify adding a whole plugin for it). Reproducing this on a
+fresh machine needs one extra manual step: `:MasonInstall ruff` (or the Lua snippet
+above) after the initial `:Lazy sync`. `clang-format` has no such gap since it's a
+system package, not Mason-managed.
+
+**Verified live**: headless Neovim, real messy files. C++: `int main(){int x=1;return
+x;}` -> properly braced/indented/spaced 4-line output via `clang-format`. Python:
+`x=1` / `y =2` -> `x = 1` / `y = 2` via `ruff_format`. `list_formatters()` confirms
+exactly one formatter resolves per filetype as configured, no unexpected fallbacks.
