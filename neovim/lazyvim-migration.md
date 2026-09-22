@@ -606,3 +606,22 @@ end, { buffer = buffer, desc = "Preview Hunk (Popup, focused)" })
 keypress (not just calling the Lua function directly). Confirmed via
 `nvim_get_current_win()` that focus ends up on the floating popup window
 (`relative = "win"`), not the original file window, after a single keypress.
+
+## Follow-up: plugin review results so far (2026-09-22)
+
+Continuing the one-by-one review pass:
+- `persistence.nvim` (session save/restore per project) - tested live, **kept**, no
+  changes - already just LazyVim's default.
+- `nvim-treesitter-textobjects` (`]f`/`[f`/`]c`/`[c`/`]a`/`[a` - jump between
+  function/class/parameter boundaries) - tested live, **not useful, disabled**. Note
+  this is unrelated to `mini.ai` (the `af`/`if`/`daf`/etc. select-a-function plugin),
+  which stays - LazyVim splits "jump between" and "select" into two separate plugins.
+
+**Change** - `~/.config/nvim/lua/plugins/disabled.lua`, appended:
+```lua
+{ "nvim-treesitter/nvim-treesitter-textobjects", enabled = false },
+```
+
+**Verified live**: headless Neovim, forced `VeryLazy`. Confirmed the plugin no longer
+appears in `require('lazy').plugins()` at all, and `]f` has no buffer-local keymap in a
+`.cpp` buffer (previously bound by this plugin).
