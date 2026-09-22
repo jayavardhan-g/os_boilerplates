@@ -1185,3 +1185,37 @@ try several normalisations of its lhs - literal spaces are the leader, and the l
 can appear leading *or trailing* (`<C-W><space>` is the window hydra, `[<space>` adds a
 blank line). Skipping the trailing case is what made the first run falsely report
 `<C-w>`, `[`, `]` and `<lead><lead>` as undocumented.
+
+## Follow-up: regex section added to the cheatsheet (2026-09-23)
+
+**What**: added a **Regex & patterns** category (16 entries) - Vim's regex flavour
+differs enough from PCRE to be worth real coverage. Content now **1259 lines / 116
+entries / 28 categories**.
+
+Covers: which flavour applies where, the four magic levels, very-magic `\v`, character
+classes, quantifiers (including Vim's non-greedy `\{-}`), anchors and word boundaries,
+`\zs` / `\ze` (Vim's answer to lookaround), groups/alternation/backreferences, the
+replacement-side mini-language (`&`, `\1`, `\u`/`\U`/`\L`, `\=` expressions), the
+`\n`-vs-`\r` newline gotcha, case sensitivity, live substitute preview, range limiting,
+`:g` and `:v`, and a set of practical recipes.
+
+**A genuinely setup-specific point worth recording**: patterns are *not* portable
+between the two search paths here. `/`, `:s`, `:g` use **Vim regex**, while `<lead>sg`
+grep and `<lead>sr` grug-far both shell out to **ripgrep** (Rust regex, PCRE-ish), where
+`+ ? ( ) { } |` work bare. Verified from Snacks' own source
+(`snacks/picker/source/grep.lua` builds an `rg` command).
+
+**Every recipe was executed, not just written**: wrote a harness that runs each pattern
+on a scratch buffer and asserts the resulting text. 20/20 passed - snake/camel case
+conversion both directions, `\=submatch(0)+1` arithmetic, `\zs`, `\r` vs `\n`, non-greedy
+`\{-}`, word boundaries, doubled-word detection, `\V`, `:g`/`:v`, `:g/^/m0`,
+`:g/pat/normal`, `:g/pat/t$`, ranges.
+
+**This caught a real error in my own text**: the recipe labelled "squeeze blank lines"
+(`:g/^$/,/./-1d`) does not squeeze - it deletes blank runs **entirely**
+(`a,'','','',b` -> `a,b`). The actual squeeze-to-one idiom is
+`:%s/\n\{3,}/\r\r/g` (verified: -> `a,'',b`). Both are now listed with accurate labels.
+Options documented in the case-sensitivity entry (`ignorecase`, `smartcase`,
+`inccommand=nosplit`) were read from the live config rather than assumed.
+
+Keymap coverage re-checked after the addition: still 279/283, no regression.

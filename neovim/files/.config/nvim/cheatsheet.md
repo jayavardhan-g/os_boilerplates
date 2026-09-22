@@ -1041,6 +1041,214 @@ completion menu, then `<Tab>` between the fields it leaves you.
 - visual `@` - run a macro over every selected line
 - visual `q` - see `:help v_Q-default`
 
+## Regex & patterns
+
+### Which regex flavour applies where
+This matters constantly and trips people up - the same pattern does not work
+everywhere in this setup.
+
+- `/pattern`, `?pattern`, `:s`, `:g`, `:v` - **Vim regex**
+- `<lead>sg` / `<lead>/` grep, and `<lead>sr` grug-far - **ripgrep** (Rust
+  regex, essentially PCRE-style)
+
+```text
+  find "foo(" or "bar("      Vim:      /\v(foo|bar)\(
+                             ripgrep:  (foo|bar)\(
+```
+
+Rule of thumb: in ripgrep `+ ? ( ) { } |` work bare; in Vim they need
+backslashes unless you turn on very-magic mode with `\v`.
+
+### Magic levels: \v \m \M \V
+Vim has four levels controlling how many characters are "special".
+
+```text
+  \v  very magic    all of + ? ( ) { } | < > work bare, like PCRE
+  \m  magic         DEFAULT: . * [] work bare; + ? ( ) | need a backslash
+  \M  nomagic       only . and * lose their meaning too
+  \V  very nomagic  literally everything except \ is a plain character
+```
+
+`\V` is the one to reach for when searching text full of punctuation -
+`/\Vhttp://x.com` needs no escaping at all.
+
+### Very magic mode: \v
+Put `\v` at the start and Vim's regex behaves the way you expect from other
+languages.
+
+```text
+  without \v :   /\(foo\|bar\)\+\d\{2,3}
+  with    \v :   /\v(foo|bar)+\d{2,3}
+```
+
+Worth making a habit - nearly every non-trivial Vim pattern is shorter and
+more readable with `\v`.
+
+### Character classes
+- `.` - any character except a newline
+- `\d` / `\D` - digit / non-digit
+- `\w` / `\W` - word character `[0-9A-Za-z_]` / non-word
+- `\s` / `\S` - whitespace / non-whitespace
+- `\a` - alphabetic, `\l` - lowercase letter, `\u` - uppercase letter
+- `\x` - hex digit
+- `[abc]` / `[^abc]` - any of / none of
+- `[a-z0-9_]` - ranges, as usual
+
+Careful: in a **replacement** `\u` and `\l` mean something completely
+different (see "case tricks" below).
+
+### Quantifiers and repeats
+```text
+  magic (default)        very magic (\v)      meaning
+  *                      *                    0 or more
+  \+                     +                    1 or more
+  \?  or  \=             ?                    0 or 1
+  \{2,5}                 {2,5}                between 2 and 5
+  \{3}                   {3}                  exactly 3
+  \{-}                   {-}                  0 or more, NON-greedy
+  \{-1,}                 {-1,}                1 or more, non-greedy
+```
+
+`\{-}` is Vim's equivalent of PCRE's `*?` - it matches as little as
+possible, which is what you want for things like `\v".{-}"`.
+
+### Anchors and word boundaries
+- `^` - start of line, `$` - end of line
+- `\<` / `\>` - start / end of a word (in `\v`: `<` and `>`)
+- `\%^` / `\%$` - start / end of the **file**
+- `\%V` - restrict the match to the visual selection
+
+```text
+  /\<log\>      matches "log" but not "login" or "catalog"
+  /\vlog>       same thing in very-magic mode
+```
+
+### Match start and end: \zs and \ze
+Vim-specific and genuinely useful: they move where the *match* begins and
+ends, so you can require context without consuming it.
+
+```text
+  /foo\zsbar        matches "bar", but only when preceded by "foo"
+  /foo\zebar        matches "foo", but only when followed by "bar"
+
+  :%s/version: \zs\d\+/99/     changes only the number, keeps the label
+```
+
+Replaces the need for lookahead/lookbehind in most practical cases.
+
+### Groups, alternation and backreferences
+- `\(...\)` - a group (in `\v`: `(...)` )
+- `\%(...\)` - a group that does **not** capture
+- `\|` - alternation (in `\v`: `|` )
+- `\1` … `\9` - backreference to a captured group
+
+```text
+  find a doubled word:
+    /\v<(\w+)\s+\1>
+
+  swap two comma-separated fields:
+    :%s/\v(\w+), (\w+)/\2, \1/
+```
+
+### The replacement side
+The right-hand side of `:s` has its own small language.
+
+- `&` or `\0` - the whole match
+- `\1` … `\9` - captured groups
+- `~` - the previous replacement string
+- `\u` / `\l` - upper/lowercase the **next character**
+- `\U` / `\L` - upper/lowercase until `\E`
+- `\E` - end a `\U` or `\L` run
+- `\=` - evaluate the rest as a Vimscript **expression**
+
+```text
+  :%s/\w\+/"&"/g              wrap every word in quotes
+  :%s/\v_(\w)/\u\1/g          snake_case  →  camelCase
+  :%s/\v(\l)(\u)/\1_\l\2/g    camelCase   →  snake_case
+  :%s/\d\+/\=submatch(0)+1/g  increment every number by 1
+```
+
+### Newlines: the classic gotcha
+`\n` does **not** mean the same thing on both sides of a `:s`.
+
+```text
+  searching:     \n  matches a line ending          ✔
+  replacing:     \n  inserts a NUL byte (shows as ^@)   ✘
+  replacing:     \r  inserts a real newline          ✔
+
+  join every pair of lines:   :%s/\n//
+  split on every comma:       :%s/,/\r/g
+```
+
+### Case sensitivity
+This setup has `ignorecase` **on** with `smartcase` **on** (verified).
+
+```text
+  /timeout      matches Timeout, TIMEOUT, timeout   (all lowercase → loose)
+  /Timeout      matches Timeout only        (a capital → case-sensitive)
+  /timeout\c    force case-INsensitive, whatever the options say
+  /Timeout\C    force case-sensitive
+```
+
+`\c` and `\C` work anywhere in the pattern, not just at the start.
+
+### Live preview while substituting
+`inccommand` is set to `nosplit`, so as you type a `:%s/.../.../` command the
+matches highlight and the replacement is previewed **in the buffer**, before
+you press Enter.
+
+```text
+  :%s/timeout/delay/g
+     ▲ every match already shows as "delay" while you type;
+       press <Esc> and nothing was ever changed
+```
+
+### Limit a substitution to part of the file
+```text
+  :%s/a/b/g        whole file
+  :s/a/b/g         current line only
+  :.,+5s/a/b/g     this line and the next 5
+  :1,20s/a/b/g     lines 1 to 20
+  :'<,'>s/a/b/g    the visual selection (Vim fills this in for you)
+  :%s/\%Va/b/g     only inside the selection, anywhere in the file
+```
+
+Without the `g` flag only the **first** match on each line is replaced
+(`gdefault` is off here, which is the standard behaviour).
+
+### Run a command on every matching line: :g and :v
+`:g` is one of the most powerful things in Vim and has no keybinding - it
+runs an Ex command on every line matching a pattern.
+
+```text
+  :g/TODO/d            delete every line containing TODO
+  :v/TODO/d            delete every line NOT containing it (also :g!)
+  :g/^$/d              delete all blank lines
+  :g/TODO/t$           copy matching lines to the end of the file
+  :g/TODO/m0           move them to the top (reverses their order)
+  :g/^/m0              reverse the whole file
+  :g/pat/normal A;     append a ";" to every matching line
+```
+
+`:v` is just "inverse `:g`". Combining `:g` with `normal` lets you run any
+normal-mode keystrokes on every matching line.
+
+### Practical recipes
+```text
+  strip trailing whitespace     :%s/\s\+$//e
+  blank runs → one blank line   :%s/\n\{3,}/\r\r/g
+  delete blank runs entirely    :g/^$/,/./-1d
+  remove adjacent duplicates    :g/^\(.*\)$\n\1$/d
+  quote every line              :%s/^.*$/"&"/
+  numbers → +1                  :%s/\d\+/\=submatch(0)+1/g
+  keep only matching lines      :v/pattern/d
+  count matches                 :%s/pattern//gn
+```
+
+The trailing `e` flag in the first one means "don't error if nothing
+matched", which keeps it safe inside mappings and macros. The `n` flag in
+the last one **counts** without changing anything.
+
 ## Customizations: default vs current
 
 ### Keys changed from stock LazyVim
