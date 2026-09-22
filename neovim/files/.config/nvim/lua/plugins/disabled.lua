@@ -22,4 +22,11 @@ return {
   -- segment select) - tried live, decided not needed. Unrelated to
   -- mini.pairs (autopairs) - separate mini.nvim module, stays enabled.
   { "nvim-mini/mini.ai", enabled = false },
+
+  -- No linters were ever configured for any language actually in use
+  -- (linters_by_ft only had fish by default) - and for Python, ruff
+  -- already attaches as an LSP (from installing it as a conform.nvim
+  -- formatter) and surfaces its own lint diagnostics inline, making this
+  -- redundant there anyway. Decided not needed.
+  { "mfussenegger/nvim-lint", enabled = false },
 }

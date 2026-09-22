@@ -695,3 +695,26 @@ system package, not Mason-managed.
 x;}` -> properly braced/indented/spaced 4-line output via `clang-format`. Python:
 `x=1` / `y =2` -> `x = 1` / `y = 2` via `ruff_format`. `list_formatters()` confirms
 exactly one formatter resolves per filetype as configured, no unexpected fallbacks.
+
+## Follow-up: nvim-lint disabled (2026-09-22)
+
+**What**: `nvim-lint` - decided not needed after discussing what linters actually add on
+top of formatters/LSP diagnostics. Concretely checked this setup's actual state first:
+**C++ has no LSP attached at all** (not clangd, nothing - confirmed live, a bigger gap
+than "no linter"), and **Python's `ruff` already attaches as an LSP** (side effect of
+installing it as a conform.nvim formatter in the previous follow-up) and surfaces its own
+lint diagnostics inline already - making a separate `nvim-lint` + ruff wiring redundant
+for Python specifically. No linter was ever configured for any language in use anyway
+(`linters_by_ft` only had `fish` by default).
+
+**Change** - `~/.config/nvim/lua/plugins/disabled.lua`, appended:
+```lua
+{ "mfussenegger/nvim-lint", enabled = false },
+```
+
+**Verified live**: headless Neovim, forced `VeryLazy`. Confirmed `nvim-lint` no longer
+appears in `require('lazy').plugins()`.
+
+**Flagged, not yet acted on**: C++ has zero LSP (`clangd`) set up - no diagnostics,
+go-to-definition, or hover for C/C++ at all currently. This is a separate, bigger
+decision than the linter question - revisit if/when C++ tooling depth becomes a priority.
