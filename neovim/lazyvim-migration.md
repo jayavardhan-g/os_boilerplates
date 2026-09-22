@@ -774,3 +774,36 @@ coexisting with the old broken ones. Functional test: simulated the actual `<lea
 keypress on a file containing a `// TODO:` comment - window count jumped from 1 to 5
 (Snacks picker's input/results/preview windows), confirming the picker genuinely opens
 with no error, not just that the keymap resolves.
+
+## Follow-up: plugin review pass complete (2026-09-22)
+
+`which-key.nvim` (keybinding popup) and `lualine.nvim` (statusline) - both kept, no
+changes. This closes out the one-by-one review started earlier this session.
+
+**Final results, 14 plugins reviewed** (core infra like `lazy.nvim`/`LazyVim`/
+`plenary.nvim`/`nui.nvim`/`mini.icons`/`mason.nvim`/`mason-lspconfig.nvim`/
+`nvim-lspconfig`/`nvim-treesitter` core excluded - not practical to test standalone):
+
+| Plugin | Verdict |
+|---|---|
+| `flash.nvim` | kept - rebound off `s`/`S` to `gs`/`gS` |
+| `gitsigns.nvim` | kept - added `<leader>ghP` popup preview |
+| `persistence.nvim` | kept, unchanged |
+| `nvim-treesitter-textobjects` | **disabled** |
+| `mini.ai` | **disabled** |
+| `conform.nvim` | kept - wired up `clang-format` (C/C++) + `ruff format` (Python), installed `ruff` |
+| `nvim-lint` | **disabled** |
+| `grug-far.nvim` | kept |
+| `bufferline.nvim` | kept, unchanged |
+| `noice.nvim` | kept, unchanged |
+| `trouble.nvim` | **disabled** |
+| `todo-comments.nvim` | kept - fixed 4 keymaps broken by the trouble.nvim/no-telescope situation |
+| `which-key.nvim` | kept, unchanged |
+| `lualine.nvim` | kept, unchanged |
+
+`blink.cmp` and `mini.pairs` were excluded from the keep/remove decision since they
+already have runtime toggles (`<leader>ac`, `<leader>up`) instead.
+
+**Still flagged, not addressed**: C++ has no LSP (`clangd`) attached at all - no
+diagnostics/go-to-def/hover for C/C++. Bigger, separate decision from anything in this
+review pass.
