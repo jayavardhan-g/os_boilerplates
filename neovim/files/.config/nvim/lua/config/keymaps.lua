@@ -28,9 +28,11 @@ vim.keymap.set("v", "<C-_>", "gc", comment_opts)
 -- way sometimes). Gated via vim.g.blink_cmp_enabled, checked by the
 -- "enabled" function in plugins/completion.lua. Snacks.toggle gives
 -- which-key integration (shows on/off state, icon, color) for free.
--- <leader>uC was already taken (LazyVim's colorscheme picker) - confirmed
--- live via nvim_get_keymap, not just by grepping keymaps.lua, since that
--- one is registered outside this file.
+-- <leader>uC was tried first, but was already taken (LazyVim's colorscheme
+-- picker) - confirmed live via nvim_get_keymap, not just by grepping
+-- keymaps.lua, since that one is registered outside this file. Settled on
+-- <leader>ac ("autocomplete") instead - nothing else is bound under
+-- <leader>a at all, confirmed the same way.
 vim.g.blink_cmp_enabled = true
 Snacks.toggle({
   name = "Autocomplete",
@@ -41,4 +43,4 @@ Snacks.toggle({
       pcall(function() require("blink.cmp").hide() end)
     end
   end,
-}):map("<leader>uo")
+}):map("<leader>ac")

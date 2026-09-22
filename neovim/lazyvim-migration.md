@@ -454,3 +454,9 @@ with `desc = "Toggle Autocomplete"` (not colliding with anything, per the live k
 dump). Simulated the keypress: `require('blink.cmp.config').enabled()` flips `true` ->
 `false`, notification `Disabled **Autocomplete**` fires, `vim.g.blink_cmp_enabled`
 matches. Re-pressing flips it back to `true`.
+
+**Moved to `<leader>ac` (2026-09-22)**: user asked for a say in the actual key rather
+than have one picked unilaterally - fair, a keybinding is a pure preference call, not
+something to decide alone. Proposed `<leader>ac` ("autocomplete"); confirmed live that
+nothing at all is bound under `<leader>a`, so no collision risk. Re-verified the same way
+as the original binding - registers correctly, toggle behavior unchanged.
