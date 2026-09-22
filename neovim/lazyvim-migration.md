@@ -737,3 +737,40 @@ decision than the linter question - revisit if/when C++ tooling depth becomes a 
 
 **Verified live**: headless Neovim, forced `VeryLazy`. Confirmed `trouble.nvim` no
 longer appears in `require('lazy').plugins()`.
+
+## Follow-up: todo-comments.nvim kept, fixed its 4 dead keymaps (2026-09-22)
+
+**What**: `todo-comments.nvim` tested live and kept. Its LazyVim default keymaps include
+2 that depend on `trouble.nvim` (disabled in the previous follow-up) and 2 that depend on
+Telescope - which isn't installed in this setup **at all** (picker is `snacks`, confirmed
+via `lazyvim_picker`/the actual installed plugin list) - so all 4 would error if pressed.
+Confirmed live before deciding what to do: `TodoTelescope` and `TodoTrouble` both fail.
+
+**Decision** (asked, since this had real options): `<leader>xt`/`<leader>xT`
+(Trouble-dependent) dropped outright - no working replacement without Trouble.
+`<leader>st`/`<leader>sT` (Telescope-dependent) rerouted to Snacks' grep picker instead,
+pre-filled with the todo keywords as a regex search.
+
+**Change** - `~/.config/nvim/lua/plugins/todo-comments.lua` (new):
+```lua
+return {
+  {
+    "folke/todo-comments.nvim",
+    -- stylua: ignore
+    keys = {
+      { "<leader>xt", false },
+      { "<leader>xT", false },
+      { "<leader>st", function() Snacks.picker.grep({ search = "TODO|FIX|FIXME|HACK|WARN|PERF|NOTE" }) end, desc = "Todo" },
+      { "<leader>sT", function() Snacks.picker.grep({ search = "TODO|FIX|FIXME" }) end, desc = "Todo/Fix/Fixme" },
+    },
+  },
+}
+```
+
+**Verified live**: headless Neovim. `<leader>xt`/`<leader>xT` are now simply unbound
+(harmless "no mapping" instead of a Lua error). `<leader>st`/`<leader>sT` resolve to the
+new `desc`s ("Todo"/"Todo/Fix/Fixme"), confirming they're overridden, not just
+coexisting with the old broken ones. Functional test: simulated the actual `<leader>st`
+keypress on a file containing a `// TODO:` comment - window count jumped from 1 to 5
+(Snacks picker's input/results/preview windows), confirming the picker genuinely opens
+with no error, not just that the keymap resolves.
