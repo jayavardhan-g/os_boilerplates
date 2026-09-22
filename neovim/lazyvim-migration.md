@@ -282,3 +282,59 @@ No plugin needed - Neovim 0.10+ ships this OSC52 provider built in
 OSC52 escape sequence and `wl-paste` confirmed the word actually landed in the real
 Wayland clipboard (untouched local path). With `SSH_CONNECTION` set, the same command
 correctly emitted `\x1b]52;c;aGVsbG8=` (`hello`, base64-encoded) instead.
+
+## Follow-up: `Ctrl+/` toggles comment, VSCode-style (2026-09-22)
+
+**What**: `Ctrl+/` was opening a terminal (LazyVim default) instead of toggling a
+comment, which is the muscle memory carried over from VSCode. Remapped it to comment
+toggle; terminal access is unaffected since it was never *only* on this key.
+
+**Why**: LazyVim binds `<c-/>` and `<c-_>` (terminal emulators send one or the other for
+the same physical key depending on keyboard protocol support - see Notes) to
+`Snacks.terminal.focus(...)` (root-dir terminal), per
+`~/.local/share/nvim/lazy/LazyVim/lua/lazyvim/config/keymaps.lua`. That's a duplicate of
+`<leader>ft` (same action, "Terminal (Root Dir)") and `<leader>fT` ("Terminal (cwd)"),
+both of which stay untouched - so reclaiming `<c-/>`/`<c-_>` loses no functionality, just
+a faster alias for something still reachable via leader.
+
+Comment toggling itself (`gcc`/`gc`) is Neovim's own built-in feature (native since 0.10,
+confirmed present as core Lua-backed keymaps independent of any plugin - not from the
+disabled `ts-comments.nvim`), and already produces the correct `commentstring` per
+filetype (`// %s` for C/C++/JS, `# %s` for Python/sh, `<!-- %s -->` for Markdown, `-- %s`
+for Lua) via Neovim's built-in ftplugin system - verified directly with a headless
+`:set filetype=X` + print `commentstring` check across all languages this setup uses.
+
+**Change** - `~/.config/nvim/lua/config/keymaps.lua`, appended:
+```lua
+-- VSCode-style comment toggle. Overrides LazyVim's default terminal-toggle
+-- binding on this key (<leader>ft/<leader>fT still open a terminal).
+-- remap=true is required: "gcc"/"gc" are themselves keymaps (Neovim's
+-- built-in comment support, not a raw command), so noremap would try to
+-- interpret g/c/c literally instead of dispatching through them.
+local comment_opts = { remap = true, silent = true, desc = "Toggle comment" }
+vim.keymap.set("n", "<C-/>", "gcc", comment_opts)
+vim.keymap.set("n", "<C-_>", "gcc", comment_opts)
+vim.keymap.set("v", "<C-/>", "gc", comment_opts)
+vim.keymap.set("v", "<C-_>", "gc", comment_opts)
+```
+
+**Verified live**: headless Neovim, forced `VeryLazy` to fire (needed in headless mode -
+LazyVim's own `<c-/>` binding and this override both live in `config/keymaps.lua` files
+that only load on that event, which never fires without a real UI attaching). Confirmed
+via `nvim_get_keymap` that both `<C-/>`/`<C-_>` now resolve to `desc = "Toggle comment"`
+(not "Terminal (Root Dir)") in both normal and visual mode. End-to-end keypress
+simulation on a `.cpp` file: normal-mode `Ctrl+/` on `int main() {` produced
+`// int main() {`; visual-mode `Ctrl+/` over the whole 3-line file commented every line
+with `//`, confirming both the line-toggle and selection-toggle paths work correctly.
+
+**Notes**:
+- Both `<C-/>` and `<C-_>` are mapped (not just `<C-/>`) because terminal keyboard
+  encoding for this physical key isn't uniform: legacy encoding sends the literal control
+  byte `0x1f` (`<C-_>`), while terminals supporting the newer Kitty keyboard protocol
+  (kitty itself, this setup's terminal, included) can send `<C-/>` as a distinct code.
+  Mapping only one would leave the binding flaky depending on which code Neovim's TUI
+  actually receives - this mirrors LazyVim's own default, which maps both for the same
+  reason.
+- `<leader>ft` (Terminal, Root Dir) and `<leader>fT` (Terminal, cwd) remain the way to
+  open a terminal - nothing was moved to replace the reclaimed key, since these already
+  existed and cover the same use case.
