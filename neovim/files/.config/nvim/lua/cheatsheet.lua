@@ -117,7 +117,19 @@ function M.open()
     title = "Cheatsheet",
     items = items,
     preview = "preview",
-    layout = { preset = "default" },
+    layout = {
+      preset = "default",
+      -- Snacks' default backdrop is a 60%-opacity black overlay across the
+      -- whole editor, which reads as "the theme changed" every time this
+      -- opens. Off: everything behind keeps its normal colours.
+      layout = { backdrop = false },
+    },
+    -- The bodies are prose, so let the preview wrap instead of cutting
+    -- lines off at the pane edge (Snacks defaults preview windows to
+    -- wrap=false, which suits code previews, not paragraphs).
+    win = {
+      preview = { wo = { wrap = true, linebreak = true } },
+    },
     format = function(item)
       return {
         { ("%-46s"):format(item.title) },

@@ -1052,3 +1052,36 @@ confirmed to render the selected entry's **body** (matched on distinctive conten
 `f{char}`, not just the title). `<CR>` confirmed to close the picker and open a single
 float titled with the entry name, sized to content (`w=64 h=9`), containing only that
 entry's text.
+
+## Follow-up: cheatsheet polish - no backdrop dimming, wrapped preview (2026-09-23)
+
+**What**: reported that "the entire theme is changing" when the cheatsheet opens. Root
+cause: Snacks' `default` layout preset doesn't disable the **backdrop** - a full-screen
+overlay window at 60% opacity black (`snacks/win.lua:108`, `bg = "#000000"`) drawn
+behind the picker, which dims the whole editor and reads as a theme change. Several
+other presets (`sidebar`, `vertical`, `select`, `vscode`) set `backdrop = false`
+explicitly; `default` doesn't.
+
+Also fixed while in there: the preview pane had `wrap = false` (Snacks' default, which
+suits code previews), so prose body lines longer than the pane were cut off at the edge.
+
+**Change** - `~/.config/nvim/lua/cheatsheet.lua`:
+```lua
+layout = {
+  preset = "default",
+  layout = { backdrop = false },
+},
+win = {
+  preview = { wo = { wrap = true, linebreak = true } },
+},
+```
+The override survives preset resolution because Snacks only skips preset merging when
+your layout already defines a positional box (`layout.layout[1]`), which this doesn't -
+so the preset is merged first and these overrides land on top
+(`snacks/picker/config/init.lua:225-240`).
+
+**Verified live**: window count dropped 7 -> 6 and the full-screen `rel=editor w=80
+h=24` overlay is gone (explicit check for fullscreen editor-relative windows now
+returns 0). Preview window confirmed `wrap=true linebreak=true`. Borders were already
+rounded (`╭`) so they already matched the single-entry float - no change needed there,
+confirmed rather than assumed.
