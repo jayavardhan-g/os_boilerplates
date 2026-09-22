@@ -576,3 +576,33 @@ alongside it - the `on_attach` wrap didn't drop anything.
 
 **`flash.nvim` decision**: kept, no changes beyond the `gs`/`gS` rebind from the
 previous follow-up.
+
+## Follow-up: <leader>ghP now auto-focuses in one keypress (2026-09-22)
+
+**What**: previously `<leader>ghP` opened the popup but left focus in the original
+window - needed pressing it a second time to actually move focus in for scrolling.
+Changed it to call `gs.preview_hunk()` twice within the single keymap callback, so one
+keypress does both (open, then focus) instead of requiring a second manual press.
+
+**Why this is safe to call twice back-to-back with no delay**: `preview_hunk()`'s own
+first lines are `if popup.is_open('hunk') then popup.focus_open('hunk'); return end` -
+i.e. calling it while already open is the officially-intended way to focus in, not a
+workaround. Tested whether the two calls needed a `vim.schedule`/delay between them in
+case window creation is async - checked directly (headless, two synchronous calls with
+no `vim.wait` in between): current window ends up being the popup, not the original,
+confirming no delay is needed - hunk data is already cached from gitsigns' background
+tracking, so window creation completes synchronously within the same call.
+
+**Change** - `~/.config/nvim/lua/plugins/gitsigns.lua`:
+```lua
+vim.keymap.set("n", "<leader>ghP", function()
+  local gs = require("gitsigns")
+  gs.preview_hunk()
+  gs.preview_hunk()
+end, { buffer = buffer, desc = "Preview Hunk (Popup, focused)" })
+```
+
+**Verified live**: headless Neovim, real git repo, simulated the actual `<leader>ghP`
+keypress (not just calling the Lua function directly). Confirmed via
+`nvim_get_current_win()` that focus ends up on the floating popup window
+(`relative = "win"`), not the original file window, after a single keypress.
