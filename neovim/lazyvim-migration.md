@@ -994,3 +994,61 @@ picker version, then the bare `Snacks.picker.lines()` version) both under-verifi
 *visual/UX* result even though the underlying mechanics were confirmed working -
 "the keymap registers and doesn't error" isn't the same bar as "the actual on-screen
 result is good," and this one needed direct user feedback twice to get right.
+
+## Follow-up: cheatsheet rebuilt as a section picker (2026-09-23)
+
+**What**: third and final shape for this. Previous versions searched *lines* of one
+markdown file, which meant results were fragments and selecting one dumped you into the
+raw document. Rebuilt around **entries**: the markdown is parsed into one entry per
+`### Title` block (grouped by the `## Category` above it), the picker fuzzy-matches
+entry titles + category, the right pane previews the selected entry, and `<CR>` opens
+**only that entry** in its own centered float.
+
+This is what was actually asked for: typing `find` yields "Find text in the current
+line" / "Find text in the current file" / "Find text across the whole project" /
+"Find files by name" etc. as distinct selectable sections, rather than raw line hits.
+
+**Content**: rewritten and expanded from ~150 lines to **525 lines / 80 entries**
+covering find, replace, buffers, windows, tabs, motions, editing, text objects,
+registers/clipboard, macros, comments, autocomplete, autopairs, formatting, LSP,
+diagnostics, git, sessions, terminal, explorer, UI toggles, scratch buffers - plus a
+dedicated "Customizations: default vs current" category listing every key changed from
+stock LazyVim, options changed (`shiftwidth`/`tabstop` 2 -> 4), plugins disabled,
+plugins added and formatters wired up. Entries that differ from stock LazyVim are
+tagged **[custom]** with the default called out.
+
+Content was grounded in a **full dump of the live keymap table** (`nvim_get_keymap` for
+global maps, `nvim_buf_get_keymap` in an LSP-attached Python buffer for buffer-local
+ones) rather than written from memory - which caught that this setup uses Neovim 0.11+
+native LSP bindings (`grn`, `gra`, `grr`, `gri`, `grt`, `gO`, `<C-w>d`) alongside
+LazyVim's buffer-local `K`/`gr`/`gD`/`gI`/`gy`, not the older `gd`/`gr`/`K` trio I'd
+otherwise have written down.
+
+**Why a custom Snacks source this time**: the two earlier attempts used
+`Snacks.picker.lines()`, a built-in source whose preview is wired to the "main" window
+and which fought every attempt to reshape its layout. A *custom* source sidesteps all
+of that - `Snacks.picker({ items = ..., preview = "preview", format = ... })` takes
+arbitrary items, and each item carries its own `preview = { text = ..., ft = ... }`
+which the generic `"preview"` previewer renders directly
+(`snacks/picker/preview.lua:57`). Layout is the stock `default` preset: centered,
+two-pane, list left / preview right.
+
+**Change** - `~/.config/nvim/lua/cheatsheet.lua` (new, 136 lines): markdown parser
+(`M.entries()`), single-entry float (`M.show()`), picker (`M.open()`).
+`~/.config/nvim/cheatsheet.md` rewritten (525 lines).
+`~/.config/nvim/lua/config/keymaps.lua`: `g?` now just calls
+`require("cheatsheet").open()`.
+
+In the single-entry float: `q` / `<Esc>` close, `<BS>` goes back to the search list.
+
+**Verified live**: parser yields 80 entries with correct category grouping. Fuzzy
+matching verified by driving the picker's `pattern` field programmatically (feedkeys
+does **not** reach the picker's floating input in headless mode - an earlier check
+showing "80 items, unfiltered" was a test-harness artifact, not a real filtering
+failure, and was re-tested properly rather than assumed): `"clipboard"` -> 3 matches
+(all genuinely clipboard-related), `"find"` -> 15, `"replace"` -> 5 (exactly the five
+Replace entries). Picker opens with a 7-window two-pane layout and the preview pane was
+confirmed to render the selected entry's **body** (matched on distinctive content,
+`f{char}`, not just the title). `<CR>` confirmed to close the picker and open a single
+float titled with the entry name, sized to content (`w=64 h=9`), containing only that
+entry's text.

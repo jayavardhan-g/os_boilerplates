@@ -45,40 +45,11 @@ Snacks.toggle({
   end,
 }):map("<leader>ac")
 
--- Personal cheatsheet (~/.config/nvim/cheatsheet.md). A single clean
--- rounded-border centered floating window, styled like noice.nvim's own
--- popups - tried Snacks.picker.lines() first (twice), but its layout
--- presets (ivy, vscode, select) either scattered multiple panes on screen
--- or wouldn't reliably render a preview pane at all once reshaped away
--- from the default. This is simpler and fully self-contained: native `/`
--- search (real incremental search, no picker involved) starts immediately
--- on open.
+-- Searchable cheatsheet - see lua/cheatsheet.lua for the implementation.
 -- Bound to g? (native g? is ROT13-a-motion, essentially unused) rather than
 -- bare ? (native backward-search, used constantly) or <leader>? (already
 -- LazyVim's "buffer-local keymaps" popup) - both checked live and rejected
 -- before landing here.
 vim.keymap.set("n", "g?", function()
-  local path = vim.fn.stdpath("config") .. "/cheatsheet.md"
-  local buf = vim.fn.bufadd(path)
-  vim.fn.bufload(buf)
-  local width = math.floor(vim.o.columns * 0.7)
-  local height = math.floor(vim.o.lines * 0.7)
-  local win = vim.api.nvim_open_win(buf, true, {
-    relative = "editor",
-    width = width,
-    height = height,
-    row = math.floor((vim.o.lines - height) / 2),
-    col = math.floor((vim.o.columns - width) / 2),
-    border = "rounded",
-    title = " Cheatsheet ",
-    title_pos = "center",
-  })
-  vim.wo[win].wrap = true
-  vim.wo[win].conceallevel = 2
-  vim.wo[win].cursorline = true
-  vim.bo[buf].filetype = "markdown"
-  local close_opts = { buffer = buf, silent = true }
-  vim.keymap.set("n", "q", "<cmd>close<cr>", close_opts)
-  vim.keymap.set("n", "<Esc>", "<cmd>close<cr>", close_opts)
-  vim.api.nvim_feedkeys("/", "n", false)
+  require("cheatsheet").open()
 end, { desc = "Cheatsheet" })

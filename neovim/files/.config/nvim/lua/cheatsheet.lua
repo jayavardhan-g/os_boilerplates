@@ -1,0 +1,136 @@
+-- Searchable cheatsheet, driven by ~/.config/nvim/cheatsheet.md.
+--
+-- The markdown is parsed into one entry per "### Title" block, grouped by the
+-- "## Category" above it. The picker fuzzy-matches entry titles (plus their
+-- category), previews the selected entry on the right, and <CR> opens just
+-- that entry on its own - deliberately never dumping you into the raw file
+-- scrolled to a line, which is what made earlier versions unpleasant.
+
+local M = {}
+
+local function path()
+  return vim.fn.stdpath("config") .. "/cheatsheet.md"
+end
+
+---@return { category: string, title: string, body: string }[]
+function M.entries()
+  local fd = io.open(path(), "r")
+  if not fd then
+    return {}
+  end
+  local content = fd:read("*a")
+  fd:close()
+
+  local items, category, title, body = {}, nil, nil, {}
+
+  local function flush()
+    if title then
+      -- trim trailing blank lines so previews don't have dead space
+      while #body > 0 and body[#body]:match("^%s*$") do
+        table.remove(body)
+      end
+      items[#items + 1] = { category = category or "", title = title, body = table.concat(body, "\n") }
+    end
+    title, body = nil, {}
+  end
+
+  for line in (content .. "\n"):gmatch("(.-)\n") do
+    -- "###" must be tested before "##": the "##" pattern needs whitespace
+    -- after it, so it won't match a "###" line, but order makes that explicit
+    local entry = line:match("^###%s+(.+)$")
+    local cat = line:match("^##%s+(.+)$")
+    if entry then
+      flush()
+      title = entry
+    elseif cat then
+      flush()
+      category = cat
+    elseif title then
+      body[#body + 1] = line
+    end
+  end
+  flush()
+
+  return items
+end
+
+--- Open a single entry in its own centered floating window.
+---@param item table
+function M.show(item)
+  local lines = vim.split("# " .. item.title .. "\n\n" .. item.body, "\n")
+
+  local buf = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+  vim.bo[buf].filetype = "markdown"
+  vim.bo[buf].modifiable = false
+  vim.bo[buf].bufhidden = "wipe"
+
+  local width = math.min(92, math.floor(vim.o.columns * 0.8))
+  -- +2 for the title/padding, capped so long entries still fit on screen
+  local height = math.max(5, math.min(#lines + 2, math.floor(vim.o.lines * 0.8)))
+
+  local win = vim.api.nvim_open_win(buf, true, {
+    relative = "editor",
+    width = width,
+    height = height,
+    row = math.floor((vim.o.lines - height) / 2),
+    col = math.floor((vim.o.columns - width) / 2),
+    border = "rounded",
+    title = " " .. item.title .. " ",
+    title_pos = "center",
+  })
+  vim.wo[win].wrap = true
+  vim.wo[win].linebreak = true
+  vim.wo[win].conceallevel = 2
+
+  local opts = { buffer = buf, silent = true, nowait = true }
+  vim.keymap.set("n", "q", "<cmd>close<cr>", opts)
+  vim.keymap.set("n", "<Esc>", "<cmd>close<cr>", opts)
+  -- backspace goes back to the search list, so you can keep browsing
+  vim.keymap.set("n", "<BS>", function()
+    vim.api.nvim_win_close(win, true)
+    M.open()
+  end, opts)
+end
+
+function M.open()
+  local items = {}
+  for i, entry in ipairs(M.entries()) do
+    items[#items + 1] = {
+      idx = i,
+      score = 0,
+      -- what fuzzy matching runs against: title first, category as extra context
+      text = entry.title .. " " .. entry.category,
+      title = entry.title,
+      category = entry.category,
+      body = entry.body,
+      preview = {
+        text = "# " .. entry.title .. "\n\n" .. entry.body,
+        ft = "markdown",
+        loc = false,
+      },
+    }
+  end
+
+  Snacks.picker({
+    source = "cheatsheet",
+    title = "Cheatsheet",
+    items = items,
+    preview = "preview",
+    layout = { preset = "default" },
+    format = function(item)
+      return {
+        { ("%-46s"):format(item.title) },
+        { item.category, "Comment" },
+      }
+    end,
+    confirm = function(picker, item)
+      picker:close()
+      if item then
+        M.show(item)
+      end
+    end,
+  })
+end
+
+return M
