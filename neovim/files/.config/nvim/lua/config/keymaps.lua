@@ -45,8 +45,13 @@ Snacks.toggle({
   end,
 }):map("<leader>ac")
 
--- Personal cheatsheet (~/.config/nvim/cheatsheet.md), opened in a centered
--- floating window with Snacks' live fuzzy-search-with-preview scoped to it.
+-- Personal cheatsheet (~/.config/nvim/cheatsheet.md). Just the search+preview
+-- picker, no separate floating window underneath it (that duplicated UI -
+-- the picker's own preview pane already shows the matched section with
+-- context). Confirming a result just closes the picker instead of the
+-- default "jump" action, since this is a reference lookup, not somewhere to
+-- go edit - landing in the raw buffer scrolled to that line was the actual
+-- complaint that prompted this rewrite.
 -- Bound to g? (native g? is ROT13-a-motion, essentially unused) rather than
 -- bare ? (native backward-search, used constantly) or <leader>? (already
 -- LazyVim's "buffer-local keymaps" popup) - both checked live and rejected
@@ -55,19 +60,8 @@ vim.keymap.set("n", "g?", function()
   local path = vim.fn.stdpath("config") .. "/cheatsheet.md"
   local buf = vim.fn.bufadd(path)
   vim.fn.bufload(buf)
-  local width = math.floor(vim.o.columns * 0.8)
-  local height = math.floor(vim.o.lines * 0.8)
-  local win = vim.api.nvim_open_win(buf, true, {
-    relative = "editor",
-    width = width,
-    height = height,
-    row = math.floor((vim.o.lines - height) / 2),
-    col = math.floor((vim.o.columns - width) / 2),
-    border = "rounded",
-    title = " Cheatsheet ",
+  Snacks.picker.lines({
+    buf = buf,
+    confirm = "close",
   })
-  vim.wo[win].wrap = true
-  vim.wo[win].conceallevel = 2
-  vim.keymap.set("n", "q", "<cmd>close<cr>", { buffer = buf, silent = true })
-  Snacks.picker.lines({ buf = buf })
 end, { desc = "Cheatsheet" })

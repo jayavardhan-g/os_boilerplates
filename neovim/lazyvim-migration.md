@@ -890,3 +890,43 @@ cheatsheet window with a title + Snacks picker's own input/list/preview windows)
 confirmed the cheatsheet buffer loaded with all 150 lines. Full close lifecycle also
 verified: `<Esc>` drops back to 2 windows (picker closes, cheatsheet stays open), `q`
 drops back to 1 (cheatsheet closes cleanly too).
+
+## Follow-up: cheatsheet UX rewrite - dropped the double-window, made confirm just close (2026-09-23)
+
+**What**: real usability problems with the first cut, reported directly: "both line
+search and entire file are opening" (the separate pre-opened floating window plus the
+picker's own UI showing at once was visually cluttered) and selecting a result "directed
+[to] the complete buffer at that line" (jarring - dumped into a raw scrollable file
+instead of just answering the lookup), making it barely better than just using `:help`.
+
+**Fix**: removed the separate `nvim_open_win` floating window entirely - the picker's
+own preview pane already renders the matched section with context, so pre-opening a
+second window showing the same file was pure duplication. Overrode the default
+`confirm` action (which is `jump` - Snacks' own source confirms this at
+`snacks/picker/actions.lua:197`) to `"close"` (a built-in action, confirmed present in
+the same file) instead, since this is a reference lookup, not somewhere to go edit -
+selecting a result now just closes the picker and returns you to whatever you were
+doing, rather than navigating anywhere.
+
+**Change** - `~/.config/nvim/lua/config/keymaps.lua`, `g?` handler simplified to:
+```lua
+vim.keymap.set("n", "g?", function()
+  local path = vim.fn.stdpath("config") .. "/cheatsheet.md"
+  local buf = vim.fn.bufadd(path)
+  vim.fn.bufload(buf)
+  Snacks.picker.lines({
+    buf = buf,
+    confirm = "close",
+  })
+end, { desc = "Cheatsheet" })
+```
+
+**Verified live**: tested against a throwaway copy of the file (a live interactive
+`nvim --embed` session had the real `cheatsheet.md` open with a swap lock at the time -
+correctly left that alone rather than touching its swap file, tested against a copy
+instead). Confirmed: opening the picker now shows exactly 5 windows (base + Snacks'
+input/list/preview - no extra duplicate floating window), stays at 5 while typing a
+filter, and drops straight back to 1 window on `<CR>` (picker closes cleanly, no jump).
+Also confirmed the preview pane genuinely renders matching content live - filtering for
+"grug" surfaced the actual grug-far section text in one of the picker's windows, not a
+blank/broken preview.
