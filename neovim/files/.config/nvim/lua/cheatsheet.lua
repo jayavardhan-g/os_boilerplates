@@ -34,11 +34,20 @@ function M.entries()
     title, body = nil, {}
   end
 
+  -- Headings inside fenced code blocks are content, not structure - the
+  -- bodies contain shell/vim snippets and ASCII mockups where a leading
+  -- "#" is common.
+  local in_fence = false
+
   for line in (content .. "\n"):gmatch("(.-)\n") do
+    if line:match("^%s*```") then
+      in_fence = not in_fence
+    end
+
     -- "###" must be tested before "##": the "##" pattern needs whitespace
     -- after it, so it won't match a "###" line, but order makes that explicit
-    local entry = line:match("^###%s+(.+)$")
-    local cat = line:match("^##%s+(.+)$")
+    local entry = not in_fence and line:match("^###%s+(.+)$") or nil
+    local cat = not in_fence and line:match("^##%s+(.+)$") or nil
     if entry then
       flush()
       title = entry
@@ -93,14 +102,32 @@ function M.show(item)
   end, opts)
 end
 
+--- Pull the `backtick spans` out of a body - the keys and commands an entry
+--- is about, without the surrounding prose.
+---@param body string
+---@return string
+local function key_terms(body)
+  local seen, out = {}, {}
+  for term in body:gmatch("`([^`]+)`") do
+    if not seen[term] and #term <= 24 then
+      seen[term] = true
+      out[#out + 1] = term
+    end
+  end
+  return table.concat(out, " ")
+end
+
 function M.open()
   local items = {}
   for i, entry in ipairs(M.entries()) do
     items[#items + 1] = {
       idx = i,
       score = 0,
-      -- what fuzzy matching runs against: title first, category as extra context
-      text = entry.title .. " " .. entry.category,
+      -- Matching runs against the title, its category, and the keys the
+      -- entry mentions - so "ghP" or "ciw" find the right entry. The prose
+      -- body is deliberately excluded: including it made a search for
+      -- "find" return 69 noisy hits with the wrong one ranked first.
+      text = entry.title .. " " .. entry.category .. " " .. key_terms(entry.body),
       title = entry.title,
       category = entry.category,
       body = entry.body,

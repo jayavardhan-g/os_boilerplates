@@ -1085,3 +1085,53 @@ h=24` overlay is gone (explicit check for fullscreen editor-relative windows now
 returns 0). Preview window confirmed `wrap=true linebreak=true`. Borders were already
 rounded (`╭`) so they already matched the single-entry float - no change needed there,
 confirmed rather than assumed.
+
+## Follow-up: cheatsheet content deepened, with UI sketches (2026-09-23)
+
+**What**: content expanded 525 -> **949 lines, 85 entries across 24 categories**. Every
+entry that produces visible UI now carries a "What you see" sketch - what the screen
+actually looks like when you press the key - rather than just naming the binding.
+Examples: the `<lead>ghP` hunk popup (with its real `Hunk 1 of 3` header, taken from
+gitsigns' own format string rather than invented), flash labels appearing over matches
+for `gs`, the grep picker's two-pane layout, the completion menu, the bufferline, split
+layouts, `:%s///gc`'s confirm prompt with what each key does, grug-far's before/after
+list, gutter signs, `K` hover docs, which-key's popup, and before/after pairs for
+`cw` vs `ciw`, autopairs, comments, formatting and `<C-a>`.
+
+Sketches are labelled in the file header as representative, not pixel-exact, so nothing
+here overclaims to be a literal screenshot.
+
+**Parser hardening**: bodies now contain many fenced code blocks, and a `#` at the start
+of a line inside one would previously have been parsed as a heading, silently splitting
+or swallowing entries. The parser now tracks fence state and ignores headings inside
+fenced blocks.
+
+**Search quality fix (found by testing, not assumed)**: matching ran against
+`title .. category` only, so searching **"hunk" returned zero results** - the git entries
+were titled "Preview a change - popup", "Move between changes" etc. and never contained
+the word. Tried including the whole body in the match text: that fixed "hunk" but
+wrecked "find" (69 hits, wrong entry ranked first). Landed on matching
+`title + category + the backtick-quoted key/command spans from the body` - keys become
+searchable without dragging in prose noise - **and** renamed the vague git/autopairs
+titles to contain the nouns people actually search for.
+
+Measured before vs after:
+```text
+  query        before            after
+  "hunk"       0 matches         6, top = Preview a hunk inline
+  "ghP"        0 matches         1, exactly the right entry
+  "gutter"     (n/a)             5, top = See changed lines in the gutter
+  "ciw"        -                 12, top = cw vs ciw
+  "replace"    5                 8, all Replace entries
+  "find"       15                23, still all Find-ish at the top
+```
+
+**Change** - `~/.config/nvim/cheatsheet.md` rewritten;
+`~/.config/nvim/lua/cheatsheet.lua` gains fence-aware parsing and a `key_terms()`
+helper that extracts backtick spans for the match text.
+
+**Verified live**: 85 entries / 24 categories parse correctly with the fenced blocks
+intact (spot-checked the `<lead>ghP` entry's body end-to-end - mockup preserved
+verbatim). Preview pane confirmed to render the sketch content. Backdrop still absent
+(0 fullscreen windows) and preview wrap still on - checked for regressions rather than
+assuming the earlier fixes survived the rewrite.
