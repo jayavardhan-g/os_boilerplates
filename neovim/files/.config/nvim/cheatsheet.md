@@ -237,7 +237,8 @@ and closing a window doesn't close the buffer.
 ### Switch between buffers
 - `H` / `L` - previous / next buffer
 - `[b` / `]b` - same thing
-- `<lead>bb` or ``<lead>` `` - jump back to the buffer you were just in
+- `<lead>bb` - jump back to the buffer you were just in
+- `<lead>` then a backtick - same thing, one key shorter
 - `<lead>,` or `<lead>fb` - fuzzy-pick from open buffers
 - `<lead>bj` - pick a buffer by an on-screen letter label
 
@@ -342,7 +343,7 @@ What you see:
 ### Jump to a line or file position
 - `gg` / `G` - top / bottom of file
 - `{n}G` or `:{n}` - go to line n
-- ``` `` ``` - jump back to where you just were
+- two backticks in a row - jump back to where you just were
 
 ### Jump to any visible spot on screen
 - `gs` then 2 characters - labels appear on matches; press one to jump **[custom]**
@@ -381,7 +382,7 @@ Works across files, so it's the "back button" after a go-to-definition.
 
 ### Marks
 - `m{a-z}` - set a mark at the cursor
-- `` `{a-z} `` - jump to that mark
+- a backtick then `{a-z}` - jump to that mark
 - `<lead>sm` - list all marks
 
 ```text
@@ -469,7 +470,7 @@ Works with any operator: `d`, `c`, `y`, `v`.
 
 ### Common text objects
 - `iw` / `aw` - word
-- `i"` `i'` `` i` `` - quoted string
+- `i"`, `i'`, or i-then-backtick - quoted string
 - `i(` `i[` `i{` - bracket contents (also `ib` / `iB`)
 - `ip` / `ap` - paragraph
 - `it` / `at` - HTML/XML tag
@@ -677,6 +678,22 @@ What you see:
 `grn` renames across every reference the server knows about, not just this
 file - safer than a find-and-replace for symbols.
 
+### Neovim's built-in LSP keys
+Neovim 0.11+ ships its own LSP bindings under `gr`, separate from LazyVim's.
+Both sets are live here, so either works.
+
+- `grn` - rename symbol
+- `gra` - code action
+- `grr` - list references
+- `gri` - go to implementation
+- `grt` - go to type definition
+- `grx` - run codelens
+- `gO` - document symbols
+- `<C-w>d` (or `<C-w><C-d>`) - show the diagnostic under the cursor in a float
+
+LazyVim's equivalents (`<lead>ca`, `gr`, `gI`, `gy`, `K`) are buffer-local
+and only appear once a language server actually attaches.
+
 ### C and C++ have no LSP (known gap)
 Nothing attaches for `.c` / `.cpp`: no definitions, references, hover or
 diagnostics. `clangd` was never set up here. Python works (`ruff` attaches
@@ -881,6 +898,148 @@ Press `<lead>` (or any prefix) and wait - which-key lists what's available.
 
 Scratch buffers persist per project - useful for notes or trying a snippet
 without creating a file.
+
+## Selection by code structure
+
+### Expand or shrink a selection by syntax node
+Grows the selection outward following the code's structure, not lines.
+
+- `<C-Space>` - grow the selection to the next bigger node
+- `<BS>` - shrink it back again (while selecting)
+- `an` / `in` - select the parent (outer) / child (inner) node
+- `]n` / `[n` - next / previous sibling node
+
+What you see:
+
+```text
+  press <C-Space> repeatedly:
+
+    compute(a, b)        1st →  a
+                         2nd →  a, b
+                         3rd →  (a, b)
+                         4th →  compute(a, b)
+```
+
+Faster than counting brackets for `ci(`-style edits on nested code.
+
+### Flash in operator-pending mode
+- `r` - remote flash: run the pending operator somewhere else
+- `R` - treesitter search
+
+```text
+  yr  then a label   →  yank that spot without moving the cursor
+  dr  then a label   →  delete there, come straight back
+```
+
+## Lists: quickfix & location
+
+### Quickfix list
+A global list of positions - grep results, diagnostics, compiler errors.
+
+- `<lead>xq` - open the quickfix list
+- `<lead>sq` - fuzzy-search its entries
+- `]q` / `[q` - next / previous item
+- `]Q` / `[Q` - last / first item
+
+```text
+  :grep timeout            fill it from a project search
+  :cfdo s/old/new/g | update   run a command on every file in it
+```
+
+### Location list
+Same idea as quickfix, but **per window** rather than global - so you can
+keep one list per split.
+
+- `<lead>xl` - open the location list
+- `<lead>sl` - fuzzy-search it
+- `]l` / `[l` - next / previous item
+- `]L` / `[L` - last / first
+- `]<C-l>` / `[<C-l>` - first item in the next / previous **file**
+- `]<C-q>` / `[<C-q>` - same idea for the quickfix list
+
+### Jump between paired things
+`[` and `]` are Vim's universal "previous / next" prefixes. In this setup:
+
+```text
+  b  buffer        d  diagnostic    e  error        w  warning
+  q  quickfix      l  loclist       a  argument     t  todo comment
+  h  git hunk      n  syntax node   T  tag stack
+
+  ]x  next      [x  previous      ]X / [X  last / first
+```
+
+So `]d` is next diagnostic, `[h` is previous git hunk, and so on - one
+pattern instead of a separate key per feature. The full set of targets:
+`]b` `[b` buffers, `]d` `[d` diagnostics, `]e` `[e` errors, `]w` `[w`
+warnings, `]q` `[q` quickfix, `]l` `[l` loclist, `]a` `[a` arguments,
+`]t` `[t` todo comments, `]h` `[h` git hunks, `]n` `[n` syntax nodes, and
+`]<C-t>` `[<C-t>` the tag stack.
+
+## Tools & meta
+
+### Save the file
+- `<C-s>` - save, from normal, insert **or** visual mode
+
+Saves without making you leave insert mode first.
+
+### Open a link or file under the cursor
+- `gx` - open the URL or path under the cursor with the system handler
+
+Opens a web link in your browser, a folder in your file manager - useful on
+a plugin URL inside a config file.
+
+### Look up the word under the cursor
+- `<lead>K` - run `keywordprg` on the word (man page for shell, etc.)
+
+Different from `K`, which is LSP hover documentation.
+
+### Manage plugins and tools
+- `<lead>l` - open Lazy: update, clean, profile startup, see what loaded
+- `<lead>L` - LazyVim changelog
+- `<lead>cm` - open Mason: install/remove LSP servers, formatters, linters
+
+`<lead>cm` is where `ruff` was installed for Python formatting.
+
+### Profile startup and performance
+- `<lead>dpp` - toggle the profiler
+- `<lead>dph` - toggle profiler highlights
+- `<lead>dps` - open the profiler scratch buffer
+
+Reach for these if Neovim starts feeling slow; Lazy (`<lead>l`) also shows
+per-plugin startup time.
+
+### Inspect highlights and syntax
+- `<lead>ui` - inspect highlight groups under the cursor
+- `<lead>uI` - open the treesitter tree inspector
+- `<lead>uT` - toggle treesitter highlighting
+- `<lead>sH` - search all highlight groups
+
+The answer to "why is this word coloured like that?" - `<lead>ui` names the
+exact highlight group in play.
+
+### Browse icons
+- `<lead>si` - search and insert nerd-font icons
+
+### Noice message tools
+- `<lead>sna` - all messages
+- `<lead>snh` - message history
+- `<lead>snl` - show the last message again
+- `<lead>snd` - dismiss everything on screen
+- `<lead>snt` - noice picker
+
+### Snippets
+- `<Tab>` / `<S-Tab>` - jump to the next / previous snippet placeholder
+
+Snippets come from friendly-snippets through blink.cmp: accept one from the
+completion menu, then `<Tab>` between the fields it leaves you.
+
+### Vim defaults worth knowing
+- `j` / `k` / `<Down>` / `<Up>` move by **screen** line, so they behave
+  sensibly on wrapped text
+- `&` - repeat the last `:s` substitution on this line
+- `Y` - yank to end of line
+- visual `@` - run a macro over every selected line
+- visual `q` - see `:help v_Q-default`
 
 ## Customizations: default vs current
 

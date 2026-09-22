@@ -107,6 +107,20 @@ end
 ---@param body string
 ---@return string
 local function key_terms(body)
+  -- Strip fenced blocks first. A ``` fence is three backticks, so leaving
+  -- them in shifts the pairing of every inline `span` that follows and the
+  -- extracted terms come out as garbage.
+  local kept = {}
+  local in_fence = false
+  for line in (body .. "\n"):gmatch("(.-)\n") do
+    if line:match("^%s*```") then
+      in_fence = not in_fence
+    elseif not in_fence then
+      kept[#kept + 1] = line
+    end
+  end
+  body = table.concat(kept, "\n")
+
   local seen, out = {}, {}
   for term in body:gmatch("`([^`]+)`") do
     if not seen[term] and #term <= 24 then

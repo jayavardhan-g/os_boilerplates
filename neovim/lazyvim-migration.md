@@ -1135,3 +1135,53 @@ intact (spot-checked the `<lead>ghP` entry's body end-to-end - mockup preserved
 verbatim). Preview pane confirmed to render the sketch content. Backdrop still absent
 (0 fullscreen windows) and preview wrap still on - checked for regressions rather than
 assuming the earlier fixes survived the rewrite.
+
+## Follow-up: cheatsheet completeness audited to 279/283 keymaps (2026-09-23)
+
+**What**: asked whether the cheatsheet really covers everything. Rather than assert it
+did, wrote a **coverage audit**: extract every backtick-quoted key from the doc, dump
+every described keymap from the live editor (`nvim_get_keymap` across normal, visual,
+insert and operator-pending), and diff them. Result went **205 -> 279 of 283** described
+keymaps documented (98.6%) after filling the gaps it found.
+
+**Two real bugs the audit exposed** (both were shipping, not just audit-side):
+
+1. **Backtick-span extraction was corrupt.** Pairing backticks left-to-right breaks on
+   any odd-count construct. The file has 70 ```` ``` ```` fence lines plus four
+   double-backtick spans (used to write a literal backtick, e.g. the leader-backtick
+   buffer switch). Each one shifts the pairing of every span after it - so
+   `documented["<lead>bd"]` came back nil despite being in the file twice. The same
+   flaw was in the shipped `key_terms()` in `cheatsheet.lua`, meaning the picker's
+   search keywords were partly garbage. Fixed by stripping fenced blocks before
+   extraction, and rewriting the four nested-backtick constructs to avoid nesting.
+2. **Keys buried in fenced blocks aren't searchable.** A fenced ASCII table of
+   `grn / gra / grr / ...` looks fine to a reader but is invisible to `key_terms()`, so
+   typing `grr` found nothing. Converted those to inline bullet spans. Same treatment
+   for the `[`/`]` bracket-pair targets.
+
+**Content gaps it found and filled** (whole feature areas that were simply absent):
+quickfix list, location list, the `[`/`]` paired-jump convention, treesitter
+incremental selection (`<C-Space>`, `an`/`in`, `]n`/`[n`), flash in operator-pending
+mode (`r`/`R`), `<C-s>` save, `gx` open-link-under-cursor, `<lead>K` keywordprg,
+Lazy/Mason (`<lead>l`, `<lead>L`, `<lead>cm`), the profiler (`<lead>dp*`), highlight and
+treesitter inspectors (`<lead>ui`, `<lead>uI`, `<lead>uT`, `<lead>sH`), the icons picker,
+the full noice group, snippet jumping (`<Tab>`/`<S-Tab>`), Neovim 0.11+'s native LSP
+family (`grn`/`gra`/`grr`/`gri`/`grt`/`grx`/`gO`), and the Vim defaults LazyVim keeps
+(screen-line `j`/`k`, `&`, `Y`, visual `@`).
+
+Content is now **1108 lines / 101 entries / 27 categories**.
+
+**The 4 remaining are not real gaps**:
+- `)` and a backtick in insert mode - mini.pairs' internal open/close actions, not keys
+  you press deliberately; the Autopairs entry covers the behaviour
+- `<lead>sn` - a which-key *group prefix* ("+noice"), not a command
+- leader-then-backtick (Switch to Other Buffer) - documented in prose, but a key
+  containing a literal backtick can't be written as a backtick span, so the audit can
+  never match it
+
+**Audit method, for repeating it later**: strip fenced blocks from the doc (fences
+break span pairing), collect `` `spans` `` into a set, then for each described keymap
+try several normalisations of its lhs - literal spaces are the leader, and the leader
+can appear leading *or trailing* (`<C-W><space>` is the window hydra, `[<space>` adds a
+blank line). Skipping the trailing case is what made the first run falsely report
+`<C-w>`, `[`, `]` and `<lead><lead>` as undocumented.
