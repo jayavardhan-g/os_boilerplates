@@ -460,3 +460,56 @@ than have one picked unilaterally - fair, a keybinding is a pure preference call
 something to decide alone. Proposed `<leader>ac` ("autocomplete"); confirmed live that
 nothing at all is bound under `<leader>a`, so no collision risk. Re-verified the same way
 as the original binding - registers correctly, toggle behavior unchanged.
+
+## Follow-up: freed s/S from flash.nvim, moved it to gs/gS (2026-09-22)
+
+**What**: began going through LazyVim's optional plugins one at a time (test live, then
+decide keep/remove) as a review process - `flash.nvim` (jump-to-visible-location) was
+first. It works well, but its default LazyVim binding is `s`/`S` in normal/visual/
+operator-pending mode, which steals Vim's native substitute-char (`s`) and
+substitute-line (`S`) - both muscle memory in daily use. Moved flash to `gs`/`gS`
+instead, freeing `s`/`S` back to native.
+
+**Why gs/gS specifically**: `<leader>s` was considered first, but it's not a free key -
+it's LazyVim's "Search" group prefix with 30+ sub-bindings (`<leader>sg` grep, `<leader>sq`
+quickfix, `<leader>su` undotree, `<leader>sh` help, etc. - confirmed live via
+`nvim_get_keymap`). Making `<leader>s` itself a complete flash binding would force a
+timeout-based disambiguation delay on every single one of those existing search
+commands - not worth it for this. `gs`/`gS` confirmed genuinely free (native `gs` is an
+obscure, essentially-unused "sleep N seconds" command) - same 2-keystroke-then-target
+feel as the original binding, no leader delay.
+
+**Change** - `~/.config/nvim/lua/plugins/flash.lua` (new):
+```lua
+return {
+  {
+    "folke/flash.nvim",
+    -- stylua: ignore
+    keys = {
+      { "s", false, mode = { "n", "x", "o" } },
+      { "S", false, mode = { "n", "o", "x" } },
+      { "gs", mode = { "n", "x", "o" }, function() require("flash").jump() end, desc = "Flash" },
+      { "gS", mode = { "n", "o", "x" }, function() require("flash").treesitter() end, desc = "Flash Treesitter" },
+    },
+  },
+}
+```
+`false` as the second positional element of a `keys` entry is lazy.nvim's documented way
+to disable one specific default-provided keymap without touching the rest of the spec
+(confirmed in `lazy.nvim`'s own `core/handler/keys.lua`) - `r`/`R` (operator-pending
+remote flash) and `<c-s>`/`<c-space>` (cmdline toggle, treesitter incremental selection)
+are untouched since they don't collide with anything.
+
+**Verified live**: headless Neovim, forced `VeryLazy`. `nvim_get_keymap` confirms `s`/`S`
+are no longer registered at all (native Vim behavior applies) and `gs`/`gS` resolve to
+`Flash`/`Flash Treesitter`. End-to-end: normal-mode `s` on `hello world` correctly
+deletes the character under cursor and enters insert mode (produced `XXello world` after
+typing `XX`) - exactly native substitute-char behavior.
+
+**Process note**: this is the first of a plugin-by-plugin review pass (test live -> keep
+or remove/adjust -> next plugin) - more follow-ups in this vein will land here as they're
+decided. Core infrastructure plugins that can't be meaningfully tested standalone
+(`lazy.nvim`, `LazyVim`, `plenary.nvim`, `nui.nvim`, `mini.icons`, `mason.nvim`/
+`mason-lspconfig.nvim`, `nvim-lspconfig`, `nvim-treesitter` core) are being skipped in
+this review; `blink.cmp` and `mini.pairs` already have their own runtime toggles
+(`<leader>ac`, `<leader>up`) so don't need a keep/remove decision here.
