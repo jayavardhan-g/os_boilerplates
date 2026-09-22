@@ -625,3 +625,17 @@ Continuing the one-by-one review pass:
 **Verified live**: headless Neovim, forced `VeryLazy`. Confirmed the plugin no longer
 appears in `require('lazy').plugins()` at all, and `]f` has no buffer-local keymap in a
 `.cpp` buffer (previously bound by this plugin).
+
+## Follow-up: mini.ai disabled (2026-09-22)
+
+**What**: `mini.ai` (`af`/`if`/`daf`/`diu`/`dae` etc. - select function/class/call/
+camelCase-segment as a text object) - tested live, decided not needed. Unrelated to
+`mini.pairs` (autopairs), a separate mini.nvim module - stays enabled.
+
+**Change** - `~/.config/nvim/lua/plugins/disabled.lua`, appended:
+```lua
+{ "nvim-mini/mini.ai", enabled = false },
+```
+
+**Verified live**: headless Neovim, forced `VeryLazy`. Confirmed `mini.ai` no longer
+appears in `require('lazy').plugins()`.

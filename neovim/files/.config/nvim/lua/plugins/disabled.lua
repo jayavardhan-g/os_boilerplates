@@ -15,7 +15,11 @@ return {
   { "folke/lazydev.nvim", enabled = false },
 
   -- ]f/[f/]c/[c/]a/[a jump-between-functions/classes/params - tried live,
-  -- decided not useful. (mini.ai, the af/if select-a-function-etc plugin,
-  -- is unrelated and stays.)
+  -- decided not useful.
   { "nvim-treesitter/nvim-treesitter-textobjects", enabled = false },
+
+  -- af/if/daf/diu/etc "smart" text objects (function/class/call/camelCase-
+  -- segment select) - tried live, decided not needed. Unrelated to
+  -- mini.pairs (autopairs) - separate mini.nvim module, stays enabled.
+  { "nvim-mini/mini.ai", enabled = false },
 }
