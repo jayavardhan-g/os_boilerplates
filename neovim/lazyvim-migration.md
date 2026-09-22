@@ -513,3 +513,55 @@ decided. Core infrastructure plugins that can't be meaningfully tested standalon
 `mason-lspconfig.nvim`, `nvim-lspconfig`, `nvim-treesitter` core) are being skipped in
 this review; `blink.cmp` and `mini.pairs` already have their own runtime toggles
 (`<leader>ac`, `<leader>up`) so don't need a keep/remove decision here.
+
+## Follow-up: gitsigns popup hunk preview on <leader>ghP (2026-09-22)
+
+**What**: second plugin in the one-by-one review - `gitsigns.nvim`. LazyVim's default
+`<leader>ghp` (`preview_hunk_inline`) hit two real limits while testing: long lines get
+cut off with no way to wrap (confirmed against Neovim's own extmark API - `virt_lines`
+only supports `trunc`/`scroll`, `wrap` is rejected outright:
+`Invalid 'virt_lines_overflow': 'wrap'`), and the preview closes on *any* cursor
+movement (`CursorMoved` autocmd in gitsigns' own source), so you can't scroll through a
+tall hunk either. Added `<leader>ghP` for the non-inline `preview_hunk` (floating popup)
+instead of replacing the inline one - popup auto-expands height to fit all lines
+(real wrapping) and, called a second time while already open, moves focus into the
+window so `j`/`k` scroll freely without closing it (confirmed this works after initially
+looking like the same closing bug - the first call only opens the popup, cursor stays in
+the original window; the second call is what actually focuses in).
+
+**Change** - `~/.config/nvim/lua/plugins/gitsigns.lua` (new):
+```lua
+return {
+  {
+    "lewis6991/gitsigns.nvim",
+    opts = function(_, opts)
+      local on_attach = opts.on_attach
+      opts.on_attach = function(buffer)
+        if on_attach then
+          on_attach(buffer)
+        end
+        vim.keymap.set(
+          "n",
+          "<leader>ghP",
+          function() require("gitsigns").preview_hunk() end,
+          { buffer = buffer, desc = "Preview Hunk (Popup)" }
+        )
+      end
+      return opts
+    end,
+  },
+}
+```
+Wraps (doesn't replace) the default `on_attach` so LazyVim's other 10 `gh*` bindings
+stay intact - kept buffer-local (`buffer = buffer`) rather than global, matching how the
+rest of gitsigns' keymaps behave (only present in buffers gitsigns actually attaches to,
+i.e. git-tracked files).
+
+**Verified live**: headless Neovim, opened a real file inside this git repo, forced
+`VeryLazy` + `LazyFile`. Confirmed `<leader>ghP` registers as a **buffer-local** keymap
+(not global) with `desc = "Preview Hunk (Popup)"`, and all 10 of LazyVim's original
+`gh*` mappings (`s`, `r`, `S`, `u`, `R`, `p`, `b`, `B`, `d`, `D`) are still present
+alongside it - the `on_attach` wrap didn't drop anything.
+
+**`flash.nvim` decision**: kept, no changes beyond the `gs`/`gS` rebind from the
+previous follow-up.
