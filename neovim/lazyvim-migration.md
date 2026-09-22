@@ -338,3 +338,59 @@ with `//`, confirming both the line-toggle and selection-toggle paths work corre
 - `<leader>ft` (Terminal, Root Dir) and `<leader>fT` (Terminal, cwd) remain the way to
   open a terminal - nothing was moved to replace the reclaimed key, since these already
   existed and cover the same use case.
+
+## Follow-up: 4-space indent everywhere, disabled completion ghost text (2026-09-22)
+
+**What**: two separate complaints about editing feel - "auto brackets and indentation
+... very bad" and, later, "the autofill suggestions ... distracting". Addressed the parts
+that were unambiguous; autopairs (`mini.pairs`) specifics were never pinned down (asked
+for a concrete example, none given yet) so left untouched pending that.
+
+**Why**:
+- **Indentation**: LazyVim sets a **global** `shiftwidth=2`/`tabstop=2` for every
+  filetype - confirmed no per-language override existed anywhere in this config. Asked
+  directly what width was wanted (options: 4 for C-family only, 4 everywhere, tabs for
+  C-family, or custom) - answer was **4 everywhere**. Note this only changes indent
+  *width*; the indent *logic* was already treesitter-based
+  (`indentexpr = v:lua.LazyVim.treesitter.indentexpr()`, wired automatically whenever a
+  parser is installed - confirmed in `lazyvim/plugins/treesitter.lua`), not the naive
+  `smartindent` fallback, so no separate fix was needed there.
+- **Ghost text**: "autofill suggestions" is blink.cmp's `ghost_text` - the greyed-out
+  inline preview of the top completion candidate shown ahead of the cursor as you type,
+  distinct from the dropdown completion menu itself (which was not reported as a problem
+  and stays on). Confirmed via `lazyvim/plugins/extras/coding/blink.lua`:
+  `ghost_text.enabled = vim.g.ai_cmp`, and `vim.g.ai_cmp = true` by default - so it was on
+  by default with no explicit user opt-in.
+
+**Change** - `~/.config/nvim/lua/config/options.lua`, appended:
+```lua
+vim.opt.shiftwidth = 4
+vim.opt.tabstop = 4
+```
+`~/.config/nvim/lua/plugins/completion.lua` (new - LazyVim plugin-spec override, same
+pattern as `languages.lua`/`disabled.lua`):
+```lua
+return {
+  {
+    "saghen/blink.cmp",
+    opts = {
+      completion = {
+        ghost_text = { enabled = false },
+      },
+    },
+  },
+}
+```
+
+**Verified live**: headless Neovim, forced `VeryLazy`. `.cpp` and `.py` buffers both
+report `shiftwidth=4 tabstop=4 expandtab=true` (was 2/2 before). For ghost text,
+`require('blink.cmp.config').completion.ghost_text.enabled` is a function (blink.cmp
+normalizes bool opts into closures internally) - called it directly, returns `false`
+(was `true`/on before the override).
+
+**Not yet done**: autopairs (`mini.pairs`) behavior - user's original complaint bundled
+"auto brackets ... very bad" with indentation, but never specified what's actually wrong
+(not closing when expected? closing when not wanted? bad interaction on Enter inside
+`{}`?). Revisit once a concrete repro is given - LazyVim's current `mini.pairs` defaults
+are documented in `lazyvim/plugins/coding.lua` (`skip_next`, `skip_ts = {"string"}`,
+`skip_unbalanced`) as the starting point.
