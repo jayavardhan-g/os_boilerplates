@@ -1219,3 +1219,48 @@ Options documented in the case-sensitivity entry (`ignorecase`, `smartcase`,
 `inccommand=nosplit`) were read from the live config rather than assumed.
 
 Keymap coverage re-checked after the addition: still 279/283, no regression.
+
+## Follow-up: 12 more cheatsheet categories, and a real gq/gw discovery (2026-09-23)
+
+**What**: asked whether other whole categories were missing the way regex had been. The
+keymap audit couldn't answer that - it only checks keys, and a category like regex is
+mostly `:` commands and syntax. Reviewed the surface area by hand and found twelve
+genuine gaps, all now added. Content is **1554 lines / 141 entries / 40 categories**.
+
+Added: visual & block editing (`<C-v>` column edits, `g<C-a>` numbering), the Ex command
+line & shell (ranges, `q:`, `:!`, `!{motion}` filters, `:sort`), folding, insert-mode
+tricks (`<C-r>{reg}`, `<C-o>`, digraphs), command-line editing (`<C-r><C-w>`), `gn`/`cgn`
+repeatable changes, the remaining operators (`gU`/`gu`/`g~`, `=`, reflow), diff mode,
+spell checking, undo time travel (`:earlier`, `g-`), terminal mode, and config/health
+(`:checkhealth`, `:verbose set opt?`, `:LazyExtras`, where each config file lives).
+
+**Auditing the modes I'd skipped also paid off**: the original coverage audit only
+looked at normal/visual/insert/operator-pending. Checking terminal and command-line
+modes surfaced that `<C-/>` is still bound **inside** a terminal buffer (it closes the
+terminal) even though we took that key for comments in normal/visual mode - a genuinely
+useful detail, now documented.
+
+**A real behavioural discovery, found by testing rather than assuming**: `gq` does
+**not** reflow text in this setup. LazyVim sets `formatexpr` globally to
+`v:lua.LazyVim.format.formatexpr()`, so `gq` delegates to conform/LSP **code
+formatting** instead of wrapping paragraphs. Measured with `textwidth=60` on a 150-char
+line:
+
+```text
+  gqq  ->  1 line, 150 chars   (unchanged - ran the code formatter)
+  gww  ->  3 lines, 59 wide    (actual reflow)
+```
+
+`gw` always uses Vim's internal formatter and ignores `formatexpr`, so **`gw` is the
+one to use here**. With `formatexpr` cleared, `gq` wraps at 79 with `textwidth=0` as
+vanilla Vim would - confirming the cause rather than guessing. My first draft of that
+entry recommended `gq`, which would have been wrong; the entry now leads with `gw` and
+explains why.
+
+**Everything testable was executed**: `:sort` / `sort u` / `sort n` / `sort!`, `%!sort`
+shell filtering, `:r !cmd`, `gUiw` / `guu` / `g~~`, `cgn` followed by `.`, visual-block
+`I` insert, `g<C-a>` column numbering, `zc` folding with `foldmethod=indent`, and `=G`
+re-indent (checked on a real `.cpp` buffer in the full config, since a bare `-u NONE`
+session has no indent plugins and would have shown a false negative).
+
+Keymap coverage re-checked afterwards: still 279/283, no regression.

@@ -1041,6 +1041,298 @@ completion menu, then `<Tab>` between the fields it leaves you.
 - visual `@` - run a macro over every selected line
 - visual `q` - see `:help v_Q-default`
 
+## Visual & block editing
+
+### The three visual modes
+- `v` - character-wise
+- `V` - line-wise
+- `<C-v>` - **block** (column) selection
+- `gv` - reselect whatever you selected last
+- `o` - jump to the other end of the selection, to extend it the other way
+
+### Edit many lines at once
+Block selection plus `I` or `A` inserts the same text on every selected line.
+
+```text
+  <C-v>  then  jjj  to select a column, then  I  # <Esc>
+
+    foo = 1            # foo = 1
+    bar = 2      →     # bar = 2
+    baz = 3            # baz = 3
+
+  I  inserts before the block   ·   A  appends after it
+  $  before A appends at each line's own end, however ragged
+```
+
+`c` on a block replaces the column on every line at once.
+
+### Number a column automatically
+- `g<C-a>` - in a visual selection, turn a column of numbers into an
+  incrementing sequence
+
+```text
+  select the zeros, press g<C-a>
+
+    0. item        1. item
+    0. item   →    2. item
+    0. item        3. item
+```
+
+### Operators inside a selection
+- `d` / `c` / `y` - delete, change, yank the selection
+- `>` / `<` - indent; `gv` afterwards reselects so you can repeat
+- `u` / `U` / `~` - lowercase / uppercase / toggle case
+- `r{char}` - replace every selected character
+- `J` - join the selected lines
+- `gq` - reflow the selection as text
+- `:` - starts an Ex command already scoped to the selection
+
+## Ex command line & shell
+
+### Ranges
+Almost every `:` command takes a range in front of it.
+
+```text
+  :%s/…        whole file            :.s/…       current line
+  :1,20s/…     lines 1-20            :.,+5s/…    this line + next 5
+  :'<,'>s/…    the visual selection  :$s/…       last line
+  :/foo/s/…    next line matching foo
+  :'a,'bs/…    from mark a to mark b
+```
+
+### The command window
+- `q:` - open your command history as an **editable buffer**
+- `q/` - the same for search history
+- `<C-f>` while typing a `:` command - switch into it mid-command
+
+Edit any past command like normal text, press `<CR>` on a line to run it.
+Far easier than arrowing through history for something long.
+
+### Run shell commands
+- `:!cmd` - run a shell command, show the output
+- `:r !cmd` - read a command's output **into** the buffer
+- `:w !cmd` - pipe the buffer into a command (without saving)
+- `!{motion}cmd` - filter text **through** a command, replacing it
+
+```text
+  !ipsort<CR>        sort the current paragraph through `sort`
+  :%!jq .            pretty-print the whole buffer as JSON
+  :r !date           paste today's date on the next line
+```
+
+### Sort lines
+- `:sort` - sort the whole file (or a range)
+- `:sort!` - reverse
+- `:sort u` - sort and remove duplicates
+- `:sort n` - numeric sort (so 9 comes before 10)
+- `:'<,'>sort` - sort just the selection
+
+## Folding
+
+### How folding works here
+This setup uses `foldmethod=indent` with `foldlevel=99`, so folds follow
+indentation and everything starts **open** - you only see folds if you make
+them.
+
+- `za` - toggle the fold under the cursor
+- `zo` / `zc` - open / close it
+- `zR` / `zM` - open **all** folds / close all folds
+- `zj` / `zk` - move to the next / previous fold
+- `zv` - open just enough to see the cursor line
+
+```text
+  zc on an indented block:
+
+    def handler():              def handler():
+        parse()            →    +---  3 lines ------
+        run()
+        log()
+```
+
+## Insert-mode tricks
+
+### Paste and delete without leaving insert
+- `<C-r>{reg}` - insert a register's contents
+- `<C-r>"` - the last yank · `<C-r>0` - the last explicit yank
+- `<C-r>%` - the current filename
+- `<C-w>` - delete the word before the cursor
+- `<C-u>` - delete back to the start of the line
+- `<C-o>` - run **one** normal-mode command, then return to insert
+- `<C-t>` / `<C-d>` - indent / unindent the current line
+
+`<C-o>` is the one to remember: `<C-o>A` jumps to end of line and keeps
+typing, without an `<Esc>` round trip.
+
+### Special characters
+- `<C-k>` then two letters - insert a digraph, e.g. `<C-k>a:` gives ä
+- `<C-v>u00e9` - insert a character by unicode codepoint
+
+## Command-line editing
+
+### Pull text into the command line
+- `<C-r><C-w>` - insert the word under the cursor
+- `<C-r><C-a>` - the WORD under the cursor
+- `<C-r>%` - the current filename
+- `<C-r>{reg}` - any register
+
+```text
+  cursor on "timeout", then:   :%s/<C-r><C-w>/delay/g
+  → the command line already reads  :%s/timeout/delay/g
+```
+
+### History and extras
+- `<Up>` / `<Down>` - history **filtered by what you've typed so far**
+- `q:` - full history as an editable buffer
+- `<S-CR>` - redirect the command's output into a popup (noice)
+- `<C-s>` - toggle flash search while typing a `/` search
+
+## Repeat a change across matches
+
+### cgn: change next match, then repeat
+`gn` selects the next match of the last search, so `cgn` changes it - and
+then `.` repeats the whole find-and-change.
+
+```text
+  /timeout<CR>        search for it once
+  cgn delay <Esc>     change this match
+  .                   change the next one
+  n .                 skip one, change the one after
+```
+
+The advantage over `:%s` is that you approve each change as you go, with a
+single keystroke, and you can skip freely with `n`.
+
+- `gn` / `gN` - select the next / previous match
+- `dgn` - delete the next match
+- `cgn` - change it
+
+## More operators
+
+### Change case with a motion
+- `gU{motion}` - uppercase · `gu{motion}` - lowercase · `g~{motion}` - toggle
+- `gUiw` - uppercase the word · `guu` / `gUU` - the whole line
+
+### Re-indent code
+- `={motion}` - re-indent by the language's rules
+- `==` - the current line · `=G` - from here to end of file · `=ip` - paragraph
+
+Uses the same treesitter-based indent logic as typing does.
+
+### Reflow paragraphs and comments
+**Use `gw`, not `gq`, in this setup.** LazyVim points `formatexpr` at its own
+formatter, so `gq` runs conform/LSP **code formatting** over the range rather
+than wrapping text. `gw` always uses Vim's internal formatter and ignores
+`formatexpr`, so it is the one that actually reflows prose.
+
+- `gw{motion}` - reflow text, e.g. `gwip` for a paragraph
+- `gww` - the current line
+- `gwap` - a paragraph including its blank line
+- `gq{motion}` - runs the **code formatter** here (same as `<lead>cf` on a range)
+
+Wrap width comes from `textwidth`, which is `0` by default here - with 0 it
+falls back to 79 columns. Set `:setlocal textwidth=72` first if you want a
+specific width. Verified: with `textwidth=60`, `gww` wraps at 60 while `gqq`
+leaves the line untouched.
+
+## Diff mode
+
+### Compare two files
+- `nvim -d file1 file2` - open straight into a diff
+- `:diffthis` in two windows - diff whatever is already open
+- `:diffoff` - stop diffing · `:diffupdate` - recompute
+
+### Move and apply changes
+- `]c` / `[c` - next / previous difference
+- `do` - "diff obtain": pull the other side's version into this buffer
+- `dp` - "diff put": push this side's version to the other buffer
+
+For git specifically, `<lead>ghd` (gitsigns) diffs the current file against
+the index without setting this up manually.
+
+## Spell checking
+
+### Turn it on and fix words
+Spell checking is **off** by default here.
+
+- `<lead>us` - toggle it on/off
+- `]s` / `[s` - jump to the next / previous misspelling
+- `z=` - suggest corrections for the word under the cursor
+- `zg` - add the word to your dictionary ("good")
+- `zw` - mark a word as wrong
+- `zug` - undo a `zg`
+
+```text
+  z= on a misspelled word:
+
+    Change "recieve" to:
+      1  receive
+      2  relieve
+    Type number and <Enter>:
+```
+
+## Undo time travel
+
+### Beyond plain undo
+Undo in Vim is a **tree**, not a line, and this setup has `undofile` on -
+so undo history survives closing and reopening the file.
+
+- `u` / `<C-r>` - undo / redo
+- `g-` / `g+` - move backwards / forwards through **every** state, including
+  branches that plain `u` can't reach
+- `:earlier 10m` / `:later 5m` - jump by time
+- `:earlier 3f` / `:later 1f` - jump by file **writes**
+- `<lead>su` - browse the whole tree visually
+
+`:earlier 1f` is the "undo everything since my last save" button.
+
+## Terminal mode
+
+### Working inside a terminal buffer
+- `<lead>ft` / `<lead>fT` - open a terminal (root dir / cwd)
+- `<C-\><C-n>` - leave terminal-insert mode, so you can scroll, search and
+  yank the output like any buffer
+- `i` or `a` - go back to typing in the shell
+- `<C-/>` - closes the terminal from **inside** it
+
+That last one is worth knowing: `<C-/>` is the comment toggle in normal and
+visual mode here, but inside a terminal buffer it still toggles the terminal
+away, which is exactly what you want.
+
+## Config & health
+
+### Inspect this setup
+- `:checkhealth` - full diagnostic report (providers, LSP, plugins)
+- `:set opt?` - show an option's current value, e.g. `:set shiftwidth?`
+- `:verbose set opt?` - show its value **and which file last set it**
+- `:setlocal` - change an option for this buffer/window only
+
+`:verbose set shiftwidth?` is the fastest way to answer "why is this 4 and
+where did that come from?".
+
+### Manage the setup
+- `:Lazy` (`<lead>l`) - plugins: update, clean, see startup times
+- `:Mason` (`<lead>cm`) - language servers, formatters, linters
+- `:LazyExtras` - LazyVim's **language packs**: enable one and it wires up
+  the LSP, formatter, treesitter parser and debugger for that language
+  together
+
+`:LazyExtras` is how you would close the C/C++ gap - enabling the `clangd`
+extra sets up the language server this setup currently lacks.
+
+### Where the config lives
+```text
+  ~/.config/nvim/
+    lua/config/options.lua     editor options
+    lua/config/keymaps.lua     custom keybindings
+    lua/config/autocmds.lua    automatic behaviour
+    lua/plugins/*.lua          one file per plugin override
+    cheatsheet.md              this document
+    lua/cheatsheet.lua         the picker that shows it
+```
+
+Anything in `lua/plugins/` is merged over LazyVim's defaults, so a file
+there only needs the parts you want to change.
+
 ## Regex & patterns
 
 ### Which regex flavour applies where
