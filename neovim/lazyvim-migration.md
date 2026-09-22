@@ -930,3 +930,67 @@ filter, and drops straight back to 1 window on `<CR>` (picker closes cleanly, no
 Also confirmed the preview pane genuinely renders matching content live - filtering for
 "grug" surfaced the actual grug-far section text in one of the picker's windows, not a
 blank/broken preview.
+
+## Follow-up: cheatsheet rebuilt as a clean floating window instead of a picker (2026-09-23)
+
+**What**: asked to make it "look similar to noice" after the Snacks-picker rewrite still
+wasn't good. Spent real effort trying to reshape `Snacks.picker.lines()`'s layout first
+- tried the `vscode` and `select` layout presets (both are single-box designs, closer to
+noice's aesthetic than the default `ivy` 3-pane bottom dock), and tried forcing
+`preview = "preview"` to get an embedded preview pane. Neither held up: the `lines`
+source ties its preview to the "main" window in a way that doesn't cleanly relocate into
+a custom layout's preview slot, and after reshaping, filtering for "grug" no longer
+reliably surfaced matching content anywhere on screen (verified live, confirmed
+empty/not-found rather than assuming). Rather than keep fighting an opaque layout
+system, dropped Snacks' picker entirely for this and built a fully self-contained
+floating window instead.
+
+**New design**: a single centered floating window with a rounded border and a
+" Cheatsheet " title - the same visual recipe noice.nvim itself uses for its own popups
+(confirmed via `nvim_win_get_config`: real border table, correct title, 70%-of-screen
+sizing). `filetype = "markdown"` for real syntax highlighting of the content. Search is
+native Vim `/` (real incremental search + match-count indicator, e.g. `[1/2]`) rather
+than a picker - `/` is fed automatically the moment it opens, so you can start typing a
+search term immediately. `q` and `<Esc>` both close it.
+
+**Change** - `~/.config/nvim/lua/config/keymaps.lua`, `g?` handler replaced:
+```lua
+vim.keymap.set("n", "g?", function()
+  local path = vim.fn.stdpath("config") .. "/cheatsheet.md"
+  local buf = vim.fn.bufadd(path)
+  vim.fn.bufload(buf)
+  local width = math.floor(vim.o.columns * 0.7)
+  local height = math.floor(vim.o.lines * 0.7)
+  local win = vim.api.nvim_open_win(buf, true, {
+    relative = "editor",
+    width = width,
+    height = height,
+    row = math.floor((vim.o.lines - height) / 2),
+    col = math.floor((vim.o.columns - width) / 2),
+    border = "rounded",
+    title = " Cheatsheet ",
+    title_pos = "center",
+  })
+  vim.wo[win].wrap = true
+  vim.wo[win].conceallevel = 2
+  vim.wo[win].cursorline = true
+  vim.bo[buf].filetype = "markdown"
+  local close_opts = { buffer = buf, silent = true }
+  vim.keymap.set("n", "q", "<cmd>close<cr>", close_opts)
+  vim.keymap.set("n", "<Esc>", "<cmd>close<cr>", close_opts)
+  vim.api.nvim_feedkeys("/", "n", false)
+end, { desc = "Cheatsheet" })
+```
+
+**Verified live**: tested against a throwaway copy again (the real file still had a live
+`nvim --embed` session's swap lock). Confirmed the floating window has a real border
+table, title text " Cheatsheet ", and correct dimensions. Confirmed real `/grug<CR>`
+search jumps straight to the actual line mentioning grug-far, with Neovim's native
+`[1/2]` match-count indicator showing - genuine incremental search, not a simulation.
+`q` closes back to a single window cleanly.
+
+**Lesson for later**: two failed iterations before this (the pre-opened-window-plus-
+picker version, then the bare `Snacks.picker.lines()` version) both under-verified the
+*visual/UX* result even though the underlying mechanics were confirmed working -
+"the keymap registers and doesn't error" isn't the same bar as "the actual on-screen
+result is good," and this one needed direct user feedback twice to get right.
