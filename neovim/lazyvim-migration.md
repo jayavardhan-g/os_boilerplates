@@ -807,3 +807,86 @@ already have runtime toggles (`<leader>ac`, `<leader>up`) instead.
 **Still flagged, not addressed**: C++ has no LSP (`clangd`) attached at all - no
 diagnostics/go-to-def/hover for C/C++. Bigger, separate decision from anything in this
 review pass.
+
+## Follow-up: personal cheatsheet on g? (2026-09-22/23)
+
+**What**: built a searchable personal cheatsheet - `g?` opens `~/.config/nvim/
+cheatsheet.md` in a centered floating window and immediately launches a live
+fuzzy-search-with-preview over its lines, so typing e.g. "buffer" filters straight to
+the relevant section.
+
+**Why not an existing plugin**: researched `cheatsheet.nvim` and `legendary.nvim` first
+rather than assuming nothing existed. Neither actually fit: `cheatsheet.nvim`'s
+no-Telescope fallback just dumps every bundled sheet concatenated into one static
+floating window with no live fuzzy filter (this setup uses Snacks, not Telescope), and
+its bundled content wouldn't cover this setup's own customizations (grug-far, the
+`gs`/`gS` rebind, `<leader>ghP`, etc.) regardless. `legendary.nvim`/`which-key.nvim`
+(already installed) surface keymap -> one-line-description pairs, not the prose
+"how does `:%s` relate to grug-far" explanations actually being asked for. That gap
+needed real curated content either way, so built it directly on what's already
+installed (`Snacks.picker.lines()`) instead of adding a new dependency for a UI shell
+that wouldn't add anything Snacks doesn't already do here.
+
+**Also compared Telescope vs Snacks broadly** before settling on Snacks (the user asked
+directly) - Snacks is confirmed to be LazyVim's own current default (its internal
+`checks.picker` order is `snacks -> fzf -> telescope`), everything built this session
+already assumes it, and it already has the frecency/live-search capability needed here
+built in. Telescope's edge is a larger/older extension ecosystem, not a fit for this
+specific need.
+
+**Keybinding decision** (3 rounds of live-checking before landing on one - worth
+recording since it's a good example of why "verify live, not by assumption" matters):
+1. Bare `?` considered first - rejected without discussion needed, it's native
+   backward-search, used constantly, no simple substitute the way `s`/`S` had `cl`/`cc`.
+2. `<leader>?` recommended next, assumed free by analogy to the earlier `<leader>a`
+   check - **wrong**, confirmed live it's already LazyVim's "Buffer Keymaps (which-key)"
+   binding, a genuinely useful existing feature (shows buffer-local keymaps for
+   whatever you're currently in). Caught only because the user pointed at checking
+   before proceeding, not because it was checked proactively first this time - a real
+   process miss.
+3. `<F1>` and `g?` both confirmed free via `nvim_get_keymap`. `<F1>` was the first
+   instinct (universal "help" convention), but user raised that a terminal emulator or
+   window manager could intercept a function key before Neovim ever sees it - checked
+   `~/.config/kitty/kitty.conf` and `~/.config/hypr/` directly, no F1 binding at either
+   layer *today*, but function keys are structurally the class most likely to get
+   grabbed by a lower layer, a risk plain letter-combos like `g?` don't have at all.
+   Landed on **`g?`** - native `g?` is ROT13-encode-a-motion, essentially unused, and it
+   keeps a `?` in the key, closest to the original ask.
+
+**Change** - `~/.config/nvim/cheatsheet.md` (new, ~150 lines): topic sections covering
+Buffers, Tabs, Windows/Splits, Search & Replace (both `:%s` and grug-far, as asked),
+Git, Comments, Flash navigation, Autocomplete, Formatting, Autopairs, Snacks
+find/search, LSP (including the still-open C++-has-no-LSP gap), Sessions, and
+Discoverability - each entry covers the actual keys wired up in *this* setup, not
+generic Vim defaults.
+
+`~/.config/nvim/lua/config/keymaps.lua`, appended:
+```lua
+vim.keymap.set("n", "g?", function()
+  local path = vim.fn.stdpath("config") .. "/cheatsheet.md"
+  local buf = vim.fn.bufadd(path)
+  vim.fn.bufload(buf)
+  local width = math.floor(vim.o.columns * 0.8)
+  local height = math.floor(vim.o.lines * 0.8)
+  local win = vim.api.nvim_open_win(buf, true, {
+    relative = "editor",
+    width = width,
+    height = height,
+    row = math.floor((vim.o.lines - height) / 2),
+    col = math.floor((vim.o.columns - width) / 2),
+    border = "rounded",
+    title = " Cheatsheet ",
+  })
+  vim.wo[win].wrap = true
+  vim.wo[win].conceallevel = 2
+  vim.keymap.set("n", "q", "<cmd>close<cr>", { buffer = buf, silent = true })
+  Snacks.picker.lines({ buf = buf })
+end, { desc = "Cheatsheet" })
+```
+
+**Verified live**: headless Neovim. `g?` registers with `desc = "Cheatsheet"`.
+Simulated the actual keypress: window count jumps from 1 to 6 (base + centered floating
+cheatsheet window with a title + Snacks picker's own input/list/preview windows),
+confirmed the cheatsheet buffer loaded with all 150 lines. Full close lifecycle also
+verified: `<Esc>` drops back to 2 windows (picker closes, cheatsheet stays open), `q`
+drops back to 1 (cheatsheet closes cleanly too).
