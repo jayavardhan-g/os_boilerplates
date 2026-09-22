@@ -694,11 +694,27 @@ Both sets are live here, so either works.
 LazyVim's equivalents (`<lead>ca`, `gr`, `gI`, `gy`, `K`) are buffer-local
 and only appear once a language server actually attaches.
 
-### C and C++ have no LSP (known gap)
-Nothing attaches for `.c` / `.cpp`: no definitions, references, hover or
-diagnostics. `clangd` was never set up here. Python works (`ruff` attaches
-automatically). Formatting still works for C/C++ because `clang-format`
-runs independently of any language server.
+### C and C++ language server (clangd)
+`clangd` is set up **[custom]** and attaches automatically to `.c` / `.cpp`
+files, so everything above works there: definitions, references, hover,
+diagnostics and code actions.
+
+- `<lead>ch` - switch between the source and its header **[custom]**
+- `<lead>cl` - confirm clangd is attached to this buffer
+
+It runs the system `clangd` (from the `clang` package, same one that gives
+you `clang-format`) rather than a Mason-installed copy, with
+`--clang-tidy` on, so you get clang-tidy lint warnings alongside compiler
+errors.
+
+**For accurate results in a real project**, clangd wants a
+`compile_commands.json` so it knows your include paths and flags. CMake
+emits one with `-DCMAKE_EXPORT_COMPILE_COMMANDS=ON`; symlink it into the
+project root if it lands in a build directory. Without one, clangd falls
+back to single-file analysis - still useful, but cross-file resolution and
+includes will be weaker.
+
+Python is covered separately by `ruff`, which also attaches automatically.
 
 ## Diagnostics
 
@@ -1316,8 +1332,10 @@ where did that come from?".
   the LSP, formatter, treesitter parser and debugger for that language
   together
 
-`:LazyExtras` is how you would close the C/C++ gap - enabling the `clangd`
-extra sets up the language server this setup currently lacks.
+`:LazyExtras` is LazyVim's route to language packs. The C/C++ server here
+was set up directly instead (`lua/plugins/clangd.lua`) rather than through
+the extra, to avoid pulling in `clangd_extensions.nvim` - see the clangd
+entry under LSP.
 
 ### Where the config lives
 ```text
@@ -1555,6 +1573,7 @@ the last one **counts** without changing anything.
   new  <lead>ghP   focused hunk popup
   new  <lead>y/Y   clipboard yank (OSC 52 over SSH)
   new  g?          this cheatsheet (native g? is ROT13, unused)
+  new  <lead>ch    switch C/C++ source <-> header (clangd)
 ```
 
 ### Options changed
@@ -1580,6 +1599,11 @@ Indent *logic* was already treesitter-based; only the width changed.
 
 ### Plugins added
 - `nvim-ghost.nvim` - edit browser textareas in Neovim
+
+### Language servers
+- Python - `ruff` (installed via Mason, also does the formatting)
+- C / C++ - `clangd` **[custom]**, system package, configured in
+  `lua/plugins/clangd.lua` without LazyVim's full extra
 
 ### Formatters added
 - `clang-format` for C/C++ (system package, ships with `clang`)

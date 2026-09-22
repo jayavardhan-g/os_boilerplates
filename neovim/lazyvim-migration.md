@@ -1264,3 +1264,43 @@ re-indent (checked on a real `.cpp` buffer in the full config, since a bare `-u 
 session has no indent plugins and would have shown a false negative).
 
 Keymap coverage re-checked afterwards: still 279/283, no regression.
+
+## Follow-up: clangd set up - C/C++ finally has an LSP (2026-09-23)
+
+**What**: closed the gap flagged repeatedly above. `.c` / `.cpp` files had **no language
+server at all** - no go-to-definition, references, hover or diagnostics - despite C++
+being a primary language here. Formatting worked only because `clang-format` runs
+independently of any LSP.
+
+**Nothing needed installing**: `clangd` 22.1.8 is already at `/usr/bin/clangd`, shipped
+by the same `clang` system package that provides `clang-format`. Checked before reaching
+for Mason, and `mason = false` is set on the server so Mason doesn't install a second
+copy.
+
+**Deliberately not the full `lang.clangd` extra** (asked rather than decided): that extra
+also pulls in `clangd_extensions.nvim`. Inspected what that actually contributes here -
+an AST viewer, inlay-hint tweaks, and an **nvim-cmp** score comparator that does nothing
+in this setup since we use blink.cmp. Crucially, source/header switching is provided by
+`nvim-lspconfig` itself (it creates `LspClangdSwitchSourceHeader` in its own
+`lsp/clangd.lua`), **not** by the extra plugin - so the minimal route loses essentially
+nothing. The clangd `cmd` flags were taken from LazyVim's extra so the tuning matches.
+
+**Change** - `~/.config/nvim/lua/plugins/clangd.lua` (new): `nvim-lspconfig` server entry
+with `mason = false`, LazyVim's clangd flags (`--background-index`, `--clang-tidy`,
+`--header-insertion=iwyu`, `--completion-style=detailed`, `--function-arg-placeholders`,
+`--fallback-style=llvm`), root markers, utf-16 offset encoding, and `<lead>ch` for
+source/header switching (confirmed free via `nvim_get_keymap` before binding).
+
+**Verified live, functionally - not just "it attached"**: on a real `.cpp` file clangd
+attaches (`name=clangd`, root resolved correctly), **go-to-definition** on a call
+correctly jumped to the definition line, **hover** returned the full signature with
+parameter list, and a deliberately broken file produced **3 correct diagnostics**
+("Cannot initialize a variable of type 'int' with an lvalue...", "Use of undeclared
+identifier", "Expected ';' after return statement (fix available)"). `<lead>ch`
+confirmed registered as a buffer-local keymap.
+
+**Cheatsheet corrected**: the "C and C++ have no LSP (known gap)" entry was now false -
+replaced with a clangd entry covering `<lead>ch`, the `--clang-tidy` behaviour, and the
+`compile_commands.json` caveat (CMake's `-DCMAKE_EXPORT_COMPILE_COMMANDS=ON`; without it
+clangd falls back to weaker single-file analysis). Also added a "Language servers"
+section to the customizations summary. Coverage re-checked: 279/283, no regression.
