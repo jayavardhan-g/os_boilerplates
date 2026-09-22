@@ -523,11 +523,22 @@ only supports `trunc`/`scroll`, `wrap` is rejected outright:
 `Invalid 'virt_lines_overflow': 'wrap'`), and the preview closes on *any* cursor
 movement (`CursorMoved` autocmd in gitsigns' own source), so you can't scroll through a
 tall hunk either. Added `<leader>ghP` for the non-inline `preview_hunk` (floating popup)
-instead of replacing the inline one - popup auto-expands height to fit all lines
-(real wrapping) and, called a second time while already open, moves focus into the
-window so `j`/`k` scroll freely without closing it (confirmed this works after initially
-looking like the same closing bug - the first call only opens the popup, cursor stays in
-the original window; the second call is what actually focuses in).
+instead of replacing the inline one, and called a second time while already open it moves
+focus into the window so `j`/`k` scroll freely without closing it (confirmed this works
+after initially looking like the same closing bug - the first call only opens the popup,
+cursor stays in the original window; the second call is what actually focuses in).
+
+**Correction (still 2026-09-22, caught same day)**: initially described the popup as
+"real wrapping" - checked directly and that's wrong, **the popup doesn't wrap either**
+(`vim.wo[winid].wrap` is `false`, confirmed live; no wrap-related option is ever set
+anywhere in `gitsigns/popup.lua`). What it actually does: auto-**widens** the floating
+window to fit the hunk's longest line (verified live - a ~250-char test line produced a
+266-column-wide popup), so on a normal terminal most long lines just fit without any
+extra step. For a line wider than the actual terminal, the popup is a real window/buffer
+(unlike inline's virtual-lines overlay), so once focused into it (the 2nd-call trick
+above), ordinary `nowrap`-window horizontal scrolling (`$`, `zl`, etc.) reaches the rest
+of the line - same net result (you can always see 100% of a line) but via width-then-
+scroll, not word-wrap.
 
 **Change** - `~/.config/nvim/lua/plugins/gitsigns.lua` (new):
 ```lua
