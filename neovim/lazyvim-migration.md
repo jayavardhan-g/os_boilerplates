@@ -1487,3 +1487,40 @@ message appears when LeetCode throttles its API during contests.
 console keys, finding problems, the cookie-expired case); GhostText entry points
 LeetCode users here instead. Keymap coverage unchanged at 280/284 (no new global
 keymaps - everything is under `:Leet`).
+
+## Follow-up: leetcode.nvim health check, and the "cookie expired" error explained (2026-09-23)
+
+**Is it still working?** Its last *tagged release* is v0.3.1 (2025-06-28), but commits
+continued to 2026-04-28 (the installed version); not archived, ~2.2k stars, issues and
+PRs active through this week. Caveat: nothing merged since April, nine community PRs
+pending - fixes are slow. Tested live against LeetCode rather than inferring from dates:
+problem lookup (GraphQL) returned correct data, the problem list returned all 4,060
+problems, and unauthenticated POSTs to the run/submit endpoints reached LeetCode's own
+server (Django's "403 CSRF verification failed" page - `server: cloudflare` is just the
+CDN edge, not the bot check). So Cloudflare wasn't blocking this machine at the time.
+Logged-in run/submit remain untested (needs the user's cookie).
+
+(Testing note: a first probe used a zsh loop variable named `path`, which in zsh is tied
+to `$PATH` - it wiped the command search path, so its "origin answered" output was
+meaningless. Renamed the variable and re-ran.)
+
+**The "cookie expired" message is a catch-all** - `api/utils.lua:153` shows it for any
+401/403, so it can't distinguish its three real causes: a genuinely expired cookie
+(fix: `:Leet cookie update`), LeetCode throttling its API during contests (fix: wait),
+and Cloudflare flagging the request as a bot (fix: curl-impersonate). Documented a
+diagnosis order: fresh cookie first; if a fresh cookie fails immediately outside
+contest time, it's Cloudflare.
+
+**curl-impersonate** (community-confirmed fix in issue #167, latest confirmation
+2026-08-29): plenary.curl shells out to `curl`, and Cloudflare recognises curl by its
+TLS handshake regardless of the User-Agent header. curl-impersonate is a curl build that
+handshakes like a real browser. Verified before documenting it: plenary really reads
+`vim.g.plenary_curl_bin_path` (`plenary/curl.lua:291`); the package is in the official
+repos (`extra`, 2.2.2) so plain `pacman -S` works; and Arch's own file list for the
+package confirms it installs `curl_chrome136` - the exact profile the reports used -
+plus newer ones (`curl_chrome150`, `curl_firefox147`). **Not installed** - only needed
+if the Cloudflare case actually occurs.
+
+**Cheatsheet**: the LeetCode "cookie expired" entry now has the cause/diagnosis table,
+plus new entries for the curl-impersonate fix and for what plenary is (and what its
+announced end of active maintenance means). 153 entries; keymap coverage unchanged.

@@ -1665,11 +1665,61 @@ Inside the results console:
 - `:Leet exit` - close the session
 
 ### When it says your cookie expired
-- `:Leet cookie update` - paste a fresh cookie
+The message "Your cookie may have expired, or LeetCode has temporarily
+restricted API access" is a **catch-all**: the plugin shows it for *any*
+rejected request (a 401 or 403), so it can't tell you why. Three different
+causes sit behind it, and each has a different fix:
 
-Cookies do expire. But the same message also appears when LeetCode
-throttles its API, usually during contests - then waiting it out is the
-only fix, and a VPN can make it worse.
+```text
+  cause                     how to tell                        fix
+  cookie really expired     haven't pasted one in a while      :Leet cookie update
+  LeetCode throttling       during contests; site slow too     wait; turn off VPN
+  Cloudflare bot check      a FRESH cookie still fails at      curl-impersonate
+                            once, site fine in the browser     (see below)
+```
+
+What to do, in order:
+1. `:Leet cookie update` with a fresh cookie - fixes it most of the time
+2. still failing immediately, and not contest time -> almost certainly
+   Cloudflare: use the fix below
+3. contest time -> wait it out; nothing on your side fixes throttling
+
+To check when your current cookie expires: browser dev tools ->
+Application (Storage in Firefox) -> Cookies -> leetcode.com -> the Expires
+column for `LEETCODE_SESSION`.
+
+### Fix Cloudflare blocking (curl-impersonate)
+Only for the Cloudflare case above - it does nothing for an expired cookie
+or for throttling.
+
+- `sudo pacman -S curl-impersonate` - official repos, no AUR needed
+- then in `lua/config/options.lua`:
+  `vim.g.plenary_curl_bin_path = "curl_chrome136"`
+- restart Neovim
+
+Why it works: every request goes through the ordinary `curl` program.
+The plugin already sends a browser User-Agent, but Cloudflare recognises
+curl anyway from *how it opens the secure connection*, which differs from
+a real browser. curl-impersonate is a curl build that opens connections
+exactly like Chrome, so it gets let through. The setting just tells plenary
+which curl program to run (plenary reads it in `plenary/curl.lua`).
+
+`curl_chrome136` is the profile users confirmed working. The package also
+ships newer ones (`curl_chrome150`, and Firefox profiles such as
+`curl_firefox147`) if 136 ever stops passing.
+
+### What plenary is
+`plenary.nvim` is a general-purpose Lua toolkit that plugins build on -
+HTTP requests, file paths, async jobs, test tooling. leetcode.nvim uses
+two parts: `plenary.curl` for every request to LeetCode (which is why the
+Cloudflare fix is a plenary setting), and `plenary.path` for where your
+solutions are stored. LazyVim itself and todo-comments also depend on it,
+so it stays installed regardless.
+
+Its maintainers have announced it's ending *active* maintenance: no new
+features and slower fixes, but existing code keeps working. It only
+becomes a problem if a future Neovim change breaks it and nobody patches
+it.
 
 ## Customizations: default vs current
 
