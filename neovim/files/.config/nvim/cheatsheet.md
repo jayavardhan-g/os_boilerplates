@@ -1686,6 +1686,24 @@ Inside the results console:
 - `:Leet menu` - back to the menu
 - `:Leet exit` - close the session
 
+### A question won't open (swap file warning)
+Symptom: opening a problem you've done before shows Neovim's "Found a swap
+file" warning, and after Recover or Delete the question never appears.
+
+Cause: that solution file is already open in another Neovim - usually a
+second `nvim leetcode.nvim` running at the same time. Neovim's warning
+turns into an error in the way the plugin loads solutions, so it gives up.
+
+- Fixed **[custom]**: LeetCode sessions no longer create swap files, so this
+  can't happen from a new session. A session already running from before
+  the change still has them - restart it once.
+- Still worth running only one LeetCode session at a time: two sessions
+  editing the same problem would overwrite each other's saves.
+- `:Leet tabs` - find a problem that's already open in another tab
+
+Tradeoff: with no swap file, a crash loses edits since your last `:w`.
+The saved file and your LeetCode submissions are unaffected.
+
 ### When it says your cookie expired
 The message "Your cookie may have expired, or LeetCode has temporarily
 restricted API access" is a **catch-all**: the plugin shows it for *any*

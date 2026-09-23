@@ -100,6 +100,20 @@ return {
       -- after the solution buffer exists, and again for the new buffer when
       -- :Leet lang switches language.
       hooks = {
+        -- No swap files in LeetCode sessions. The plugin loads solutions with
+        -- bufload(), and when any other Neovim already has that file open (a
+        -- second LeetCode session, or a stale .swp), Neovim raises E325
+        -- there instead of prompting - the plugin treats that as fatal and
+        -- the question never opens, whichever of Recover/Delete you pick.
+        -- A per-file fix doesn't work (the swap check runs before
+        -- BufReadPre/SwapExists could intervene); session-wide does. `enter`
+        -- fires at session start, before any question buffer exists.
+        -- Tradeoff: a crash loses edits since the last :w.
+        enter = {
+          function()
+            vim.o.swapfile = false
+          end,
+        },
         question_enter = {
           function(question)
             local function map(lhs, sub, desc)

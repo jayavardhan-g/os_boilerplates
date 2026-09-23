@@ -1641,3 +1641,39 @@ verifiable headlessly.
 background (the editor colour, see-through) differed from the grey panel. With the
 panel now the same colour, inline code is distinguished only by its colour. Flagged to
 the user rather than changed.
+
+## Follow-up: LeetCode questions failing to open - swap files (2026-09-23)
+
+**What**: reopening a previously attempted problem showed a "code already found,
+recover/delete?" prompt, and after either choice the question never appeared.
+
+**Diagnosis**: the plugin has no such prompt (grepped) - it's Neovim's own swap-file
+`ATTENTION` dialog. `nvim -r` showed the swap for `33.search-in-rotated-sorted-array.cpp`
+owned by a **still-running** `nvim leetcode.nvim` (pid 48973), i.e. the same solution
+file open in two places. Reproduced on a throwaway file with a second headless Neovim
+holding it open: the plugin loads solutions via `vim.fn.bufload()`, which raises
+**`E325: ATTENTION`** as an error rather than prompting. The buffer actually loads
+(`loaded=true`), but the plugin treats the error as fatal - so the question never
+opens whichever option is chosen.
+
+**What didn't work, tested rather than assumed**: a `SwapExists` autocmd setting
+`v:swapchoice` ('o' or 'e'), and `swapfile=false` per-buffer in `BufReadPre` - both still
+got E325, because the swap check runs before either can intervene. (A first
+reproduction attempt gave meaningless results: `-c "set directory=..."` runs *after*
+the file loads, so the holder's swap went to the default directory and no conflict
+existed. Fixed with `--cmd`, which runs before.) What works session-wide:
+`shortmess+=A` and `noswapfile`.
+
+**Decision** (asked): no swap files in LeetCode sessions. Chosen over `shortmess+=A`,
+which keeps swap files but hides the warning - stale swaps from crashes would then pile
+up unnoticed and ambush a normal Neovim later. Tradeoff accepted: a crash loses edits
+since the last `:w`.
+
+**Change** - `lua/plugins/leetcode.lua`: `hooks.enter` sets `vim.o.swapfile = false`.
+`enter` fires in `leetcode.start()` before any question buffer exists, so every
+solution buffer inherits it; normal Neovim sessions are untouched.
+
+**Verified**: in a real `nvim leetcode.nvim` session, `swapfile` is `false` after
+start, and loading a file that another Neovim holds with a swap succeeds (`ok=true`,
+no E325, no own swap). A normal session still has `swapfile=true`. The other instance's
+swap and the user's live problem-33 swap were left untouched.
