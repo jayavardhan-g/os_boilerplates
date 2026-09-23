@@ -1,0 +1,7 @@
+# Default C/C++ style for anything under $HOME without its own .clang-format
+# (a project's file, being closer, still wins). LLVM, but 4-space indent to
+# match nvim's shiftwidth; access modifiers stay flush left (LLVM's -2 was
+# tuned for 2-space indent).
+BasedOnStyle: LLVM
+IndentWidth: 4
+AccessModifierOffset: -4

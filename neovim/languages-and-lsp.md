@@ -1,7 +1,7 @@
 # Languages, formatters and language servers
 
 **Category:** neovim
-**Files touched:** `lua/plugins/languages.lua`, `lua/plugins/formatting.lua`, `lua/plugins/clangd.lua`, `lua/config/options.lua` (all under `~/.config/nvim/`; copies in [`files/`](files/))
+**Files touched:** `lua/plugins/languages.lua`, `lua/plugins/formatting.lua`, `lua/plugins/clangd.lua`, `lua/config/options.lua` (all under `~/.config/nvim/`), `~/.clang-format`; copies in [`files/`](files/)
 
 Which languages this setup supports and how: the treesitter trim, formatters (clang-format, ruff) and the clangd language server. Part of the LazyVim setup - see [[lazyvim-migration]] for the migration itself and the index of all topic files.
 
@@ -184,3 +184,31 @@ on shows them instantly); `<leader>ud` is "Toggle Diagnostics", and toggling fli
 `true`. Confirmed nothing in LazyVim re-enables diagnostics globally after startup.
 
 **Notes**: the toggle is per session - every new Neovim starts with them off again.
+
+## Follow-up: clang-format indents 4 spaces, not 2 (2026-09-23)
+
+**What**: `<leader>cf` (conform -> clang-format) was indenting C/C++ with 2 spaces despite
+`shiftwidth=4`. Added a home-wide `~/.clang-format`.
+
+**Why**: clang-format never reads Vim's `shiftwidth`; with no `.clang-format` found it
+falls back to LLVM style (`IndentWidth: 2`). `--fallback-style` in conform's args was
+tried first - it only accepts predefined style names, not inline `{...}` settings
+("Invalid fallback style"). `--style={...}` would work but overrides every project's own
+`.clang-format`. A file in `$HOME` is found by clang-format's parent-directory search for
+anything under home (including leetcode.nvim's `~/.local/share/nvim/leetcode/`), while a
+project's closer `.clang-format` still wins.
+
+**Change** - `~/.clang-format` (new; copy in [`files/`](files/.clang-format)):
+```yaml
+BasedOnStyle: LLVM
+IndentWidth: 4
+AccessModifierOffset: -4
+```
+`AccessModifierOffset: -4` keeps `public:`/`private:` flush left, as before and as
+LeetCode's templates write them - LLVM's `-2` with 4-space indent would put them at
+column 2.
+
+**Verified live**: headless Neovim, forced `VeryLazy`, `conform.format()` on a
+LeetCode-shaped `.cpp` under `$HOME`: body indented 4, `public:` at column 0.
+
+**Notes**: files outside `$HOME` (e.g. `/tmp`) still get LLVM's 2-space default.
