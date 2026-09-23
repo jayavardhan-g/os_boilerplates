@@ -576,7 +576,7 @@ What you see:
 Sources: LSP, snippets, file paths, and words from open buffers.
 
 ### Turn autocomplete on or off
-- `<lead>ac` - toggle the whole completion engine **[custom]**
+- `<lead>ac` - toggle the whole completion engine (starts **off** in every session) **[custom]**
 
 Added because the menu gets in the way when writing prose or moving fast.
 Shows an on/off notification and stays that way until you flip it back.

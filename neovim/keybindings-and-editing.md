@@ -302,3 +302,24 @@ blink.cmp's default key preset) already claimed either key in those modes.
   one-char backspace (plain `<BS>` still is). Normal-mode `<C-h>` window nav is untouched.
 - A terminal that sends `^?` for Ctrl+Backspace is indistinguishable from `<BS>` and
   can't be fixed from nvim - configure that terminal to send a distinct code instead.
+
+## Follow-up: autocomplete starts off (2026-09-23)
+
+**What**: the `<leader>ac` autocomplete toggle (above) now starts **off** in every
+session instead of on - user wants it out of the way until asked for.
+
+**Change** - `~/.config/nvim/lua/config/keymaps.lua` (copy in
+[`files/`](files/.config/nvim/lua/config/keymaps.lua)): the toggle's backing global now
+initialises to `false`; the `Snacks.toggle` block and `completion.lua`'s
+`enabled = function() return vim.g.blink_cmp_enabled ~= false end` are unchanged.
+```lua
+vim.g.blink_cmp_enabled = false
+```
+`~/.config/nvim/cheatsheet.md`: the `<lead>ac` line notes it starts off.
+
+**Verified live**: headless Neovim, forced `VeryLazy`:
+`require("blink.cmp.config").enabled()` is `false` at startup; invoking the `<leader>ac`
+mapping ("Toggle Autocomplete") flips it to `true`.
+
+**Notes**: previously initialised to `true` (on by default, toggle to hide). Per session -
+every new Neovim starts with it off again.
