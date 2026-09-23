@@ -739,7 +739,7 @@ What you see:
 - `<C-w>d` - diagnostic under the cursor, in a float
 - `<lead>sd` - searchable list of all diagnostics
 - `<lead>sD` - diagnostics for this buffer only
-- `<lead>ud` - toggle diagnostics display on/off
+- `<lead>ud` - toggle diagnostics display on/off (starts **off** in every session)
 
 ## Git
 

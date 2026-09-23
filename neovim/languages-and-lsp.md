@@ -1,7 +1,7 @@
 # Languages, formatters and language servers
 
 **Category:** neovim
-**Files touched:** `lua/plugins/languages.lua`, `lua/plugins/formatting.lua`, `lua/plugins/clangd.lua` (all under `~/.config/nvim/`; copies in [`files/`](files/))
+**Files touched:** `lua/plugins/languages.lua`, `lua/plugins/formatting.lua`, `lua/plugins/clangd.lua`, `lua/config/options.lua` (all under `~/.config/nvim/`; copies in [`files/`](files/))
 
 Which languages this setup supports and how: the treesitter trim, formatters (clang-format, ruff) and the clangd language server. Part of the LazyVim setup - see [[lazyvim-migration]] for the migration itself and the index of all topic files.
 
@@ -161,3 +161,26 @@ replaced with a clangd entry covering `<lead>ch`, the `--clang-tidy` behaviour, 
 `compile_commands.json` caveat (CMake's `-DCMAKE_EXPORT_COMPILE_COMMANDS=ON`; without it
 clangd falls back to weaker single-file analysis). Also added a "Language servers"
 section to the customizations summary. Coverage re-checked: 279/283, no regression.
+
+## Follow-up: diagnostics hidden by default (2026-09-23)
+
+**What**: LSP diagnostics (signs, underlines, virtual text) now start disabled in every
+Neovim session; `<leader>ud` (LazyVim's `Snacks.toggle.diagnostics()`) turns them back on.
+Asked whether this should be global or LeetCode-only - answer was everywhere.
+
+**Why**: user wanted them out of the way by default, enabled on demand.
+
+**Change** - `~/.config/nvim/lua/config/options.lua`, appended (copy in
+[`files/`](files/.config/nvim/lua/config/options.lua)):
+```lua
+vim.diagnostic.enable(false)
+```
+`~/.config/nvim/cheatsheet.md`: the `<lead>ud` line notes it starts off.
+
+**Verified live**: headless Neovim on a `.cpp` file with an undeclared call, clangd
+attached, forced `VeryLazy`: `vim.diagnostic.is_enabled()` is `false` while
+`vim.diagnostic.get(0)` still holds the 1 error (clangd keeps computing them - toggling
+on shows them instantly); `<leader>ud` is "Toggle Diagnostics", and toggling flips it to
+`true`. Confirmed nothing in LazyVim re-enables diagnostics globally after startup.
+
+**Notes**: the toggle is per session - every new Neovim starts with them off again.
