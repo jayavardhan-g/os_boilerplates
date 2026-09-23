@@ -56,8 +56,15 @@ end
 
 -- Base editor UI
 hl("Normal", { fg = c.foreground, bg = c.background })
-hl("NormalFloat", { fg = c.foreground, bg = c.color0 })
-hl("FloatBorder", { fg = c.color8, bg = c.color0 })
+-- Floats and sidebars share the editor background on purpose: kitty renders
+-- cells in exactly its own background colour at background_opacity, so this
+-- makes them see-through like the editor. With color0 they were solid grey
+-- boxes. Covers every NormalFloat user (Snacks explorer box via SnacksNormal,
+-- the leetcode.nvim description panel, hover docs, which-key, Lazy, ...);
+-- rounded borders still set them apart. Pmenu (completion menu) is left
+-- solid below so the selected item stays easy to pick out.
+hl("NormalFloat", { fg = c.foreground, bg = c.background })
+hl("FloatBorder", { fg = c.color8, bg = c.background })
 hl("Cursor", { fg = c.background, bg = c.cursor })
 hl("CursorLine", { bg = c.color0 })
 hl("CursorLineNr", { fg = c.cursor, bold = true })

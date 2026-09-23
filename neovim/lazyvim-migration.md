@@ -1595,3 +1595,49 @@ landed as normal-mode commands - a fake `nui.input` gives a deterministic test i
 
 Also confirmed the failed attempt didn't leave a bad cookie behind: `Cookie.set` parses
 before writing, so a malformed paste never reaches disk.
+
+## Follow-up: see-through popups/sidebars, readable LeetCode descriptions (2026-09-23)
+
+**What**: from a screenshot - the leetcode.nvim description panel was a solid grey box
+that didn't match the see-through editor, and its plain text was nearly invisible.
+Asked to make the explorer and LeetCode sidebars transparent like the editor instead of
+writing a custom theme.
+
+**Root cause, measured**:
+- The editor looks see-through because `Normal` uses **exactly kitty's background
+  colour**, which kitty renders at `background_opacity 0.6`. `NormalFloat` used
+  `color0` (`#48454e`), a different colour, so kitty drew it solid. Both grey boxes
+  trace back to it: the LeetCode description split sets
+  `winhighlight = Normal:NormalFloat` (`leetcode-ui/split/description.lua:47`), and the
+  Snacks explorer's outer layout box uses `SnacksNormal`, which Snacks links to
+  `NormalFloat` (`snacks/win.lua:206`). Its list and input already used `Normal`.
+- The unreadable text: leetcode.nvim draws plain description text in the theme's
+  **`Conceal`** colour (`theme/default.lua`: `normal = { fg = hl("Conceal").fg }`) -
+  here `#4f5258`, a colour meant to be faint. WCAG contrast against the panel: **1.2**
+  (unreadable). Transparency alone only lifts that to **2.4** (4.5 is comfortable
+  reading), so both fixes were needed.
+
+**Decisions** (asked): transparency for **all** popups, not just the two sidebars;
+and brighten the plain text too.
+
+**Change**:
+- `colors/kitty.lua` (now tracked in `files/`): `NormalFloat` and `FloatBorder` use
+  `c.background` instead of `c.color0`. `Pmenu` (completion menu) deliberately left
+  solid so the selected item stays easy to pick out.
+- `lua/plugins/leetcode.lua`: wraps `leetcode.theme.default.get` so `normal` takes the
+  live `Normal` foreground. Not a fixed colour, because kitty's colours change with
+  Noctalia and leetcode.nvim re-reads `get()` at start and on every `ColorScheme`. Not a
+  highlight link either: the plugin merges `normal` with bold/italic for emphasised
+  words, and a link would silently drop those.
+
+**Verified live**: `NormalFloat`, `FloatBorder` and the explorer's layout box all now
+resolve to the editor background (`#141318`); `Pmenu` still `#48454e`. In a
+`nvim leetcode.nvim` session, plain text (`<p>`) uses `#e6e1e9` (the Normal
+foreground, contrast 14.4), `<strong>` is still bold and `<em>` still italic in that
+colour, and `<code>` keeps its own colour. Visual look in the real terminal not
+verifiable headlessly.
+
+**Side effect**: inline code "chips" in descriptions used to stand out because their
+background (the editor colour, see-through) differed from the grey panel. With the
+panel now the same colour, inline code is distinguished only by its colour. Flagged to
+the user rather than changed.

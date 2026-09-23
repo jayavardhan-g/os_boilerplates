@@ -1804,6 +1804,12 @@ On a fresh machine only ruff needs installing: `:MasonInstall ruff`.
 Not a plugin theme - `colors/kitty.lua` reads kitty's live theme file and
 matches it, so Neovim tracks your terminal colours automatically.
 
+Popups and sidebars are see-through like the editor **[custom]**: they use
+the editor's background colour, which kitty renders at its
+`background_opacity`. Covers the file explorer, the LeetCode description
+panel, hover docs, which-key and Lazy. The completion menu stays solid so
+the selected item is easy to spot. (Before: solid grey boxes.)
+
 ## This cheatsheet
 
 ### How to use it

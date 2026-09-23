@@ -120,6 +120,22 @@ return {
       local cmd = require("leetcode.command")
       cmd.cookie_prompt = two_box_cookie_prompt
       cmd.commands.cookie.update[1] = two_box_cookie_prompt
+
+      -- Plain description text is drawn in the theme's Conceal colour, which
+      -- is meant to be faint: 1.2:1 contrast on the old grey panel, 2.4:1
+      -- even transparent. Use the normal text colour instead (14.4:1).
+      -- Wrapping default.get rather than setting a fixed colour keeps it in
+      -- step with the colorscheme - Theme.load re-reads get() at start and on
+      -- every ColorScheme event, and kitty's colours change with Noctalia.
+      -- A real fg, not a link: the plugin merges `normal` with bold/italic
+      -- for emphasised words, and a link would silently drop those.
+      local default = require("leetcode.theme.default")
+      local get = default.get
+      default.get = function()
+        local theme = get()
+        theme.normal = { fg = vim.api.nvim_get_hl(0, { name = "Normal", link = false }).fg }
+        return theme
+      end
     end,
   },
 }
