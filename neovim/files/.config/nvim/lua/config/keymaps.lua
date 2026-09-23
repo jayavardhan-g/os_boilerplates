@@ -59,3 +59,27 @@ Snacks.toggle({
 vim.keymap.set("n", "<leader>h", function()
   require("cheatsheet").open()
 end, { desc = "Cheatsheet" })
+
+-- Pick the language (filetype) of the current buffer. For buffers with no
+-- file extension to go on - GhostText textareas and :enew scratch buffers -
+-- where indentation, formatting and the LSP otherwise have nothing to key
+-- off. In a ghost buffer, the FileType autocmd in plugins/ghosttext.lua also
+-- attaches the language server. Snacks' picker is called directly: plain
+-- vim.ui.select is the stock numbered prompt in this setup.
+vim.keymap.set("n", "<leader>cL", function()
+  local buf = vim.api.nvim_get_current_buf()
+  local items, seen = {}, {}
+  for _, ft in ipairs({ "cpp", "c", "python", "markdown", "text" }) do
+    items[#items + 1], seen[ft] = ft, true
+  end
+  for _, ft in ipairs(vim.fn.getcompletion("", "filetype")) do
+    if not seen[ft] then
+      items[#items + 1] = ft
+    end
+  end
+  Snacks.picker.select(items, { prompt = "Language for this buffer" }, function(choice)
+    if choice and vim.api.nvim_buf_is_valid(buf) then
+      vim.bo[buf].filetype = choice
+    end
+  end)
+end, { desc = "Set Buffer Language" })

@@ -1559,6 +1559,55 @@ The trailing `e` flag in the first one means "don't error if nothing
 matched", which keeps it safe inside mappings and macros. The `n` flag in
 the last one **counts** without changing anything.
 
+## GhostText & buffer language
+
+### Edit browser text in Neovim (GhostText)
+Click the GhostText browser extension on any text box and it opens here in
+a new tab; every edit syncs back to the page live. Close the tab (or the
+page) to end it.
+
+- `leetcode.com` opens straight into **C++** **[custom]** - clangd,
+  clang-format and C++ indentation, all attached automatically
+- any other site opens as plain text - use `<lead>cL` to pick a language
+
+What you see:
+
+```text
+  tab title:   leetcode.com-2.cpp
+  :set ft?     filetype=cpp
+  <lead>cl     clangd attached
+```
+
+Why it needed work: ghost buffers are unnamed scratch buffers, and Neovim
+refuses to attach a language server to those. This setup names the buffer
+with the right extension (under `~/.cache/nvim/nvim-ghost/`) and starts the
+matching servers itself. Nothing is ever written to disk.
+
+### Set the language of any buffer
+- `<lead>cL` - pick a filetype for the current buffer **[custom]**
+
+Your languages are listed first; every other filetype is one fuzzy search
+away. Works in any buffer - including plain `:enew` scratch buffers, which
+otherwise have no language at all, so indentation, autopairs and formatting
+behave oddly in them.
+
+```text
+  ╭─ Language for this buffer ───────╮
+  │ > py                             │
+  │   python                         │
+  │   pyrex                          │
+  ╰──────────────────────────────────╯
+```
+
+In a GhostText buffer, switching language also swaps the language server
+(e.g. cpp -> python detaches clangd and attaches ruff).
+
+### Formatting in a ghost buffer
+- `<lead>cf` - format it
+
+Format-on-save never fires for ghost buffers (they're never saved - the
+text syncs to the browser instead), so format manually before you submit.
+
 ## Customizations: default vs current
 
 ### Keys changed from stock LazyVim
@@ -1574,6 +1623,7 @@ the last one **counts** without changing anything.
   new  <lead>y/Y   clipboard yank (OSC 52 over SSH)
   new  <lead>h     this cheatsheet
   new  <lead>ch    switch C/C++ source <-> header (clangd)
+  new  <lead>cL    set the language of the current buffer
 ```
 
 ### Options changed
@@ -1598,7 +1648,8 @@ Indent *logic* was already treesitter-based; only the width changed.
 ```
 
 ### Plugins added
-- `nvim-ghost.nvim` - edit browser textareas in Neovim
+- `nvim-ghost.nvim` - edit browser textareas in Neovim (with per-site
+  languages and LSP support - see the GhostText entry)
 
 ### Language servers
 - Python - `ruff` (installed via Mason, also does the formatting)
