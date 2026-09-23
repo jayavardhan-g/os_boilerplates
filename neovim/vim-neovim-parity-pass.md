@@ -851,7 +851,8 @@ side by side again, exactly as before this bug.
 
 ## Follow-up: re-matched Vim keybinds to LazyVim's actual keys, dropped jk/kj (2026-09-15)
 
-**What**: since Neovim moved to LazyVim (see [[lazyvim-migration]]), the reason several
+**What**: since Neovim moved to LazyVim (see [[lazyvim-migration]]; the key-by-key LazyVim
+comparison is in [[keybindings-and-editing]]), the reason several
 `~/.vimrc` keybinds looked the way they did - "match what Neovim does" - no longer holds,
 because Neovim's own keys changed. Re-pointed the Vim side at LazyVim's *current* defaults
 instead of leaving it matching the old, now-dead hand-rolled Neovim config. Also dropped
