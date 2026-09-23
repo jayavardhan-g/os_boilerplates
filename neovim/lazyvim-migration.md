@@ -1551,3 +1551,47 @@ and `\s` -> `<Cmd>Leet submit<CR>` there, while an unrelated buffer gets neither
 real `nvim leetcode.nvim` session (checked after `VimEnter`), `run` and `submit` are
 both among its 23 subcommands. Not verified: pressing them on a live problem, which
 needs the user's login. Cheatsheet "Run, test and submit" entry updated.
+
+## Follow-up: LeetCode sign-in split into two boxes (2026-09-23)
+
+**What**: first real sign-in failed with "Bad csrf token format". The user had copied
+just the `LEETCODE_SESSION` value from dev tools' Cookies tab. `Cookie.parse`
+(`lua/leetcode/cache/cookie.lua:88`) needs **both** `csrftoken=...` and
+`LEETCODE_SESSION=...` as `name=value` pairs, checking csrftoken first - hence that exact
+error. Asked for separate input boxes for the two values instead of one "paste the
+whole Cookie header" box.
+
+**Change** - `lua/plugins/leetcode.lua`: a `two_box_cookie_prompt` that asks for
+csrftoken, then LEETCODE_SESSION, assembles `csrftoken=X; LEETCODE_SESSION=Y`, and hands
+it to the plugin's **own** `cookie.set` - so saving and the login check are the
+plugin's, unchanged. Uses the same nui popup style as the original prompt (wider, since
+the tokens are long). Also strips a pasted `name=` prefix, trims whitespace, cancels on
+an empty first box, and still accepts a full Cookie header in the first box (skipping
+the second).
+
+Done from config rather than editing the plugin's files, which are overwritten on every
+plugin update. It had to reach **three** places, since two of them keep references
+rather than looking the function up when called: `cmd.cookie_prompt` itself;
+`cmd.commands.cookie.update[1]`, which the `:Leet cookie update` table captures when its
+module loads, so it's patched directly; and the sign-in page's "Sign in" button, which
+captures the prompt when that page first renders - after our `config` runs, so it picks
+up the replacement. A custom `config` function calls `require("leetcode").setup(opts)`
+first, then patches.
+
+**Verified**: in a real `nvim leetcode.nvim` session, all three references point at the
+new function (the sign-in page module was found holding it). Behaviour tested with a
+fake popup feeding scripted answers and `cookie.set` stubbed (nothing written, no
+network) - 5/5: two plain values; values pasted with their names; stray whitespace; a
+full Cookie header in box 1 (one box only, passed through untouched); empty box 1
+cancels. Real popups were also confirmed to show the right titles in order ("1/2
+csrftoken" then "2/2 LEETCODE_SESSION").
+
+**Testing notes** for next time: leetcode.nvim resolves its storage paths only once a
+session starts, so its cookie module can't even be required in a plain Neovim (`field
+'cache' (a nil value)`) - test inside `nvim leetcode.nvim` after `VimEnter`. And typing
+into nui popups via feedkeys doesn't work when the whole test runs as one script
+(`startinsert` only takes effect once control returns to the main loop), so keystrokes
+landed as normal-mode commands - a fake `nui.input` gives a deterministic test instead.
+
+Also confirmed the failed attempt didn't leave a bad cookie behind: `Cookie.set` parses
+before writing, so a malformed paste never reaches disk.

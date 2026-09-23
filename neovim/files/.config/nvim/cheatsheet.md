@@ -1628,11 +1628,25 @@ the way) so clangd doesn't flag every `vector` as undeclared, and strips
 them again before anything is sent.
 
 ### Log in (first time only)
-- `:Leet cookie update` - paste your LeetCode session cookie
+- `:Leet cookie update`, or the "Sign in" button on the start screen
 
-Getting the cookie: log in to leetcode.com in the browser, open dev tools
--> Network, click any request to leetcode.com, and copy the **Request
-Headers** -> `Cookie` value in full. Not the `set-cookie` response header.
+It asks in two boxes **[custom]**:
+1. `csrftoken` - the value of the csrftoken cookie
+2. `LEETCODE_SESSION` - the value of the LEETCODE_SESSION cookie
+
+Where to find them: log in to leetcode.com, open dev tools -> Network,
+click a request to leetcode.com itself (not assets.leetcode.com), open its
+Cookies tab and copy each value. Pasting them with their names
+(`csrftoken=...`) works too, and stray spaces are trimmed.
+
+Shortcut: paste the whole Request Headers -> `Cookie` value into the first
+box and it skips the second.
+
+Stock leetcode.nvim has a single box that needs the whole Cookie header;
+pasting just one value there fails with "Bad csrf token format".
+
+Treat both values like a password - together they are your logged-in
+session.
 
 ### Run, test and submit
 - `\r` - run against the example test cases **[custom]**
