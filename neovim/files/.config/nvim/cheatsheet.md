@@ -1570,6 +1570,9 @@ page) to end it.
   clang-format and C++ indentation, all attached automatically
 - any other site opens as plain text - use `<lead>cL` to pick a language
 
+For LeetCode itself, `nvim leetcode.nvim` is the better route - see the
+LeetCode section.
+
 What you see:
 
 ```text
@@ -1607,6 +1610,66 @@ In a GhostText buffer, switching language also swaps the language server
 
 Format-on-save never fires for ghost buffers (they're never saved - the
 text syncs to the browser instead), so format manually before you submit.
+
+## LeetCode
+
+### Solve LeetCode inside Neovim
+Replaces the browser tab: browse problems, write, run, test and submit
+without leaving Neovim.
+
+- `nvim leetcode.nvim` - launch a dedicated LeetCode session **[custom]**
+- `:Leet` - open the menu (problems, daily, random, lists)
+
+Solutions are real `.cpp` files, so clangd, clang-format and format-on-save
+all work normally - better than the GhostText route for LeetCode.
+LeetCode compiles C++ with `bits/stdc++.h` and `using namespace std`
+implicitly; the plugin adds those two lines to each solution (folded out of
+the way) so clangd doesn't flag every `vector` as undeclared, and strips
+them again before anything is sent.
+
+### Log in (first time only)
+- `:Leet cookie update` - paste your LeetCode session cookie
+
+Getting the cookie: log in to leetcode.com in the browser, open dev tools
+-> Network, click any request to leetcode.com, and copy the **Request
+Headers** -> `Cookie` value in full. Not the `set-cookie` response header.
+
+### Run, test and submit
+- `:Leet run` - run against the example test cases
+- `:Leet test` - same as run
+- `:Leet submit` - submit for judging
+- `:Leet console` - reopen the results console
+- `:Leet desc` - toggle the problem description
+- `:Leet lang` - switch language for this problem
+- `:Leet reset` - reset the code to the starting template
+- `:Leet last_submit` - restore your last submission
+- `:Leet open` - open the problem in the browser
+- `:Leet yank` - copy just the solution code
+
+### Console and test case keys
+Inside the results console:
+
+- `q` - close / toggle the console
+- `<CR>` - confirm
+- `r` - reset test cases
+- `U` - use a test case
+- `H` - focus the test cases pane
+- `L` - focus the results pane
+- `1`, `2`, ... - switch between test cases
+
+### Find problems
+- `:Leet list` - browse and filter all problems
+- `:Leet daily` - today's daily problem
+- `:Leet random` - a random problem
+- `:Leet menu` - back to the menu
+- `:Leet exit` - close the session
+
+### When it says your cookie expired
+- `:Leet cookie update` - paste a fresh cookie
+
+Cookies do expire. But the same message also appears when LeetCode
+throttles its API, usually during contests - then waiting it out is the
+only fix, and a VPN can make it worse.
 
 ## Customizations: default vs current
 
@@ -1650,6 +1713,8 @@ Indent *logic* was already treesitter-based; only the width changed.
 ### Plugins added
 - `nvim-ghost.nvim` - edit browser textareas in Neovim (with per-site
   languages and LSP support - see the GhostText entry)
+- `leetcode.nvim` - solve LeetCode problems in Neovim (also brought the
+  `html` treesitter parser back, which it uses for problem descriptions)
 
 ### Language servers
 - Python - `ruff` (installed via Mason, also does the formatting)

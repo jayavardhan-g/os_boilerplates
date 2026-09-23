@@ -1422,3 +1422,68 @@ confirming.)
 `<leader>cL` in the customizations summary. Keymap coverage 280/284, same four known
 non-gaps. Note: format-on-save never fires in ghost buffers (never written) - documented
 to use `<leader>cf` before submitting.
+
+## Follow-up: leetcode.nvim - run, test and submit LeetCode from Neovim (2026-09-23)
+
+**What**: asked whether page commands (e.g. LeetCode's `Ctrl+'` to run tests) could be
+sent from Neovim through GhostText. They can't: the GhostText protocol carries only
+text, selections, URL and a syntax hint - no channel back to the page. Building one
+(forking the extension plus patching nvim-ghost, or a userscript polling a local
+server) was estimated at half a day to a day, plus ongoing breakage from per-site DOM
+selectors. Checked for an existing solution first instead: **kawre/leetcode.nvim**, an
+actively maintained plugin that replaces the LeetCode browser tab entirely - `:Leet
+run` / `test` / `submit` natively. Chosen over building anything.
+
+It's also the better fit than GhostText for LeetCode specifically: solutions are real
+`.cpp` files, so clangd / clang-format / format-on-save work with none of the ghost-
+buffer workarounds.
+
+**Findings while setting it up** (read the plugin's source rather than trusting its
+README alone):
+- **Picker**: it auto-detects in order snacks -> fzf-lua -> telescope -> mini. Its
+  Snacks check is `assert(Snacks.config["picker"].enabled)` - ran that exact condition
+  here: true, so it uses Snacks with no config.
+- **`html` treesitter parser** is "optional, but highly recommended" (renders problem
+  descriptions). It had been deliberately removed in the very first trim follow-up
+  above ("languages actually used"). Restored in `languages.lua`, with a comment saying
+  why, so it isn't trimmed again. Other web parsers (javascript/jsdoc/tsx/typescript)
+  stay removed. Confirmed `html` is back in the merged `ensure_installed` list.
+- **Upstream's `build = ":TSUpdate html"` fails here** ("Not an editor command: TSUpdate
+  html") - treesitter isn't loaded at plugin-build time, and it would fail again on a
+  fresh machine. Dropped: `ensure_installed` installs the parser instead.
+- **C++ includes**: LeetCode compiles with `bits/stdc++.h` and `using namespace std`
+  implicitly, so solutions use `vector`/`string` with no `#include`. I initially wrote
+  an `injector` adding those two lines - then found the plugin **already injects exactly
+  those by default** (`lua/leetcode/config/imports.lua`; `inject_imports()` returns the
+  defaults when no `imports` override is set), folded out of the way. My version would
+  have put them in every file twice. Removed. Also confirmed only the marked
+  `@leet start`/`@leet end` code section is sent on run/test/submit
+  (`console.lua:63`), so injected lines never get submitted.
+- `bits/stdc++.h` exists on this system (`/usr/include/c++/16/...`, GCC libstdc++), so
+  clangd can resolve it.
+
+**Change** - `lua/plugins/leetcode.lua` (new): the plugin with `plenary.nvim` +
+`nui.nvim` (both already installed), `lang = "cpp"` (its default, made explicit), no
+injector override. `lua/plugins/languages.lua`: `html` no longer filtered out.
+
+**Verified live**:
+- `:Leet` command registered; config resolved `lang=cpp`, no injector override.
+- A LeetCode-style solution file laid out as the plugin writes it (imports section +
+  marked code section): clangd attached, **0 errors**. Same file without the imports
+  section: **3 errors** ("No template named 'vector'") - i.e. exactly the problem the
+  default imports solve.
+- `nvim leetcode.nvim` launches cleanly: after `VimEnter` the working directory moved
+  to `~/.local/share/nvim/leetcode` (its storage home), the menu buffer mounted
+  (`ft=leetcode.nvim`), 0 errors in `:messages`. (Note for headless testing: `-c`
+  commands run **before** `VimEnter`, and the plugin starts on `VimEnter` - checks must
+  be deferred past it or they see nothing. The first attempt hit exactly that.)
+
+**Not done, needs the user**: logging in. `:Leet cookie update` with the `Cookie` value
+from the browser's **request** headers. The plugin stores it under its own cache dir;
+no cookie value is in this repo. Cookies expire periodically, and the same "expired"
+message appears when LeetCode throttles its API during contests.
+
+**Cheatsheet**: new "LeetCode" category (6 entries: launching, login, run/test/submit,
+console keys, finding problems, the cookie-expired case); GhostText entry points
+LeetCode users here instead. Keymap coverage unchanged at 280/284 (no new global
+keymaps - everything is under `:Leet`).
