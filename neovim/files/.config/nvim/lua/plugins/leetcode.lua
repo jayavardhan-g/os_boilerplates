@@ -21,6 +21,24 @@ return {
       -- folded out of the way. That's what keeps clangd from flagging every
       -- vector/string as undeclared. Only the marked code section is sent on
       -- run/test/submit, so the injected lines never get submitted.
+
+      -- The plugin ships no keys for run/submit, only :Leet commands. These
+      -- are buffer-local to solution buffers, so they can't clash with
+      -- anything elsewhere. No separate "test" key: :Leet test and :Leet run
+      -- hit the same endpoint (interpret_solution). question_enter fires
+      -- after the solution buffer exists, and again for the new buffer when
+      -- :Leet lang switches language.
+      hooks = {
+        question_enter = {
+          function(question)
+            local function map(lhs, sub, desc)
+              vim.keymap.set("n", lhs, "<cmd>Leet " .. sub .. "<cr>", { buffer = question.bufnr, desc = desc })
+            end
+            map("<localleader>r", "run", "LeetCode: Run")
+            map("<localleader>s", "submit", "LeetCode: Submit")
+          end,
+        },
+      },
     },
   },
 }

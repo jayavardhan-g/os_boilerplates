@@ -1635,8 +1635,16 @@ Getting the cookie: log in to leetcode.com in the browser, open dev tools
 Headers** -> `Cookie` value in full. Not the `set-cookie` response header.
 
 ### Run, test and submit
-- `:Leet run` - run against the example test cases
-- `:Leet test` - same as run
+- `\r` - run against the example test cases **[custom]**
+- `\s` - submit for judging **[custom]**
+
+`\` is the local leader. Both keys exist only inside a LeetCode solution
+file, so they can't clash with anything else. The plugin itself ships no
+keys for these. There's no separate test key: `:Leet test` and `:Leet run`
+send your code to the same place.
+
+The same actions as commands:
+- `:Leet run` / `:Leet test` - run against the example test cases
 - `:Leet submit` - submit for judging
 - `:Leet console` - reopen the results console
 - `:Leet desc` - toggle the problem description
@@ -1737,6 +1745,7 @@ it.
   new  <lead>h     this cheatsheet
   new  <lead>ch    switch C/C++ source <-> header (clangd)
   new  <lead>cL    set the language of the current buffer
+  new  \r / \s     LeetCode run / submit (solution files only)
 ```
 
 ### Options changed

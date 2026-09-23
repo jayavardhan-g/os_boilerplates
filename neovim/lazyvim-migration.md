@@ -1524,3 +1524,30 @@ if the Cloudflare case actually occurs.
 **Cheatsheet**: the LeetCode "cookie expired" entry now has the cause/diagnosis table,
 plus new entries for the curl-impersonate fix and for what plenary is (and what its
 announced end of active maintenance means). 153 entries; keymap coverage unchanged.
+
+## Follow-up: LeetCode run/submit keys (2026-09-23)
+
+**What**: leetcode.nvim ships **no** keys for run/test/submit - checked the source: its
+configurable `keys` only cover its own windows (`q`, `<CR>`, `r`, `U`, `H`, `L`), and
+nothing binds run or submit. Added `\r` (run) and `\s` (submit); `\` is the local
+leader.
+
+**Decision** (asked, with options checked first): `<leader>l...` was out (`<leader>l`
+is Lazy, so a group under it would delay opening Lazy); `<leader>r` / `<leader>R` are
+free today but reserved by the refactoring / REST extras; `Ctrl+'` / `Ctrl+Enter`
+(LeetCode's website keys) only reach Neovim in terminals that support kitty's keyboard
+protocol. Chose local-leader keys, bound **buffer-locally** to solution buffers only.
+
+No test key: `:Leet test` and `:Leet run` hit the same endpoint (`urls.run` and
+`urls.interpret` are both `/problems/%s/interpret_solution/`).
+
+**Change** - `lua/plugins/leetcode.lua`: a `hooks.question_enter` function. That hook
+fires in `Question:handle_mount()` right after `create_buffer()`, and again when
+`:Leet lang` opens a new, not-yet-loaded solution buffer - so the keys follow a
+language switch.
+
+**Verified**: calling the registered hook on a buffer binds `\r` -> `<Cmd>Leet run<CR>`
+and `\s` -> `<Cmd>Leet submit<CR>` there, while an unrelated buffer gets neither. In a
+real `nvim leetcode.nvim` session (checked after `VimEnter`), `run` and `submit` are
+both among its 23 subcommands. Not verified: pressing them on a live problem, which
+needs the user's login. Cheatsheet "Run, test and submit" entry updated.
