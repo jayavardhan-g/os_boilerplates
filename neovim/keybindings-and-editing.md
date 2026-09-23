@@ -1,7 +1,7 @@
 # Keybindings and editing behaviour
 
 **Category:** neovim
-**Files touched:** `lua/config/keymaps.lua`, `lua/config/options.lua`, `lua/plugins/completion.lua` (all under `~/.config/nvim/`; copies in [`files/`](files/))
+**Files touched:** `lua/config/keymaps.lua`, `cheatsheet.md`, `lua/config/options.lua`, `lua/plugins/completion.lua` (all under `~/.config/nvim/`; copies in [`files/`](files/))
 
 Key remaps and editing defaults layered on top of LazyVim: the old-vs-LazyVim key comparison, OSC 52 clipboard yank, VSCode-style comment toggle, 4-space indent, and the autocomplete toggle. Part of the LazyVim setup - see [[lazyvim-migration]] for the migration itself and the index of all topic files.
 
@@ -269,3 +269,36 @@ than have one picked unilaterally - fair, a keybinding is a pure preference call
 something to decide alone. Proposed `<leader>ac` ("autocomplete"); confirmed live that
 nothing at all is bound under `<leader>a`, so no collision risk. Re-verified the same way
 as the original binding - registers correctly, toggle behavior unchanged.
+
+## Follow-up: Ctrl+Backspace deletes the previous word (2026-09-23)
+
+**What**: Ctrl+Backspace did nothing in insert mode. Mapped it to `<C-w>` (Vim's native
+"delete word before cursor") in insert and command-line mode.
+
+**Why**: Neovim enables the kitty keyboard protocol, so in kitty Ctrl+Backspace arrives
+as a distinct `<C-BS>` key rather than plain `<BS>`/`^H` - and neither Vim nor LazyVim
+has any default action for `<C-BS>`, so it was silently dropped. Fixed in nvim rather
+than kitty on purpose: a kitty-side `map ctrl+backspace send_text all \x17` would push
+`^W` into *every* program running in kitty (and mask `<C-BS>` from anything that wants
+it), and would only help inside kitty. The nvim mapping travels with the config.
+
+**Change** - `~/.config/nvim/lua/config/keymaps.lua`, appended (copy in
+[`files/`](files/.config/nvim/lua/config/keymaps.lua)):
+```lua
+vim.keymap.set({ "i", "c" }, "<C-BS>", "<C-w>", { noremap = true, desc = "Delete word before cursor" })
+vim.keymap.set({ "i", "c" }, "<C-h>", "<C-w>", { noremap = true, desc = "Delete word before cursor" })
+```
+`~/.config/nvim/cheatsheet.md` - the Insert-mode tricks line now reads
+``- `<C-w>` (or `<C-BS>` / `<C-h>`) - delete the word before the cursor``.
+
+**Verified live**: headless Neovim, forced `VeryLazy`. `nvim_get_keymap` shows both keys
+mapped to `<C-W>` in `i` and `c` modes; feeding `A<C-BS>` on `foo bar baz` left
+`foo bar `, then `A<C-h>` left `foo `. Checked beforehand that nothing (LazyVim,
+blink.cmp's default key preset) already claimed either key in those modes.
+
+**Notes**:
+- `<C-h>` is mapped too for terminals without the kitty protocol (e.g. alacritty's
+  default), which send `^H` for Ctrl+Backspace. Cost: insert-mode `<C-h>` is no longer a
+  one-char backspace (plain `<BS>` still is). Normal-mode `<C-h>` window nav is untouched.
+- A terminal that sends `^?` for Ctrl+Backspace is indistinguishable from `<BS>` and
+  can't be fixed from nvim - configure that terminal to send a distinct code instead.

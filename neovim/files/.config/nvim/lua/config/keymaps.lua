@@ -83,3 +83,13 @@ vim.keymap.set("n", "<leader>cL", function()
     end
   end)
 end, { desc = "Set Buffer Language" })
+
+-- Ctrl+Backspace deletes the word before the cursor, like everywhere else.
+-- Vim has no default for it: terminals speaking the kitty keyboard protocol
+-- (kitty, foot, ghostty, wezterm with it enabled) send a distinct <C-BS>,
+-- while legacy ones (alacritty's default) send ^H, which arrives as <C-h> -
+-- mapping both covers either. Costs insert-mode <C-h> as a one-char
+-- backspace, which plain <BS> already does. A terminal that sends ^? for it
+-- is indistinguishable from <BS> and needs fixing on the terminal side.
+vim.keymap.set({ "i", "c" }, "<C-BS>", "<C-w>", { noremap = true, desc = "Delete word before cursor" })
+vim.keymap.set({ "i", "c" }, "<C-h>", "<C-w>", { noremap = true, desc = "Delete word before cursor" })

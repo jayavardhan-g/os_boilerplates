@@ -1171,7 +1171,7 @@ them.
 - `<C-r>{reg}` - insert a register's contents
 - `<C-r>"` - the last yank · `<C-r>0` - the last explicit yank
 - `<C-r>%` - the current filename
-- `<C-w>` - delete the word before the cursor
+- `<C-w>` (or `<C-BS>` / `<C-h>`) - delete the word before the cursor
 - `<C-u>` - delete back to the start of the line
 - `<C-o>` - run **one** normal-mode command, then return to insert
 - `<C-t>` / `<C-d>` - indent / unindent the current line
