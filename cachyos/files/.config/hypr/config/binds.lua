@@ -137,8 +137,26 @@ hl.bind(mainMod .. " + F5", hl.dsp.exec_cmd("hyprctl reload"))
 --
 -- These are harmless on master/dwindle workspaces: a layout that doesn't
 -- understand the message just ignores it, so the keys simply do nothing there.
-hl.bind(mainMod .. " + U", hl.dsp.layout("colresize +conf"))
-hl.bind(mainMod .. " + SHIFT + E", hl.dsp.layout("colresize 0.95"))
+--
+-- Both drop fullscreen/maximize (SUPER+D / SUPER+F) before resizing. A bare
+-- colresize on a maximized window leaves it in a broken half-state, reproduced
+-- live on 2026-09-24: the column shrinks on screen but the window keeps
+-- fullscreen = 1, so the next relayout snaps it back to full width ("forgets"
+-- the resize), and a focus-away-and-back throws it off-screen (x=1522 on the
+-- 1600px laptop). binds:movefocus_cycles_fullscreen (misc.lua) makes this easy
+-- to hit, since maximize carries over as you move between windows. A
+-- non-maximized column keeps its width across focus and workspace switches.
+local function colresize(arg)
+	return function()
+		local w = hl.get_active_window()
+		if w and w.fullscreen ~= 0 then
+			hl.dispatch(hl.dsp.window.fullscreen({ mode = w.fullscreen }))
+		end
+		hl.dispatch(hl.dsp.layout("colresize " .. arg))
+	end
+end
+hl.bind(mainMod .. " + U", colresize("+conf"))
+hl.bind(mainMod .. " + SHIFT + E", colresize("0.95"))
 
 -- Change focus.
 --
