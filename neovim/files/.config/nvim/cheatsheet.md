@@ -1344,7 +1344,8 @@ entry under LSP.
     lua/config/keymaps.lua     custom keybindings
     lua/config/autocmds.lua    automatic behaviour
     lua/plugins/*.lua          one file per plugin override
-    cheatsheet.md              this document
+    cheatsheet.md              this document (the original)
+    cheatsheet.user.md         your edited copy, once you edit
     lua/cheatsheet.lua         the picker that shows it
 ```
 
@@ -1840,11 +1841,44 @@ popup, so neither was taken.
 - Type to fuzzy-search entry titles; the right pane previews the selection
 - `<CR>` - open that one entry on its own
 - `<Esc>` - close · `<BS>` from a single entry goes back to the list
+- `<C-e>` - edit the selected entry · `e` does the same from a single entry
+- `<C-x>` - restore the original cheatsheet (asks first)
+- `<C-o>` - edit the selected entry in the original
 
 ### How to edit it
-Lives at `~/.config/nvim/cheatsheet.md`. The format is `## Category`, then
-`### Entry title` followed by body lines. Add a new `###` block and it shows
-up immediately - the file is re-read every time you open it, no restart.
+Edit one entry at a time, never the whole file:
 
-Headings inside fenced code blocks are ignored by the parser, so examples
-containing `#` are safe.
+- `<C-e>` in the list (or `e` while reading an entry) - opens just that
+  entry in a small window. Change it, then `:w` to save only that entry.
+- `q` - close the edit window (warns if unsaved) · `:q!` - close, discard
+- `:q` with unsaved changes keeps them - reopen the entry to get them back
+- Delete everything and `:w` - removes the entry (asks first)
+- Add a new `### Title` line inside the window - saves as an extra entry
+- Keep the first line as the `### Title` heading - saving is refused
+  without it. Changing the title text itself is fine.
+
+Your edits go into your own copy, `~/.config/nvim/cheatsheet.user.md`,
+made from the original the first time you edit. The picker title says
+"(your copy)" once it exists.
+
+### Restore the original
+- `<C-x>` in the list - asks, then deletes your copy. You're back on the
+  original, however old the edits were. There's no undo.
+- The original is `~/.config/nvim/cheatsheet.md`. Nothing you do with
+  `<C-e>` ever changes it.
+
+New entries added to the original later don't reach your copy by
+themselves - a restore picks them up, but loses your edits.
+
+### Edit the original itself
+- `<C-o>` in the list - edit the selected entry in the original, same
+  window and `:w` as `<C-e>`. This changes what a restore brings back.
+
+While you have your own copy, the picker shows the copy, so a change to
+the original only shows up after a restore.
+
+### File format
+`## Category`, then `### Entry title` followed by body lines. The file is
+re-read every time the cheatsheet opens, so changes show immediately, no
+restart. Headings inside fenced code blocks are ignored by the parser, so
+examples containing `#` are safe.

@@ -498,3 +498,64 @@ get relitigated. Cheatsheet content updated in both places it named the key.
 **Verified live**: `<leader>h` resolves to `desc = "Cheatsheet"`, feeding the keys opens
 the picker (5 floating windows), and `g?` / `??` are both released - `g?` is back to
 native ROT13. 142 entries still parse.
+
+## Follow-up: edit entries in place, restore the original (2026-09-24)
+
+**What**: the cheatsheet can now be edited from the picker, one entry at a time, and
+restored to the original at any point, discarding every edit however old.
+- `<C-e>` (picker) / `e` (single-entry view): edit the selected entry in a small float;
+  `:w` writes only that entry back.
+- `<C-x>` (picker): asks, then deletes the user's copy - back to the original.
+- `<C-o>` (picker): edit the selected entry in the original itself (changes what a
+  restore brings back).
+
+**Why**: asked for an edit option plus a restore-to-default that survives months/years
+of edits; then refined to "edit just that part, no need of opening the entire file"
+(e.g. search `ciw`, fix the `cib`/`ciB` lines in that entry only).
+
+**Decisions** (asked): user copy lives at `~/.config/nvim/cheatsheet.user.md`, next to
+the original, so it can be backed up here too; keys `<C-e>`/`<C-x>`/`<C-o>` (all free in
+Snacks' picker - checked against its default `win.input/list` keys; `<a-r>` was
+initially offered and turned out to be taken).
+
+**Design**:
+- `cheatsheet.md` is the original and `<C-e>` never touches it. The first `<C-e>` copies
+  it to `cheatsheet.user.md`; the picker shows the copy whenever it exists (title
+  "Cheatsheet (your copy)").
+- The parser now records each entry's line range (`###` heading to last non-blank line)
+  and identity (category + title + occurrence number for duplicates). Saving re-reads
+  the file and re-finds the entry by identity, not by stored line numbers, so edits
+  elsewhere in between can't cause the wrong lines to be replaced.
+- Edit buffer is `buftype=acwrite` with a `BufWriteCmd` that splices the lines in.
+  First line must stay a `### ` heading (else refused); renaming the title is fine; an
+  emptied buffer deletes the entry after a confirm; extra `###` lines become new entries.
+
+**Bug caught in testing**: first version used `bufhidden=wipe`. With `'hidden'` on
+(Neovim's default), a plain `:q` on an edited-but-unsaved window closed it and wiped
+the buffer - edits silently lost. Switched to `bufhidden=hide` (verified: `:q` keeps the
+edits hidden, `:q!` unloads/discards) plus one deterministically-named buffer per entry,
+so reopening an entry brings unsaved edits back; unmodified buffers are deleted on
+`BufHidden`. Handlers are registered only when the buffer is created, else a reopened
+buffer would save twice per `:w`.
+
+**Change**: `~/.config/nvim/lua/cheatsheet.lua` (rewritten; copy in
+[`files/`](files/.config/nvim/lua/cheatsheet.lua)). `~/.config/nvim/cheatsheet.md`: "This
+cheatsheet" category now has How to use it (new keys), How to edit it, Restore the
+original, Edit the original itself, File format; "Where the config lives" lists
+`cheatsheet.user.md`.
+
+**Verified live** (headless, forced `VeryLazy`, real files backed up and restored
+afterwards, no test copy left behind): the three keys are bound in the picker input;
+first edit creates the copy and the original's checksum is unchanged; `diff` original vs
+copy shows only the added line; `:q` with unsaved edits leaves the file untouched and
+reopening restores them; one `:w` writes once; title rename + a second save land on the
+renamed entry; heading removal is refused; emptying + `:w` deletes the entry; `e` from
+the entry view opens the editor; `<C-o>` edits land in the original only; `<C-x>`
+removes the copy and the title reverts to "Cheatsheet"; unmodified edit buffers are
+cleaned up after `q`. 157 entries parse.
+
+**Notes**:
+- New entries added to the original later don't propagate into an existing copy - a
+  restore picks them up but loses the edits.
+- `cheatsheet.user.md` doesn't exist yet. Once it does, it's a real dotfile worth storing
+  in `files/` alongside the original (rule 7) - copy it whenever a session touches nvim.
