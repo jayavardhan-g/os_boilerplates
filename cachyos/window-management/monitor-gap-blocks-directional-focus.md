@@ -2,7 +2,40 @@
 
 **Date:** 2026-09-21
 **Category:** window-management
-**Files touched:** none (investigated, attempted fix reverted — `~/.config/hypr/config/binds.lua` carries a pointer comment)
+**Files touched:** 2026-09-21: none (investigated, attempted fix reverted — `~/.config/hypr/config/binds.lua` carries a pointer comment). 2026-09-26: `~/.config/hypr/config/misc.lua` (copy at [`files/.config/hypr/config/misc.lua`](../files/.config/hypr/config/misc.lua)), see the update below.
+
+## Update (2026-09-26): `window_direction_monitor_fallback = false`
+The gap did **not** fully stop SUPER+H from crossing monitors. From the laptop's
+leftmost window, SUPER+H jumped to a window on the external's workspace 4. The
+reason: scrolling-layout columns that are scrolled off-screen keep global
+coordinates outside their own monitor. ws4's Zen sat at x=-1222 (to the left of
+the laptop) and qBittorrent at x=696 (inside the laptop's region). The fallback's
+direction search considers windows on other monitors' visible workspaces by
+geometry alone, so a hidden column counted as "to the left".
+
+Measured live: with the fallback `true`, focus-left landed on ws4 every press.
+With `false`, focus stayed put on 20 of 20 presses. SUPER+SHIFT+hjkl window moves
+didn't cross monitors with either value, so turning it off loses nothing. Now set
+in `misc.lua`:
+```lua
+binds = {
+    movefocus_cycles_fullscreen = true,
+    window_direction_monitor_fallback = false,
+},
+```
+This replaces the earlier stance (a `misc.lua` comment said the fallback was
+deliberately left `true`). If the gap is ever closed (`position = "1600x0"`), turning the
+fallback back on is no longer the complete answer: re-test for off-screen scrolling
+columns first.
+
+Seen 3 times during testing, never reproduced afterwards: focus-left jumped into the
+hidden scratchpad's kitty and opened it. Hyprland's direction search skips invisible
+workspaces, so this was most likely a test artefact (a preceding test had just
+toggled the scratchpad). If SUPER+H ever opens the scratchpad, it's a separate bug.
+
+Also note `monitors.lua` currently has HDMI-A-1 at **x=1650** (a 50px gap), not the
+1700 / 100px this entry describes. The reasoning is unchanged; 50px is still 25x
+the 2px adjacency threshold.
 
 ## What
 `SUPER+L` / `SUPER+H` (and the arrow equivalents) do **not** move focus to the other
