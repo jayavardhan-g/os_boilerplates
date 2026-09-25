@@ -735,7 +735,8 @@ Works with any operator: `d`, `c`, `y`, `v`.
 ### Common text objects
 - `iw` / `aw` - word
 - `i"`, `i'`, or i-then-backtick - quoted string
-- `i(` `i[` `i{` - bracket contents (also `ib` / `iB`)
+- `i(`/`ib`, `i[`, `i{`/`iB` - bracket contents
+- `i<`, `i>` - angle bracket contents
 - `ip` / `ap` - paragraph
 - `it` / `at` - HTML/XML tag
 

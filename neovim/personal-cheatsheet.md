@@ -701,3 +701,15 @@ lenient matcher): with the "Saving & quitting" category deleted from a scratch c
 the audit flagged 16 of its items (`ZQ`, `g<C-g>`, `:wa`, `:sav`, `:up`, `:x`, `:wq`,
 `:wqa`, `:checktime`, `:pwd`, `:cd`/`:lcd`/`:tcd` and long forms, `:f`); the rest
 (`ZZ`, `:qa` …) are also documented elsewhere. Now 2735 lines.
+
+## Follow-up: user's bracket edit adopted into the original (2026-09-26)
+
+The user's own edit (made 2026-09-24 in `cheatsheet.user.md`) is now in the original
+`cheatsheet.md` too, on request - it's clearer: the old line listed `i(` `i[` `i{` and
+then "(also `ib` / `iB`)", leaving unclear which two of the three the aliases belong
+to. Now:
+```text
+- `i(`/`ib`, `i[`, `i{`/`iB` - bracket contents
+- `i<`, `i>` - angle bracket contents
+```
+After this, `diff` shows the original and the user's copy identical.
