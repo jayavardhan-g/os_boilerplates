@@ -593,3 +593,75 @@ text/plaintex/typst/gitcommit/markdown (confirmed on a `.txt`: `wrap=true spell=
 broke it at 20; `gM` lands mid-line.
 
 **Not done**: a full coverage audit against all of Vim's features - offered.
+
+## Follow-up: full coverage audit against Neovim + every plugin (2026-09-26)
+
+**What**: asked for the cheatsheet to cover everything Neovim and the installed plugins
+offer, not just what came up in conversation. Previous audits only compared keymaps
+that carry a description (279/283) plus a hand review of categories - which is how
+basics like marks, `ZZ`, `ge`, `gf` and the whole `<C-w>` family were never noticed.
+Now **2714 lines / 227 entries / 46 categories** (was ~1940 / 163).
+
+**Method** - [`cheatsheet-audit.lua`](cheatsheet-audit.lua) (kept, re-runnable) diffs
+the doc's backtick spans (fences stripped) against:
+1. Neovim's own `$VIMRUNTIME/doc/index.txt` - every built-in key and Ex command, by mode
+   (aliases described as "same as …" skipped)
+2. every described keymap live in a `.cpp` buffer, global and buffer-local, all modes
+3. every user command (`nvim_get_commands`, global + buffer)
+4. keys *inside* plugin windows: Snacks picker input/list, the explorer, blink's preset,
+   grug-far's keymaps, the Lazy UI
+
+**Before → after** (built-in index items not mentioned): insert 50 → 9, normal 47 → 24,
+window 43 → 7, `[`/`]` 28 → 2, `g` 25 → 1, `z` 20 → 2, visual 17 → 4, cmdline 17 → 4,
+Ex commands 456 → ~100. Plugin commands ~90 → 16, in-window keys ~70 → 14. Everything
+left was checked by hand and is a matcher artefact, not a gap: keys containing a
+backtick (can't be written as a span), punctuation commands (`:!` `:&` `:<`), commands
+written as abbreviations or shorthand (`:Ex`, `BufferLineCloseLeft` / `Right`), grug-far
+keys written `\r` rather than `<localleader>r`, and families covered by a stated rule
+(every `:c…` quickfix command has an `:l…` twin; `s…` = in a split; `…rewind` = `…first`;
+menu/Vimscript/provider commands named in "Everything else, briefly").
+
+**Added**: new categories *Saving & quitting*, *Tags & include search*, *Ex commands
+reference* (lines, many-places, arglist, lookups, options, abbreviations/mappings,
+sessions, build/grep, help, rarely needed, everything else); plus entries across
+existing ones - `<C-w>` keys, more motions/marks/change list, replace mode, around
+objects, every register, macro extras, select mode, manual folds, built-in insert
+completion, cmdline editing, spell/diff/quickfix/undo/recovery/terminal commands, picker
+and explorer keys, grug-far keys, gitsigns/noice/mason/lazy/treesitter/blink/matchit/
+netrw commands, status line, mouse, start screen, Snacks' automatic behaviours.
+
+**Errors in the existing content, found by checking the live setup** (all fixed):
+- Clipboard entry said plain `y` stays internal - false: LazyVim sets
+  `clipboard=unnamedplus` locally, so every yank/delete (except the custom `x`) reaches
+  the system clipboard; `<lead>y` only matters over SSH.
+- Digraph entry (`<C-k>a:`) only works without an LSP: in code, insert `<C-k>` is
+  LazyVim's Signature Help. Verified both ways.
+- Folding entry said `foldmethod=indent`; C++ buffers actually use
+  `expr` + `vim.lsp.foldexpr()`, and `zf` there fails with E350 (documented the
+  `:setlocal foldmethod=manual` workaround).
+- Autocomplete entry said the menu appears automatically (off by default since
+  2026-09-23) and that `<Tab>` accepts (blink's `enter` preset: `<Tab>` is snippet-jump;
+  accept is `<CR>` / `<C-y>`).
+- Visual `gq` listed as reflow - it runs the code formatter here (`gw` reflows).
+- Spell said "off by default" - LazyVim's `wrap_spell` autocmd turns it on for
+  markdown/text/gitcommit.
+- Customizations summary was missing this week's changes (`<C-BS>`, diagnostics /
+  autocomplete / signature defaults, `~/.clang-format`, cheatsheet edit keys).
+
+**Setup-specific facts checked before writing, not assumed**: `H`/`L` are buffer
+switching (only `M` is native); `[[`/`]]` are LSP references in code buffers;
+`<C-]>` goes through `tagfunc=vim.lsp.tagfunc`; `lazygit` isn't installed so LazyVim
+never maps `<lead>gg`/`gG`; `tohtml` is disabled in `lazy.lua` (so no `:TOhtml`);
+Neovim 0.12 replaced `:LspInfo`/`:LspRestart` with `:lsp restart|stop|enable|disable`
+and `:checkhealth vim.lsp`; `:Nex` resolves to built-in `:Next`, not `:Nexplore`;
+Snacks explorer has `replace_netrw` on (`:e .` opens it); bigfile threshold 1.5 MB;
+`completeopt` has `noselect`, so built-in completion needs `<C-n>` before `<C-y>`.
+
+**Verified**: every `:command` named in the final doc exists (`exists()`; 477 checked,
+abbreviations resolved with `nvim_parse_cmd`); 30 key sequences executed with asserted
+results (`:t.`, `:m0`, `:%norm`, `gJ`, `]p`, `g??`, `Q`, `d2i(`, `ci"` from outside,
+`/foo/e`, `/foo/+2`, `[(`, `]}`, `g;`, `gF` with `:line`, insert `<C-a>`/`<C-y>`,
+`<C-x><C-l><C-n><C-y>`, manual `zf`, `:=`, `<C-w>s`/`<C-w>o`, visual `g<C-x>`, `:uniq`,
+`:~`, `!!`, `:filter`, `:foldd`, `:folddoc`, `zy`/`zp`); picker search text contains the
+new keys. Edits went into both the original and the user's copy through anchored,
+all-or-nothing scripts; `diff` afterwards still shows only the user's own edit.

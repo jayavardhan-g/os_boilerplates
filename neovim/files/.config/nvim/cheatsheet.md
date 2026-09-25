@@ -121,6 +121,13 @@ Stock LazyVim points these at a Telescope command, which errors here -
 this setup uses the Snacks picker and has no Telescope installed. Rerouted
 to a Snacks grep pre-filled with the todo keywords.
 
+### TODO comments in a list
+- `:TodoQuickFix` / `:TodoLocList` - all TODO / FIX / NOTE comments in the
+  quickfix / location list (`:TodoQuickFix keywords=TODO,FIX` to narrow)
+
+The `:TodoTelescope`, `:TodoFzfLua` and `:TodoTrouble` variants exist, but
+need plugins that aren't installed here.
+
 ### Find history (searches, commands, notifications)
 - `<lead>s/` - previous searches
 - `<lead>sc` or `<lead>:` - command history
@@ -139,6 +146,39 @@ Useful when a message flashed past before you could read it.
 ### Clear search highlighting
 - `<Esc>` - clear the highlight from the last search
 - `<lead>ur` - redraw, clear highlight, refresh diff
+- `:noh` - the same, as a command
+
+### Search tricks
+- `?pattern` - search **backward** (`n` / `N` follow that direction)
+- `/` then `<CR>` - repeat the last search · `:s//new/` reuses it too
+- `g*` / `g#` - like `*` / `#`, but also match inside longer words
+- `/foo/e` - land on the **end** of the match · `/foo/e+1` one past it
+- `/foo/+2` - two lines below the match · `/foo/s-1` one before its start
+- `<C-g>` / `<C-t>` - while typing a search: jump to the next / previous
+  match before pressing `<CR>`
+- `q/` / `q?` - search history in an editable window
+
+### Keys inside any picker
+Files, grep, buffers, help - every picker shares these. `?` shows them all.
+
+- `<CR>` - open · `<C-s>` / `<C-v>` / `<C-t>` - in a split / vsplit / tab
+- `<Tab>` / `<S-Tab>` - mark several items · `<C-a>` - mark all
+- `<C-q>` - send the marked (or all) results to the quickfix list
+- `<C-j>` / `<C-k>` (or `<C-n>` / `<C-p>`) - move · `<C-d>` / `<C-u>` - by pages
+- `<C-f>` / `<C-b>` - scroll the preview
+- `<M-h>` - show hidden files · `<M-i>` - show git-ignored files
+- `<M-r>` - regex on/off (grep) · `<C-g>` - live grep on/off
+- `<M-p>` - preview on/off · `<M-m>` - maximise · `<M-w>` - cycle focus
+- `<M-f>` - follow symlinks · `<M-d>` - debug-inspect the item
+- `<C-w>H` / `J` / `K` / `L` - move the whole picker left / bottom / top / right
+- `<C-Up>` / `<C-Down>` - earlier / later searches
+- `<C-r><C-w>` / `<C-r><C-a>` / `<C-r><C-l>` - type in the word / WORD /
+  line from under the cursor · `<C-r><C-f>` / `<C-r><C-p>` - the file path
+- `/` - jump between the search box and the list · `<Esc>` / `q` - close
+- `<C-r>#` - type in the previous file's name · double-click - open
+
+`<M-…>` means Alt. In the list (after `<Esc>` or `/`), `j` / `k`, `gg` / `G`
+and `zt` / `zz` / `zb` work too; `i` goes back to typing.
 
 ## Replace
 
@@ -215,12 +255,59 @@ Every match is listed with the exact before/after **before** anything is
 written. Edit the Search/Replace/Files fields in place and the list updates.
 The key to actually apply is shown in the buffer's own header.
 
+### Keys inside grug-far
+`\` is the local leader here, so `\r` means backslash then `r`.
+
+- `\r` - replace everywhere · `\s` - write the edited results back to the
+  files · `\l` - just this line
+- `\j` / `\k` - apply the next / previous match only
+- `<CR>` - go to the match · `\o` - open it but stay here · `\i` - preview
+- `\q` - send results to the quickfix list
+- `\e` - switch search engine (ripgrep / ast-grep)
+- `\x` - switch the replacement to a Lua or Vimscript expression
+- `\t` / `\a` - history: open / add · `\f` - refresh · `\b` - abort
+- `\c` - close · `g?` - help
+- `:GrugFarWithin` - search only inside the visual selection
+- `\n` / `\p` - write back just the next / previous match · `\v` - just
+  this file
+- `\w` - show the ripgrep command being run
+- `:GrugFar` - open it (same as `<lead>sr`)
+
 ### Replace across files without a plugin
 - `:grep <pattern>` - fill the quickfix list (uses ripgrep)
 - `:cfdo s/old/new/g | update` - substitute in every listed file and save
 
 Faster to type than grug-far, but runs blind with no preview. Still undoable
 per file with `u`, and nothing is written until `update` runs.
+
+## Saving & quitting
+
+### Save
+- `:w` - save · `<C-s>` - save, from any mode
+- `:w {file}` - write a copy under another name (you keep editing this one)
+- `:sav {file}` - "save as": from now on you're editing the new file
+- `:up` - save only if something changed
+- `:wa` - save every changed buffer
+- `:w !{cmd}` - feed the buffer to a shell command, e.g. `:w !wc -w`
+
+### Quit
+- `:q` - close the window (refuses if that would lose unsaved changes)
+- `:q!` or `ZQ` - close, throwing changes away
+- `:wq`, `:x` or `ZZ` - save and close (`:x`/`ZZ` only write if changed)
+- `:qa` - quit everything · `:qa!` - quit, discarding everything
+- `:wqa` / `:xa` - save everything and quit
+- `<C-z>` - suspend Neovim to the shell; type `fg` there to come back
+
+### Reload, revert and file info
+- `:e` - reload the file if it changed on disk
+- `:e!` - throw away all unsaved changes and reload
+- `:checktime` - check every buffer for outside changes (runs automatically
+  when Neovim regains focus)
+- `<C-g>` - file name, line count and position
+- `g<C-g>` - word, character and byte counts (of the selection in visual)
+- `:f {name}` - rename the buffer (the file on disk is untouched)
+- `:pwd` / `:cd {dir}` - show / change the working directory ·
+  `:lcd {dir}` - for this window only
 
 ## Buffers
 
@@ -271,6 +358,40 @@ layout the way `:bdelete` does.
 - `:ls` or `:buffers` - plain list with numbers
 - `:b {number}` or `:b {name}` - switch directly
 
+### More buffer commands
+- `<C-^>` (or `:e #`) - flip to the previous buffer
+- `:bn` / `:bp` - next / previous · `:bf` / `:bl` - first / last
+- `:bm` - next buffer with unsaved changes
+- `:bd` - delete the buffer (closes its windows too) · `:bw` - wipe it
+  completely
+- `:bufdo {cmd}` - run a command in every buffer, e.g.
+  `:bufdo %s/old/new/ge | update`
+- `:ball` - open every buffer in its own window
+- `:badd {file}` - add a file to the list without opening it
+- `:ls!` - include hidden/unlisted buffers
+- `:files` - another name for `:ls`
+- `:bun` - unload a buffer but keep it listed · `:hid` - hide this window's
+  buffer (keeps its changes) · `:unh` - a window for every loaded buffer
+- `:sb {n}` / `:sbn` / `:sbp` - split and show buffer n / the next / the
+  previous
+- `:drop {file}` - edit a file, reusing a window that already shows it
+- `:vie {file}` / `:sv {file}` - open read-only (here / in a split)
+- `:nos e {file}` - open without a swap file
+- `:fin {name}` - find a file along `path` and open it (`:sf` in a split,
+  `:tabf` in a tab) · `:checkp` - list `#include`s that can't be found
+
+### Bufferline commands
+Tab-complete `:BufferLine` to see them all. The useful ones:
+
+- `:BufferLinePick` - label every tab with a letter; type one to switch
+- `:BufferLinePickClose` - same, but closes the one you pick
+- `:BufferLineSortByDirectory` / `ByExtension` / `ByRelativeDirectory` /
+  `ByTabs` - reorder the tabs
+- `:BufferLineGoToBuffer {n}` - the nth tab from the left
+- `:BufferLineCloseOthers` / `CloseLeft` / `CloseRight` - close in bulk
+- `:BufferLineTogglePin` - same as `<lead>bp`
+- `:BufferLineTabRename {name}` - label the current tab page
+
 ## Windows & Splits
 
 ### Split the window
@@ -305,6 +426,47 @@ What you see:
 
 Zoom is handy for briefly reading a file in a cramped 3-way split.
 
+### Vim's own window keys (`<C-w>`)
+`<C-w>` then one key. A count before `<C-w>` works for most, and
+`:wincmd {key}` does the same from the command line.
+
+- `<C-w>s` / `<C-w>v` - split this window horizontally / vertically
+- `<C-w>n` - new empty window · `:new` / `:vnew` - same, below / beside
+- `<C-w>h` `j` `k` `l` - move focus (what `<C-h>` … `<C-l>` do)
+- `<C-w>w` / `<C-w>W` - next / previous window · `<C-w>p` - the last one
+- `<C-w>t` / `<C-w>b` - top-left / bottom-right window
+- `<C-w>c` (or `:clo`) - close this window · `<C-w>q` - quit it like `:q`
+- `<C-w>o` (or `:on`) - close every **other** window
+
+### Resize and rearrange windows
+- `<C-w>=` - make all windows the same size
+- `<C-w>+` / `<C-w>-` - taller / shorter (`10<C-w>+` = 10 lines)
+- `<C-w>>` / `<C-w><` - wider / narrower
+- `<C-w>_` / `<C-w>|` - maximise height / width (`{n}<C-w>_` sets exactly n)
+- `:res {n}` / `:vert res {n}` - set the height / width
+- `<C-w>H` `J` `K` `L` - move this window to the far left / bottom / top / right
+- `<C-w>r` / `<C-w>R` - rotate the windows · `<C-w>x` - swap with the next
+- `<C-w>T` - move this window into its own tab
+
+### Open things in a split
+- `<C-w>f` - split and open the file path under the cursor
+- `<C-w>gf` - open it in a new tab instead
+- `<C-w>^` - split and open the previous buffer
+- `<C-w>]` - split and jump to the definition under the cursor
+- `<C-w>}` - show it in a preview window · `<C-w>z` (or `:pc`) closes that
+- `:vert {cmd}` - make a split vertical, e.g. `:vert help` ·
+  `:bo {cmd}` / `:to {cmd}` - put it at the very bottom / top
+- `:windo {cmd}` - run a command in every window of this tab
+- `:abo {cmd}` / `:bel {cmd}` - open the split above-left / below-right of
+  this one (`:lefta` / `:rightb` are the same)
+- `:hor {cmd}` - force a split to be horizontal
+- `<C-w>i` - split and jump to where the word under the cursor is declared
+  (searching `#include`s)
+- `<C-w>g]` / `<C-w>g}` - split and pick a tag / preview-pick it
+- `:fc` - close the top floating window · `:fc!` - close every float
+- `:helpc` - close the help window
+- `:redr` - redraw the screen · `:redraws` - just the status lines
+
 ## Tabs
 
 ### What a tab is here
@@ -318,6 +480,17 @@ buffers (`H`/`L`); tabs are for keeping separate workspaces.
 - `<lead><Tab>d` - close this tab
 - `<lead><Tab>o` - close all other tabs
 - Native: `:tabnew`, `gt` / `gT`, `:tabclose`
+
+### More tab commands
+- `{n}gt` - go to tab n · `g<Tab>` - the last tab you were in
+- `:tabm {n}` - move this tab (`:tabm 0` first, `:tabm` last, `:tabm +1`)
+- `:tabo` - close all other tabs · `:tabs` - list tabs and their windows
+- `:tab {cmd}` - open a command's window as a tab, e.g. `:tab help`,
+  `:tab split`
+- `:tabdo {cmd}` - run a command in every tab
+- `:tabe {file}` - open a file in a new tab
+- `:tabn` / `:tabp` - next / previous · `:tabfir` / `:tabl` - first / last
+- `:tcd {dir}` - a working directory just for this tab
 
 ## Moving around
 
@@ -391,6 +564,65 @@ Works across files, so it's the "back button" after a go-to-definition.
   `a        jump straight back
 ```
 
+### More word and line motions
+- `ge` / `gE` - back to the end of the previous word / WORD
+- `g_` - last non-blank character of the line
+- `+` / `-` - first non-blank of the next / previous line (`<CR>` = `+`)
+- `_` - first non-blank of this line (`3_` goes two lines down)
+- `(` / `)` - previous / next sentence
+- `{n}|` - column n, e.g. `20|`
+- `M` - middle line of the screen
+
+Vim's `H` / `L` (top / bottom of the screen) are buffer switching here;
+`:norm! H` still reaches the stock behaviour if you ever need it.
+
+### Jump around inside code
+- `[(` / `])` - back / forward to the `(` or `)` enclosing the cursor
+- `[{` / `]}` - to the start / end of the enclosing `{ }` block
+- `[m` / `]m` - start / end of a method (class bodies in C++/Java)
+- `[/` / `]/` - start / end of a `/* */` comment
+- `[#` / `]#` - the enclosing `#if` / `#else` / `#endif`
+- `[[` / `]]` - in code with a language server: previous / next
+  **reference** to the symbol under the cursor. Elsewhere: previous / next
+  section (a `{` in column 0)
+- `[]` / `][` - previous / next end of a section (a `}` in column 0)
+
+### Scroll a line at a time
+- `<C-e>` / `<C-y>` - scroll the view down / up one line; the cursor stays put
+- `z<CR>` / `z.` / `z-` - like `zt` / `zz` / `zb`, but also put the cursor on
+  the first non-blank
+
+### Change list: where you edited
+- `g;` / `g,` - back / forward through the places you **changed** text
+- `:changes` - list them
+
+The jump list (`<C-o>`) remembers where you jumped; this one only where you
+typed. `g;` right after an interruption takes you back to your last edit.
+
+### More marks
+- `m{A-Z}` - a **file** mark: capital letters work across files, and
+  jumping to one opens its file
+- `'{a-z}` - jump to the mark's line; a backtick instead of `'` goes to the
+  exact column
+- `''` - back to the line you were on before the last jump
+- `'.` - where you last changed text · `'^` - where you last left insert
+  (`gi` jumps there and starts inserting)
+- `'[` / `']` - start / end of the text you last changed or yanked
+- `'<` / `'>` - start / end of the last visual selection
+- `'(` / `')` - start / end of the sentence · `'{` / `'}` - of the paragraph
+- `:ma {a-z}` - set a mark from the command line (`:5ma a`) ·
+  `:cle` - clear the jump list
+- `['` / `]'` - previous / next lowercase mark
+- `:marks` - list them · `:delm a` - delete mark a · `:delm!` - delete all
+  lowercase marks
+- `g'{mark}` - jump without adding to the jump list
+
+### Open the file under the cursor
+- `gf` - open the file whose path is under the cursor
+- `gF` - same, and go to the line number after it (`main.cpp:42`)
+- `<C-w>f` / `<C-w>gf` - in a split / a new tab
+- `gx` - open a URL or path with the system's default app instead
+
 ## Editing
 
 ### Enter insert mode
@@ -452,6 +684,26 @@ replaces word after word.
 
 Indent width here is **4 spaces** (LazyVim's default is 2) **[custom]**.
 
+### Replace mode and one-key edits
+- `r{char}` - replace the character under the cursor (`3rx` = three x's)
+- `R` - replace mode: typing overwrites; `<BS>` restores the old text
+- `gR` - like `R`, but by screen width (tabs behave sensibly)
+- `s` - delete the character and insert · `S` - clear the line and insert
+- `C` / `D` - change / delete to the end of the line
+- `X` - delete the character **before** the cursor
+- `<Insert>` in insert mode - switch between insert and replace
+
+### Join, paste and case extras
+- `gJ` - join lines **without** adding a space
+- `gp` / `gP` - paste like `p` / `P`, leaving the cursor after the text
+- `]p` / `[p` - paste after / before, re-indented to fit this line
+- `g?{motion}` - ROT13 the text (`g??` for the line)
+- `ga` - show the character's code (decimal, hex, octal) · `g8` - its
+  UTF-8 bytes
+- `g&` - repeat the last `:s` on **every** line
+- `:retab` - turn tabs into spaces (using `tabstop` / `expandtab`)
+- `g@{motion}` - run a custom operator (`operatorfunc`), for plugin authors
+
 ## Text objects
 
 ### Inside vs around
@@ -478,6 +730,18 @@ Works with any operator: `d`, `c`, `y`, `v`.
 The extra "smart" objects (`af` function, `ac` class, `au` call) came from
 mini.ai, which is **disabled** in this setup.
 
+### Around objects and sentences
+- `a"` / `a'` / `a`+backtick - the string **with** its quotes (and the space
+  after it)
+- `ab` or `a(` - parentheses and contents · `aB` or `a{` - braces
+- `a[` - square brackets · `a<` - angle brackets · `at` - a tag and its tags
+- `is` / `as` - sentence (without / with the space after it)
+- `iW` / `aW` - WORD (anything between spaces)
+- A count reaches outward: `d2i(` empties the **second** enclosing `( )`
+
+Quote objects work from anywhere on the line: with the cursor before a
+string, `ci"` jumps into the next one.
+
 ## Registers & Clipboard
 
 ### How registers work
@@ -499,10 +763,12 @@ register but never touches `"0`, so your last real copy is still there.
 - `<lead>y` - yank selection/motion to the system clipboard **[custom]**
 - `<lead>Y` - yank to end of line to the system clipboard **[custom]**
 
-Plain `y` / `yy` deliberately stay internal, so ordinary yanks don't
-overwrite what you copied from a browser. Over SSH this routes through
-OSC 52, so it reaches your **local** machine's clipboard with no X or
-Wayland forwarding.
+Locally you rarely need these: LazyVim sets `clipboard=unnamedplus`, so
+**every** plain yank and delete (`y`, `yy`, `dd`, `cw` …) already lands in
+the system clipboard - only `x` doesn't (see below). `<lead>y` is for
+**SSH**, where that syncing is switched off: it sends the text through
+OSC 52 to your **local** machine's clipboard, with no X or Wayland
+forwarding.
 
 ### Delete without clobbering the clipboard
 - `x` deletes into the black-hole register **[custom]**
@@ -514,6 +780,17 @@ Wayland forwarding.
   p              stock Vim: pastes those deleted chars (copy lost)
                  here:      pastes "config"  ← still intact
 ```
+
+### Every register
+- `"a`–`"z` - named registers · `"A`–`"Z` **append** to them
+- `"0` - last yank · `"1`–`"9` - last deletes of a line or more, newest first
+- `"-` - last small (within-a-line) delete
+- `".` - last inserted text · `":` - last command · `"/` - last search
+- `"%` - current file name · `"#` - previous file name
+- `"+` - system clipboard · `"*` - primary selection (middle-click)
+- `"_` - black hole: delete without saving anything
+- `"=` - expression: `"=6*7<CR>p` pastes 42
+- `:reg` - list them all · `:reg a0` - just those
 
 ## Macros
 
@@ -532,6 +809,14 @@ Wayland forwarding.
 
 Macros are just recorded keystrokes, so anything you can type you can
 record - including `:` commands and searches.
+
+### Edit, extend and reuse macros
+- `qA` - record more onto the end of macro `a`
+- `Q` - replay the last recorded macro
+- `@:` - repeat the last `:` command (`@@` again after that)
+- `:'<,'>norm @a` - run macro `a` on every selected line
+- `"ap` - paste a macro as text, edit it, then `0"ay$` to store it back
+- `:let @a = '...'` - write a macro directly
 
 ## Comments
 
@@ -559,7 +844,9 @@ terminal is still on `<lead>ft`.
 ## Autocomplete
 
 ### Using the completion menu
-Just type - the menu appears automatically in insert mode.
+Autocomplete starts **off** in every session - `<lead>ac` turns it on, then
+the menu appears by itself as you type. While it's off, Vim's built-in
+completion still works on demand: `<C-n>` (see "Built-in completion").
 
 What you see:
 
@@ -570,10 +857,16 @@ What you see:
   │ pathsep           Variable   │
   │ pardir            Variable   │
   ╰──────────────────────────────╯
-   <CR> or <Tab> accept · <C-n>/<C-p> move · <C-e> dismiss
+   <CR> or <C-y> accept · <C-n>/<C-p> move · <C-e> dismiss
 ```
 
 Sources: LSP, snippets, file paths, and words from open buffers.
+
+- `<CR>` / `<C-y>` - accept · `<C-e>` - close the menu
+- `<C-n>` / `<C-p>` (or `<Up>` / `<Down>`) - move through the menu
+- `<C-Space>` - open the menu by hand · `<C-b>` / `<C-f>` - scroll the docs
+- `<Tab>` / `<S-Tab>` - jump between snippet placeholders (it does **not**
+  accept a suggestion)
 
 ### Turn autocomplete on or off
 - `<lead>ac` - toggle the whole completion engine (starts **off** in every session) **[custom]**
@@ -638,6 +931,12 @@ Stock LazyVim configures **no** formatter for C, C++ or Python - those come
 from language "extras" this setup skips - so `<lead>cf` silently did nothing
 on those files until this was wired up.
 
+### Formatter commands
+- `:ConformInfo` - which formatters apply to this file, and whether they're
+  installed
+- `:LazyFormatInfo` - what `<lead>cf` and format-on-save will use here
+- `:LazyFormat` - format now (same as `<lead>cf`)
+
 ## LSP (code intelligence)
 
 ### Go to things
@@ -685,6 +984,25 @@ It no longer pops up by itself when you type `(` or `,` - turned off in
 
 `grn` renames across every reference the server knows about, not just this
 file - safer than a find-and-replace for symbols.
+
+### Symbols, references and calls
+- `<lead>ss` - pick a symbol (function, class …) in this file ·
+  `<lead>sS` - across the whole project
+- `]]` / `[[` (or `<M-n>` / `<M-p>`) - next / previous reference to the
+  symbol under the cursor; every reference is highlighted as you move
+- `gai` / `gao` - incoming / outgoing calls: who calls this function, and
+  what it calls
+- `<lead>cr` - rename the symbol everywhere it's used
+- `<C-]>` - also jumps to the definition: tag jumps are answered by the
+  language server here, so no tags file is needed (`<C-t>` comes back)
+
+### Language-server commands
+- `:checkhealth vim.lsp` - which servers are attached, and their settings
+- `:lsp restart` - restart them after they get confused · `:lsp stop` ·
+  `:lsp enable {name}` / `:lsp disable {name}`
+- `:LspInstall {server}` / `:LspUninstall {server}` - via Mason
+- `:LspClangdShowSymbolInfo` - clangd's details for the symbol under the cursor
+- `:LspClangdSwitchSourceHeader` - jump between `.cpp` and `.h` (`<lead>ch`)
 
 ### Neovim's built-in LSP keys
 Neovim 0.11+ ships its own LSP bindings under `gr`, separate from LazyVim's.
@@ -839,6 +1157,20 @@ version; this one is custom.
 `<lead>gB` opens the exact line you're on, which makes it an easy way to
 link a colleague to code.
 
+### Gitsigns commands
+`:Gitsigns` then `<Tab>` lists everything. Beyond the keys above:
+
+- `:Gitsigns toggle_current_line_blame` - blame shown at the end of every line
+- `:Gitsigns toggle_word_diff` - highlight exactly which words changed
+- `:Gitsigns toggle_linehl` - tint whole changed lines
+- `:Gitsigns diffthis` - side-by-side diff against the index
+- `:Gitsigns setqflist` - every hunk in the quickfix list
+- `:Gitsigns stage_buffer` / `reset_buffer` - the whole file at once
+
+lazygit isn't installed, so LazyVim leaves out its full-screen git UI keys
+(`<lead>gg` / `<lead>gG`). Install it (`sudo pacman -S lazygit`) and restart
+Neovim to get them.
+
 ## Sessions
 
 ### Restore your layout
@@ -863,6 +1195,14 @@ puts the splits back exactly as they were.
 Opens as a floating window over the editor. `<C-/>` does this in stock
 LazyVim, but that key is the comment toggle here **[custom]**.
 
+### Vim's own terminal
+- `:term` - a terminal in the current window · `:term {cmd}` - run a
+  command in one
+- `:vsp | term` / `:tab term` - in a vertical split / a new tab
+
+`i` to type into it, `<C-\><C-n>` to get back to normal mode (see Terminal
+mode).
+
 ## File explorer
 
 ### Browse files in a tree
@@ -879,6 +1219,27 @@ LazyVim, but that key is the comment toggle here **[custom]**.
   │  ▸ cachyos/             │
   ╰─────────────────────────╯
 ```
+
+### More explorer keys
+- `[g` / `]g` - previous / next file with git changes
+- `[d` / `]d`, `[e` / `]e`, `[w` / `]w` - files with diagnostics / errors /
+  warnings
+- `Z` - collapse every folder · `<BS>` - up to the parent folder
+- `.` - make the folder under the cursor the explorer's root
+- `<C-c>` - make it this tab's working directory · `<C-t>` - open a
+  terminal there
+- `<lead>/` - grep inside that folder
+- `H` / `I` / `P` - hidden files / ignored files / preview on-off
+
+### Vim's built-in file browser
+- `:Ex` / `:Sex` / `:Vex` / `:Tex` / `:Lex` - netrw: here / split / vsplit /
+  tab / side drawer
+- `:e .` - opens the Snacks explorer here, which replaces netrw for
+  directories
+- `:Hexplore` - netrw in a split below · `:Nexplore` / `:Pexplore` - next /
+  previous file in the listed directory · `:Ntree` - make a folder netrw's root
+- `:Nread {url}` / `:Nwrite {url}` / `:Nsource {url}` - read / write / run
+  a file over scp, ftp or http · `:NetUserPass` - set the login for it
 
 ## UI toggles
 
@@ -913,6 +1274,47 @@ Press `<lead>` (or any prefix) and wait - which-key lists what's available.
 
 - `<lead>?` - buffer-local keymaps only (what's special where you are)
 - `<lead>sk` - searchable list of every keymap
+
+### Smarter `%` (matchit)
+`%` also jumps between keyword pairs - `#if` / `#else` / `#endif`,
+`if` / `else` / `end`, HTML tags - not just brackets.
+
+- `:MatchDisable` / `:MatchEnable` - turn that off / on for this buffer ·
+  `:MatchDebug` - show what it matches
+
+### Things that happen by themselves
+- **Start screen**: `f` find file · `n` new · `r` recent · `g` grep ·
+  `p` projects · `s` restore session · `c` config · `l` Lazy · `x` extras ·
+  `q` quit
+- **Smooth scrolling** (`<lead>uS`), **indent guides** with the current scope
+  highlighted (`<lead>ug`)
+- **Reference highlighting**: other uses of the word under the cursor light up
+- **Big files** (over 1.5 MB): LSP, treesitter and folds switch off so it
+  stays fast
+- **Notifications** pop up top-right; `<lead>n` shows the history
+- `:NoMatchParen` / `:DoMatchParen` - stop / restart highlighting the
+  matching bracket
+
+### Reading the status line
+Left to right:
+
+- **Mode** (NORMAL, INSERT …) · **git branch**
+- The project folder, diagnostic counts, the file icon and path
+- Keys you've typed so far · `recording @q` while recording a macro
+- Plugin updates waiting · git changes `+~-` for this file
+- How far through the file (%) · `line:column` · the clock
+
+### Using the mouse
+The mouse works everywhere (`mouse=a`).
+
+- Click to move the cursor · drag to select · double-click a word
+- Scroll wheel scrolls; with `<S-…>` a page at a time
+- Right-click - a small menu (cut, copy, paste, go to definition …)
+- `<C-LeftMouse>` - jump to the definition · `<C-RightMouse>` - back
+- Middle-click - paste the primary selection
+- Drag a window border or status line to resize
+
+Hold `<S-…>` (Shift) while dragging to use kitty's own selection instead.
 
 ## Scratch buffers
 
@@ -955,6 +1357,36 @@ Faster than counting brackets for `ci(`-style edits on nested code.
   dr  then a label   →  delete there, come straight back
 ```
 
+## Tags & include search
+
+### Tag jumps
+- `<C-]>` - jump to the definition of the word under the cursor (answered by
+  the language server here) · `<C-t>` - jump back
+- `g]` / `g<C-]>` - choose when there are several matches
+- `:tag {name}` / `:ts {name}` - jump / choose by name · `:tags` - the stack
+- In help pages `<C-]>` follows a link and `<C-t>` goes back
+
+### Search through `#include`d files
+- `[i` / `]i` - show the first line (from the top / after the cursor) that
+  uses the word under the cursor, searching included headers too
+- `[I` / `]I` - list every such line
+- `[<C-i>` / `]<C-i>` - jump to it
+- `[<C-d>` / `]<C-d>` - jump to the `#define` of the word
+- `:is /pat/` / `:il /pat/` / `:ij /pat/` / `:isp /pat/` - the same
+  searches for any pattern: show / list / jump / split
+- `:ds` / `:dli` / `:dj` / `:dsp` - the same for `#define`s
+
+### More tag commands
+- `:tn` / `:tp` / `:tf` / `:tl` - next / previous / first / last match of
+  the last tag
+- `:po` - back up the tag stack (like `<C-t>`)
+- `:sta {name}` / `:stj` / `:sts` - the same in a new split
+- `:lt {name}` - all matches into the location list
+- `:pta {name}` / `:ptj` / `:pts` - show it in the preview window ·
+  `:ped {file}` / `:pb {buf}` - preview a file / buffer ·
+  `:pp` - back up the preview's tag stack
+
+
 ## Lists: quickfix & location
 
 ### Quickfix list
@@ -980,6 +1412,26 @@ keep one list per split.
 - `]L` / `[L` - last / first
 - `]<C-l>` / `[<C-l>` - first item in the next / previous **file**
 - `]<C-q>` / `[<C-q>` - same idea for the quickfix list
+
+### Quickfix commands (built in)
+- `:cope` / `:ccl` - open / close the list · `:cw` - open only if it has
+  errors
+- `:cn` / `:cp` - next / previous item · `:cfir` / `:cla` - first / last
+- `:cc {n}` - item n · `:cnf` / `:cpf` - first item in the next / previous
+  file
+- `:cabo` / `:cbel` - the item above / below the cursor's line ·
+  `:cbef` / `:caf` - before / after the cursor
+- `:cl` - print the list · `:col` / `:cnew` - older / newer lists
+  (Neovim keeps the last ten) · `:chi` - show that history
+- `:cex {expr}` / `:cgete {expr}` / `:cadde {expr}` - fill from an
+  expression (`:cex system('make')`) · `:cf {file}` / `:cb` - from a file /
+  the current buffer · `:cg {file}` / `:cgetb` - load without jumping ·
+  `:caddf {file}` / `:caddb` - add to the list
+- `:cbo` - scroll the list window to the last entry
+- `:cq` - quit Neovim with an error code (for scripts)
+
+Every one of these has an `l…` twin for the location list: `:lop`, `:lne`,
+`:ll {n}`, `:lvim`, `:lgr`, `:lmak`, `:lhi` …
 
 ### Jump between paired things
 `[` and `]` are Vim's universal "previous / next" prefixes. In this setup:
@@ -1108,8 +1560,23 @@ Block selection plus `I` or `A` inserts the same text on every selected line.
 - `u` / `U` / `~` - lowercase / uppercase / toggle case
 - `r{char}` - replace every selected character
 - `J` - join the selected lines
-- `gq` - reflow the selection as text
+- `gw` - reflow the selection as text (`gq` runs the code formatter here)
 - `:` - starts an Ex command already scoped to the selection
+
+### More in visual mode
+- `g<C-x>` - like `g<C-a>`, but counts **down**
+- `!{cmd}` - filter the selected lines through a shell command
+- `aw`, `ip`, `i(` … - grow the selection by a text object
+- `<C-c>` - leave visual mode
+- `zy` - yank a block without the trailing spaces · `zp` / `zP` - paste a
+  block without adding them
+
+### Select mode
+What snippets use: typing **replaces** the selection, like in other
+editors.
+
+- `gh` / `gH` / `g<C-h>` - start select mode by character / line / block
+- `<C-g>` - switch between visual and select mode
 
 ## Ex command line & shell
 
@@ -1171,6 +1638,7 @@ line. To actually split lines at a width, see "Hard wrap" below.
 - `gj` / `gk` - always by screen line
 - `g0` / `g$` - start / end of the screen line (`0` / `$` use the real line)
 - `gm` - middle of the screen · `gM` - middle of the whole line
+- `g^` - first non-blank on the screen line
 
 ### Nicer-looking wrapping
 - `:setlocal breakindent` - wrapped parts keep the line's indentation
@@ -1198,9 +1666,9 @@ on either side.
 ## Folding
 
 ### How folding works here
-This setup uses `foldmethod=indent` with `foldlevel=99`, so folds follow
-indentation and everything starts **open** - you only see folds if you make
-them.
+Folds are worked out for you: by the language server in C/C++/Python files
+(`foldmethod=expr`), by treesitter or indentation elsewhere. `foldlevel=99`
+means everything starts **open** - you only see folds once you close them.
 
 - `za` - toggle the fold under the cursor
 - `zo` / `zc` - open / close it
@@ -1217,6 +1685,24 @@ them.
         log()
 ```
 
+### More fold keys
+- `zA` / `zO` / `zC` - toggle / open / close recursively (nested folds too)
+- `zr` / `zm` - open / close one more level everywhere
+- `zi` - folding on/off entirely · `zx` - reset to the calculated folds
+- `zn` / `zN` - folding off / on (`zi` flips between them)
+- `:foldo` / `:foldc` - open / close the folds in a range
+- `:foldd {cmd}` - run a command on every line **not** inside a closed
+  fold · `:folddoc {cmd}` - only on lines inside closed ones
+- `[z` / `]z` - start / end of the open fold you're in
+
+### Make folds by hand
+The automatic folds here refuse `zf` (`E350`). Switch the window first:
+`:setlocal foldmethod=manual` (or `marker` for `{{{` / `}}}` markers).
+
+- `zf{motion}` - fold that text (`zfap` a paragraph, visual `zf` a selection)
+- `zF` - fold n lines · `:{range}fo` - fold a range
+- `zd` / `zD` - delete this fold / nested folds · `zE` - delete every fold
+
 ## Insert-mode tricks
 
 ### Paste and delete without leaving insert
@@ -1232,8 +1718,45 @@ them.
 typing, without an `<Esc>` round trip.
 
 ### Special characters
-- `<C-k>` then two letters - insert a digraph, e.g. `<C-k>a:` gives ä
+- `<C-k>` then two letters - insert a digraph, e.g. `<C-k>a:` gives ä -
+  **only in files without a language server** (text, markdown). In code,
+  `<C-k>` shows function parameters instead; use `<C-v>u00e4` there
+- `:dig` - table of every digraph
 - `<C-v>u00e9` - insert a character by unicode codepoint
+
+### Built-in completion
+Works even while autocomplete is off. The menu opens with **nothing
+selected**: press `<C-n>` to move onto the first match, then `<C-y>`.
+
+- `<C-n>` / `<C-p>` - words from open buffers (next / previous match)
+- `<C-y>` - accept · `<C-e>` - cancel, restoring what you typed
+- `<C-x><C-l>` - a whole line · `<C-x><C-f>` - a file path
+- `<C-x><C-o>` - language-server suggestions (C++, Python)
+- `<C-x><C-n>` - words from this file only
+- `<C-x><C-i>` - words from this file and `#include`d files ·
+  `<C-x><C-d>` - `#define` names
+- `<C-x>s` - spelling suggestions · `<C-x><C-k>` - dictionary ·
+  `<C-x><C-t>` - thesaurus
+- `<C-x><C-v>` - Vim commands · `<C-x><C-]>` - tags ·
+  `<C-x><C-u>` - custom (`completefunc`)
+- `<C-x><C-e>` / `<C-x><C-y>` - scroll the window without leaving insert
+- `<C-x><C-p>` - like `<C-x><C-n>`, searching backwards
+- `<C-x><C-r>` - the contents of registers · `<C-x><C-z>` - stop, keeping
+  what you typed
+
+### More insert-mode keys
+- `<C-a>` - type again whatever you typed last time · `<C-@>` - same, then
+  leave insert
+- `<C-y>` / `<C-e>` (no menu open) - copy the character from the line
+  above / below
+- `<C-g>u` - start a new undo step here, mid-typing
+- `<C-g>j` / `<C-g>k` - line down / up, back at the column you started at
+- `0<C-d>` - remove all indent · `^<C-d>` - just for this line
+- `<C-v>{key}` - insert a key literally, e.g. a real tab with `<C-v><Tab>`
+- `<C-c>` - leave insert immediately (skips abbreviations and autocommands)
+- `<C-]>` - expand an abbreviation without typing a space
+- Arrow keys, `<Home>` / `<End>`, `<PageUp>` / `<PageDown>` and `<Del>`
+  work as usual · `<C-Home>` / `<C-End>` - start / end of the file
 
 ## Command-line editing
 
@@ -1253,6 +1776,17 @@ typing, without an `<Esc>` round trip.
 - `q:` - full history as an editable buffer
 - `<S-CR>` - redirect the command's output into a popup (noice)
 - `<C-s>` - toggle flash search while typing a `/` search
+
+### Moving and completing on the command line
+- `<Tab>` / `<S-Tab>` - complete commands, files, options … ·
+  `<C-n>` / `<C-p>` - next / previous in that list
+- `<C-d>` - list everything that could complete here
+- `<C-b>` / `<C-e>` (or `<Home>` / `<End>`) - start / end of the line
+- `<S-Left>` / `<S-Right>` - a word left / right
+- `<C-w>` / `<C-u>` - delete a word / everything before the cursor
+- `<S-Up>` / `<S-Down>` - history **without** the "starts with" filter
+- `<C-v>{key}` - insert a key literally
+- `<C-c>` - abandon the command line
 
 ## Repeat a change across matches
 
@@ -1317,10 +1851,20 @@ leaves the line untouched.
 For git specifically, `<lead>ghd` (gitsigns) diffs the current file against
 the index without setting this up manually.
 
+### Diff commands
+- `:diffs {file}` - split and diff against that file ·
+  `:vert diffs {file}` - side by side
+- `:diffg` / `:diffpu` - the `do` / `dp` commands, but they take a range
+  (`:'<,'>diffg`) and a buffer name when three files are open
+- `:diffp {patch}` - apply a patch file and show the result as a diff
+- `:windo diffthis` - diff every window in the tab
+- `:syncb` - line up windows that scroll together (`scrollbind`)
+
 ## Spell checking
 
 ### Turn it on and fix words
-Spell checking is **off** by default here.
+Spell checking is **off** in code, and turns **on** by itself in markdown,
+text and git commit messages.
 
 - `<lead>us` - toggle it on/off
 - `]s` / `[s` - jump to the next / previous misspelling
@@ -1338,6 +1882,15 @@ Spell checking is **off** by default here.
     Type number and <Enter>:
 ```
 
+### More spelling keys and commands
+- `zuw` - undo a `zw` · `zG` / `zW` - good / wrong for this session only
+- `:spellr` - after fixing one word with `z=`, fix every other copy of it
+- `:spellgood {word}` / `:spellwrong {word}` / `:spellundo {word}` -
+  the same as `zg` / `zw` / `zug`, typed · `:spellrare {word}` - mark rare
+- `:setlocal spelllang=en,de` - check against several languages
+- `:spellinfo` - which dictionaries are loaded · `:spelldump` - list every word
+- `:mkspell {out} {wordlist}` - build a spell file from your own word list
+
 ## Undo time travel
 
 ### Beyond plain undo
@@ -1353,6 +1906,17 @@ so undo history survives closing and reopening the file.
 
 `:earlier 1f` is the "undo everything since my last save" button.
 
+### Undo commands
+- `:u {n}` - jump to undo state n (numbers from `:undol`) · `:red` - redo
+- `:undoj` - merge the next change into the previous undo step
+- `:wundo {file}` / `:rundo {file}` - save / load the undo history
+  (`undofile` already keeps it between sessions)
+
+### Crash recovery (swap files)
+- `nvim -r {file}` or `:rec` - recover unsaved edits from a swap file
+- `:pre` - write the swap file right now · `:sw` - show its path
+- `nvim -r` - list every swap file that can be recovered
+
 ## Terminal mode
 
 ### Working inside a terminal buffer
@@ -1365,6 +1929,149 @@ so undo history survives closing and reopening the file.
 That last one is worth knowing: `<C-/>` is the comment toggle in normal and
 visual mode here, but inside a terminal buffer it still toggles the terminal
 away, which is exactly what you want.
+
+## Ex commands reference
+
+### Work on lines
+- `:t {address}` (or `:co`) - copy lines: `:t.` duplicates this line,
+  `:5t0` copies line 5 to the top
+- `:m {address}` - move lines: `:m0` to the top, `:m$` to the bottom
+- `:d` / `:y` - delete / yank lines: `:5,10d`, `:%y+` copies the whole file
+- `:j` - join lines · `:>` / `:<` - indent / unindent (`:5,10>`)
+- `:pu {reg}` - put a register on its own line (`:pu +` from the clipboard)
+- `:norm {keys}` - run normal-mode keys on each line: `:%norm A;` puts a
+  `;` at the end of every line
+- `:ce` / `:ri` / `:le` - centre / right-align / left-align lines
+- `:= {lua}` - evaluate Lua and print it, e.g. `:= vim.o.shiftwidth`
+- `:uniq` - remove duplicate lines that are **next to each other**
+  (`:sort u` if they're scattered)
+- `:&` - repeat the last `:s` · `:&&` - with its flags too
+- `:~` - repeat the last `:s`, but with the last **search** pattern
+- `:*` - the last visual area as a range (same as `:'<,'>`)
+- `:@{reg}` - run a register's text as a command · `:@@` - repeat that
+- `:!!` - repeat the last shell command
+- `:{n}` - go to line n · `:z` - print the lines around the cursor
+- `:p` / `:nu` / `:l` - print lines · with numbers · showing tabs and line
+  ends
+- `:a` / `:i` / `:c` - type lines in after / before / in place of these
+  (finish with a line holding just `.`)
+- `:go {n}` - jump to byte n of the file
+
+### Run a command in many places
+- `:bufdo` / `:windo` / `:tabdo` - every buffer / window / tab
+- `:cdo` / `:cfdo` - every quickfix entry / file · `:ldo` / `:lfdo` - the
+  location list
+- `:argdo` - every file in the argument list
+- End with `| update` to save as you go: `:cfdo %s/old/new/g | update`
+
+### The argument list
+The files you opened Neovim with - a list you can edit and walk through.
+
+- `:args` - show it · `:args *.cpp` - replace it
+- `:arga {file}` - add · `:argd {pattern}` - remove · `:argded` - dedupe
+- `:n` / `:N` - next / previous file · `:fir` / `:la` - first / last
+- `:arge {file}` - add a file and edit it · `:argu {n}` - go to file n
+- `:wn` / `:wN` - save, then next / previous file
+- `:sn` / `:sa {n}` - the same moves, in a split · `:all` / `:sal` - a
+  window for every file
+- `:argl` / `:argg` - give this window its own list / go back to the
+  shared one
+- Naming patterns: an `s` in front usually means "in a split" (`:sbf`,
+  `:sla`, `:sN`), and `…rewind` is the same as `…first` (`:rew`, `:brew`,
+  `:cr`, `:tr`, `:tabr`)
+
+### Look things up
+- `:reg` · `:marks` · `:jumps` · `:changes` · `:undol` (undo branches)
+- `:his` - command history (`:his /` for searches)
+- `:mes` - past messages (`:mes clear` empties it) · `g<` - the last
+  command's output again
+- `:map` / `:nmap` / `:imap` … - list mappings; `:verbose nmap {key}` says
+  where one was defined
+- `:com` - user commands · `:au` - autocommands · `:hi` - highlight groups
+- `:filter /{pat}/ {cmd}` - keep only matching lines of a command's
+  output, e.g. `:filter /cpp/ oldfiles`, `:filter /Lsp/ command`
+- `:scr` - loaded scripts · `:ve` - Neovim version
+- `:set` - options you've changed · `:set all` - every option ·
+  `:opt` - browse options in a window
+
+### Change options on the fly
+- `:set {opt}` / `:set no{opt}` / `:set {opt}!` - on / off / toggle
+- `:set {opt}?` - show · `:set {opt}&` - back to default
+- `:set {opt}+=x` / `-=x` - add to / remove from a list option
+- `:setl` - this buffer or window only · `:setg` - the global value
+- `:lua {code}` - run Lua · `:so %` - run the current file
+
+Changes last until you quit; permanent ones go in `lua/config/options.lua`.
+
+### Abbreviations and quick mappings
+- `:iab {abbr} {text}` - expand as you type, e.g. `:iab teh the`
+- `:ab` - list · `:una {abbr}` - remove · `:abc` - clear all
+- `:nnoremap {key} {keys}` (also `inoremap`, `vnoremap` …) - a mapping
+  for this session · `:unmap {key}` removes it · `:noremap` - all of
+  normal, visual and operator-pending at once
+- `:command {Name} {cmd}` - a user command for this session
+
+Permanent mappings live in `lua/config/keymaps.lua`.
+
+### Sessions, views and history
+- `:mks {file}` - save windows, tabs and buffers · `:so {file}` - restore
+  (persistence.nvim does this for you - see Sessions)
+- `:mkview` / `:loadview` - save / restore one window's folds and cursor
+- `:ol` - recently opened files · `:bro ol` - pick one
+- `:wsh` / `:rsh` - write / read the ShaDa file (history, marks and
+  registers kept across restarts)
+
+### Build and grep with Vim's own tools
+- `:make` - run `make` and load the errors into the quickfix list ·
+  `:comp {name}` - switch compiler
+- `:gr {pattern}` - ripgrep into the quickfix list
+- `:vim /{pattern}/ **/*.cpp` - Vim's own (slower) grep, with Vim regex
+- `:helpg {pattern}` - grep every help page
+- `!!{cmd}` - replace this line with a command's output, e.g. `!!date`
+
+### The help system
+- `:h {topic}` - e.g. `:h ciw`, `:h 'wrap'` (options in quotes),
+  `:h :sort` (commands), `:h i_CTRL-R` (insert-mode keys)
+- `<C-]>` / `<C-t>` - follow a link / go back
+- `:h index` - every built-in key and command, by mode
+- `:Man {page}` - read a man page inside Neovim
+- `<F1>` - open help · `:helpc` - close it · `:helpt {dir}` - build tags
+  for a plugin's docs
+- `:exu` / `:viu` - one-screen summaries of Ex / normal-mode commands ·
+  `:intro` - the splash screen
+
+### Rarely needed
+- `:redir @a` … `:redir END` - capture command output into a register
+- `:exe {string}` - run a command built from a string
+- `:sil {cmd}` - run quietly · `:noa {cmd}` - without autocommands
+- `:keepj` / `:lockm` - leave the jump list / marks untouched
+- `:match` / `:2match` / `:3match` - extra highlight patterns
+- `:sign` - gutter signs · `:syntime` / `:prof` - performance profiling
+- `:breaka` / `:debug` - Vimscript debugging
+- `:Open {path}` - open a path or URL with the system's default app
+- `:UpdateRemotePlugins` - re-register Python/Node remote plugins
+- The rest (GUI menus, `:lmap` keymaps for other languages …):
+  `:h ex-cmd-index`
+
+### Everything else, briefly
+Mostly for scripts, old terminals or other setups:
+
+- **Vimscript language**: `:let` `:const` `:unlet` `:lockvar` `:unlockvar`,
+  `:if` `:elseif` `:else` `:endif`, `:for` `:while` `:break` `:continue`,
+  `:function` `:return` `:call` `:delfunction`, `:try` `:catch` `:finally`
+  `:throw`, `:eval` `:echo` `:echohl` `:finish` `:defer`
+- **GUI menus**: `:menu` and its mode variants (`:amenu`, `:nmenu`,
+  `:imenu`, `:vmenu` …, plus `unmenu` / `noremenu` forms), `:emenu`,
+  `:popup` (the right-click menu is `PopUp`), `:tmenu`
+- **GUI windows**: `:gui`, `:winpos`, `:winsize`
+- **Other languages**: `:python` / `:py3` / `:pyx`, `:perl`, `:ruby` and
+  their `…do` / `…file` forms - they need that language's provider
+  (`:checkhealth provider`)
+- **Debugging**: `:breakdel`, `:breaklist`, `:debuggreedy`, `:profdel`
+- **Legacy**: `:mkexrc` / `:mkvimrc` (write out settings), `:smagic` /
+  `:snomagic`, `:language`, `:loadkeymap`, `:k` (= `:mark`), `:mode`,
+  `:sleep`, `:unsilent`, `:redrawstatus`, `:cmapclear` and the other
+  `…mapclear`s
 
 ## Config & health
 
@@ -1388,6 +2095,71 @@ where did that come from?".
 was set up directly instead (`lua/plugins/clangd.lua`) rather than through
 the extra, to avoid pulling in `clangd_extensions.nvim` - see the clangd
 entry under LSP.
+
+### Plugin manager windows
+Inside `:Lazy` (`<lead>l`):
+
+- `S` - sync (install, clean, update) · `I` - install · `U` - update ·
+  `X` - clean out removed plugins
+- `C` - check for updates · `L` - log · `R` - restore to the lockfile
+- `P` - profile startup · `D` - debug · `H` - home · `?` - help
+- `<CR>` - details · `d` - diff · `K` - hover docs · `]]` / `[[` - next /
+  previous plugin · `q` - close
+
+Inside `:Mason` (`<lead>cm`):
+
+- `i` - install · `u` - update · `U` - update all · `X` - uninstall
+- `c` / `C` - check this / all for newer versions
+- `<CR>` - expand details · `<C-f>` - filter by language · `g?` - help
+
+### More setup commands
+- `:LazyHealth` - LazyVim's health check · `:LazyRoot` - how the project
+  root was detected
+- `:MasonUpdate` - refresh Mason's package list · `:MasonLog` ·
+  `:MasonUninstallAll`
+- `:MasonUninstall {pkg}` - remove one package
+- `:BlinkCmp status` - which completion sources are active ·
+  `:BlinkCmp build` / `build-log` - rebuild its fast matcher
+- `:NoiceAll` - every message, including hidden ones · `:NoiceHistory` -
+  same as `:Noice` · `:NoicePick` / `:NoiceSnacks` - history in a picker ·
+  `:NoiceLog` · `:NoiceStats` · `:NoiceConfig` · `:NoiceRoutes` ·
+  `:NoiceViewstats` · `:NoiceDebug` (`:NoiceFzf` / `:NoiceTelescope` need
+  plugins that aren't installed)
+- `:TSInstallFromGrammar {lang}` - build a parser from source
+- `:PlenaryBustedFile {file}` / `:PlenaryBustedDirectory {dir}` - run Lua
+  tests (for plugin development)
+- `:TSInstall {lang}` / `:TSUpdate` / `:TSUninstall {lang}` - treesitter
+  parsers · `:TSLog`
+- `:InspectTree` - the syntax tree of this file · `:Inspect` - highlight
+  groups under the cursor · `:EditQuery` - try treesitter queries live
+- `:Noice` - message history · `:NoiceLast` · `:NoiceErrors` ·
+  `:NoiceDismiss` · `:NoiceDisable` / `:NoiceEnable`
+- `:WhichKey` - every mapping · `:WhichKey <lead>g` - one group
+
+### Scripting and runtime commands
+- `:ru {file}` - source a file from the runtime path · `:pa {pack}` - load
+  an optional package · `:packl` - load all of them
+- `:colo {name}` - switch colour scheme · `:sy on` / `:sy off` - syntax
+  highlighting
+- `:filet` - filetype detection status · `:setf {ft}` - set a filetype
+  unless one is already set
+- `:luaf {file}` - run a Lua file · `:luado {code}` - run Lua on each line
+  (`:luado return line:upper()`)
+- `:aug {name}` / `:do {event}` / `:doautoa {event}` - autocommand groups,
+  and firing events by hand
+- `:delc {Name}` / `:comc` - remove one / all user commands ·
+  `:mapc` / `:nmapc` … - remove all mappings of a mode
+- `:conf {cmd}` - ask instead of failing, e.g. `:conf q` offers to save
+- `:kee {cmd}` / `:keepa {cmd}` / `:keepp {cmd}` - leave marks / the
+  alternate file / the search pattern alone
+- `:sandbox {cmd}` - run a command with side effects blocked
+- `:star` / `:stopi` / `:startr` - enter insert / leave it / enter replace,
+  from a script
+- `:trust` - allow a project's `.nvim.lua` / `.exrc` to run
+- `:restart` (or `ZR`) - restart Neovim and restore the session ·
+  `:restart!` - without restoring
+- `:detach` - leave Neovim running in the background; reattach later
+- `:qa` = `:quita` · `:st` = `<C-z>` · `:asc` = `ga` · `:di` = `:reg`
 
 ### Where the config lives
 ```text
@@ -1831,6 +2603,8 @@ it.
   new  <lead>ch    switch C/C++ source <-> header (clangd)
   new  <lead>cL    set the language of the current buffer
   new  \r / \s     LeetCode run / submit (solution files only)
+  new  <C-BS>      insert/cmdline: delete the previous word (also <C-h>)
+  new  <C-e> <C-x> <C-o>   in this cheatsheet: edit / restore / edit original
 ```
 
 ### Options changed
@@ -1838,6 +2612,10 @@ it.
   shiftwidth   2  →  4
   tabstop      2  →  4
   expandtab    true (unchanged - spaces, not tabs)
+  diagnostics  shown  →  hidden at start   (<lead>ud shows them)
+  autocomplete on     →  off at start      (<lead>ac turns it on)
+  signature    pops up by itself → only on <C-k> (insert) / gK
+  clang-format 2-space LLVM → 4-space (~/.clang-format)
 ```
 
 Indent *logic* was already treesitter-based; only the width changed.
