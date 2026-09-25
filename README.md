@@ -17,6 +17,7 @@ Personal runbook of system/config decisions, split by scope:
 | [`ssh/`](ssh/ssh-term-mismatch-fix.md) | `~/.ssh/config` fixes |
 | [`vpn/`](vpn/fortinet-vpn-client.md) | Fortinet SSL-VPN client (`openfortivpn` + a fish function) |
 | [`cloudflare-warp/`](cloudflare-warp/cloudflare-warp-client.md) | Cloudflare WARP (1.1.1.1) client — AUR build via `makepkg` (no repo/Flatpak package), `warp-svc` + `warp-cli` |
+| [`qbittorrent/`](qbittorrent/qbittorrent-bound-to-warp.md) | qBittorrent bound to the `CloudflareWARP` interface (rentry torrentvpn guide), LPD off, leak-tested on ipleak.net |
 | [`spotify/`](spotify/spotify-and-spotx.md) | Spotify (Flatpak) + SpotX ad-block patch |
 | [`limine/`](limine/windows-dual-boot-order-and-bitlocker.md) | Limine bootloader — Windows dual-boot NVRAM order + BitLocker chainload fix |
 | [`xpad/`](xpad/xpad-sticky-notes.md) | Xpad desktop sticky notes — install, `--no-new`/`--quit` flags, why `sticky` (x-apps) doesn't work here |
