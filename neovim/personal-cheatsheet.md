@@ -700,4 +700,4 @@ keymaps, user commands, in-window plugin keys. **Negative test** (so 0 isn't jus
 lenient matcher): with the "Saving & quitting" category deleted from a scratch copy,
 the audit flagged 16 of its items (`ZQ`, `g<C-g>`, `:wa`, `:sav`, `:up`, `:x`, `:wq`,
 `:wqa`, `:checktime`, `:pwd`, `:cd`/`:lcd`/`:tcd` and long forms, `:f`); the rest
-(`ZZ`, `:qa` …) are also documented elsewhere. Now 2745 lines.
+(`ZZ`, `:qa` …) are also documented elsewhere. Now 2735 lines.
