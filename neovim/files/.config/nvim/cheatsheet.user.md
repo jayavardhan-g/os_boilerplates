@@ -151,6 +151,7 @@ Useful when a message flashed past before you could read it.
 ### Search tricks
 - `?pattern` - search **backward** (`n` / `N` follow that direction)
 - `/` then `<CR>` - repeat the last search · `:s//new/` reuses it too
+- `?` then `<CR>` - repeat the last search, backward
 - `g*` / `g#` - like `*` / `#`, but also match inside longer words
 - `/foo/e` - land on the **end** of the match · `/foo/e+1` one past it
 - `/foo/+2` - two lines below the match · `/foo/s-1` one before its start
@@ -262,6 +263,7 @@ The key to actually apply is shown in the buffer's own header.
   files · `\l` - just this line
 - `\j` / `\k` - apply the next / previous match only
 - `<CR>` - go to the match · `\o` - open it but stay here · `\i` - preview
+- `<CR>` in the history window (`\t`) - reuse that search
 - `\q` - send results to the quickfix list
 - `\e` - switch search engine (ripgrep / ast-grep)
 - `\x` - switch the replacement to a Lua or Vimscript expression
@@ -307,7 +309,8 @@ per file with `u`, and nothing is written until `update` runs.
 - `g<C-g>` - word, character and byte counts (of the selection in visual)
 - `:f {name}` - rename the buffer (the file on disk is untouched)
 - `:pwd` / `:cd {dir}` - show / change the working directory ·
-  `:lcd {dir}` - for this window only
+  `:lcd {dir}` - for this window only (long names `:chdir` / `:lchdir`;
+  `:tcd` / `:tchdir` for a tab)
 
 ## Buffers
 
@@ -385,10 +388,16 @@ Tab-complete `:BufferLine` to see them all. The useful ones:
 
 - `:BufferLinePick` - label every tab with a letter; type one to switch
 - `:BufferLinePickClose` - same, but closes the one you pick
-- `:BufferLineSortByDirectory` / `ByExtension` / `ByRelativeDirectory` /
-  `ByTabs` - reorder the tabs
+- `:BufferLineSortByDirectory` / `:BufferLineSortByExtension` /
+  `:BufferLineSortByRelativeDirectory` / `:BufferLineSortByTabs` - reorder
+  the tabs
 - `:BufferLineGoToBuffer {n}` - the nth tab from the left
-- `:BufferLineCloseOthers` / `CloseLeft` / `CloseRight` - close in bulk
+- `:BufferLineCloseOthers` / `:BufferLineCloseLeft` /
+  `:BufferLineCloseRight` - close in bulk
+- `:BufferLineCycleNext` / `:BufferLineCyclePrev` - what `L` / `H` run
+- `:BufferLineMoveNext` / `:BufferLineMovePrev` - what `]B` / `[B` run
+- `:BufferLineGroupToggle {name}` / `:BufferLineGroupClose {name}` -
+  collapse / close a group of tabs (no groups are set up here)
 - `:BufferLineTogglePin` - same as `<lead>bp`
 - `:BufferLineTabRename {name}` - label the current tab page
 
@@ -591,6 +600,8 @@ Vim's `H` / `L` (top / bottom of the screen) are buffer switching here;
 - `<C-e>` / `<C-y>` - scroll the view down / up one line; the cursor stays put
 - `z<CR>` / `z.` / `z-` - like `zt` / `zz` / `zb`, but also put the cursor on
   the first non-blank
+- `z+` - the next page: the line below the window moves to the top ·
+  `z^` - the previous page: the line above moves to the bottom
 
 ### Change list: where you edited
 - `g;` / `g,` - back / forward through the places you **changed** text
@@ -612,7 +623,8 @@ typed. `g;` right after an interruption takes you back to your last edit.
 - `'(` / `')` - start / end of the sentence · `'{` / `'}` - of the paragraph
 - `:ma {a-z}` - set a mark from the command line (`:5ma a`) ·
   `:cle` - clear the jump list
-- `['` / `]'` - previous / next lowercase mark
+- `['` / `]'` - previous / next lowercase mark (`[` or `]` then a backtick:
+  the same, to the exact column)
 - `:marks` - list them · `:delm a` - delete mark a · `:delm!` - delete all
   lowercase marks
 - `g'{mark}` - jump without adding to the jump list
@@ -1234,7 +1246,8 @@ mode).
 
 ### Vim's built-in file browser
 - `:Ex` / `:Sex` / `:Vex` / `:Tex` / `:Lex` - netrw: here / split / vsplit /
-  tab / side drawer
+  tab / side drawer (full names `:Explore`, `:Sexplore`, `:Vexplore`,
+  `:Texplore`, `:Lexplore`)
 - `:e .` - opens the Snacks explorer here, which replaces netrw for
   directories
 - `:Hexplore` - netrw in a split below · `:Nexplore` / `:Pexplore` - next /
@@ -1385,7 +1398,8 @@ Faster than counting brackets for `ci(`-style edits on nested code.
 - `:lt {name}` - all matches into the location list
 - `:pta {name}` / `:ptj` / `:pts` - show it in the preview window ·
   `:ped {file}` / `:pb {buf}` - preview a file / buffer ·
-  `:pp` - back up the preview's tag stack
+  `:pp` - back up the preview's tag stack · `:ptn` / `:ptp` / `:ptf` /
+  `:ptl` - next / previous / first / last match in the preview
 
 
 ## Lists: quickfix & location
@@ -1736,7 +1750,8 @@ selected**: press `<C-n>` to move onto the first match, then `<C-y>`.
 - `<C-x><C-n>` - words from this file only
 - `<C-x><C-i>` - words from this file and `#include`d files ·
   `<C-x><C-d>` - `#define` names
-- `<C-x>s` - spelling suggestions · `<C-x><C-k>` - dictionary ·
+- `<C-x>s` (or `<C-x><C-s>`) - spelling suggestions · `<C-x><C-k>` -
+  dictionary ·
   `<C-x><C-t>` - thesaurus
 - `<C-x><C-v>` - Vim commands · `<C-x><C-]>` - tags ·
   `<C-x><C-u>` - custom (`completefunc`)
@@ -1756,6 +1771,8 @@ selected**: press `<C-n>` to move onto the first match, then `<C-y>`.
 - `<C-v>{key}` - insert a key literally, e.g. a real tab with `<C-v><Tab>`
 - `<C-c>` - leave insert immediately (skips abbreviations and autocommands)
 - `<C-]>` - expand an abbreviation without typing a space
+- `<C-\><C-n>` / `<C-\><C-g>` - back to normal mode from **any** mode
+  (insert, visual, the command line, a terminal)
 - Arrow keys, `<Home>` / `<End>`, `<PageUp>` / `<PageDown>` and `<Del>`
   work as usual · `<C-Home>` / `<C-End>` - start / end of the file
 
@@ -1970,7 +1987,8 @@ The files you opened Neovim with - a list you can edit and walk through.
 
 - `:args` - show it · `:args *.cpp` - replace it
 - `:arga {file}` - add · `:argd {pattern}` - remove · `:argded` - dedupe
-- `:n` / `:N` - next / previous file · `:fir` / `:la` - first / last
+- `:n` / `:N` (or `:prev`) - next / previous file · `:fir` / `:la` - first
+  / last · `:wp` - save, then previous
 - `:arge {file}` - add a file and edit it · `:argu {n}` - go to file n
 - `:wn` / `:wN` - save, then next / previous file
 - `:sn` / `:sa {n}` - the same moves, in a split · `:all` / `:sal` - a
@@ -2006,7 +2024,9 @@ Changes last until you quit; permanent ones go in `lua/config/options.lua`.
 
 ### Abbreviations and quick mappings
 - `:iab {abbr} {text}` - expand as you type, e.g. `:iab teh the`
-- `:ab` - list · `:una {abbr}` - remove · `:abc` - clear all
+- `:ab` - list · `:una {abbr}` - remove · `:abc` - clear all ·
+  `:norea {abbr} {text}` - one that isn't expanded any further ·
+  `:ca` / `:cabc` - abbreviations for the command line
 - `:nnoremap {key} {keys}` (also `inoremap`, `vnoremap` …) - a mapping
   for this session · `:unmap {key}` removes it · `:noremap` - all of
   normal, visual and operator-pending at once
@@ -2043,6 +2063,7 @@ Permanent mappings live in `lua/config/keymaps.lua`.
 
 ### Rarely needed
 - `:redir @a` … `:redir END` - capture command output into a register
+- `:dl` - delete a line and print the next one (old line-editor habit)
 - `:exe {string}` - run a command built from a string
 - `:sil {cmd}` - run quietly · `:noa {cmd}` - without autocommands
 - `:keepj` / `:lockm` - leave the jump list / marks untouched
@@ -2064,7 +2085,7 @@ Mostly for scripts, old terminals or other setups:
 - **GUI menus**: `:menu` and its mode variants (`:amenu`, `:nmenu`,
   `:imenu`, `:vmenu` …, plus `unmenu` / `noremenu` forms), `:emenu`,
   `:popup` (the right-click menu is `PopUp`), `:tmenu`
-- **GUI windows**: `:gui`, `:winpos`, `:winsize`
+- **GUI windows**: `:gui` / `:gvim`, `:winpos`, `:winsize`
 - **Other languages**: `:python` / `:py3` / `:pyx`, `:perl`, `:ruby` and
   their `…do` / `…file` forms - they need that language's provider
   (`:checkhealth provider`)

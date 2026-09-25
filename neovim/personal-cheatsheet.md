@@ -665,3 +665,39 @@ results (`:t.`, `:m0`, `:%norm`, `gJ`, `]p`, `g??`, `Q`, `d2i(`, `ci"` from outs
 `:~`, `!!`, `:filter`, `:foldd`, `:folddoc`, `zy`/`zp`); picker search text contains the
 new keys. Edits went into both the original and the user's copy through anchored,
 all-or-nothing scripts; `diff` afterwards still shows only the user's own edit.
+
+## Follow-up: audit made exact - 0 real gaps (2026-09-26)
+
+**What**: user questioned the "after" numbers (insert 9, normal 24, Ex ~100 …) - were
+that many things still missing? Hand-classified every remaining item: ~20 were real
+(all obscure) and the rest were matcher blind spots. Added the real ones and rewrote
+[`cheatsheet-audit.lua`](cheatsheet-audit.lua) so its count means what it says.
+
+**Real gaps added**: `z+` / `z^`, `?` then `<CR>`, `[`/`]` + backtick (in words),
+`<C-\><C-n>` / `<C-\><C-g>` from any mode, `<C-x><C-s>` spelled out, `:norea`, `:ca` /
+`:cabc`, `:ptn`/`:ptp`/`:ptf`/`:ptl`, `:dl`, `:gvim`, `:prev` / `:wp`, the long names
+`:chdir`/`:lchdir`/`:tchdir`, full names of every `:BufferLine…` command
+(Cycle/Move/Group/Close/SortBy…), netrw's full names (`:Explore` …), and `<CR>` in
+grug-far's history window.
+
+**Matcher fixes** (each was producing false "missing" lines):
+- Ex commands resolved with `vim.fn.fullcommand()` (falls back to `nvim_parse_cmd`) -
+  handles abbreviations like `:Ex` and command **modifiers** (`:abo`, `:vert`, `:sil`,
+  `:noa`, `:keepj`), which `nvim_parse_cmd` rejects without a following command.
+- Punctuation commands (`:!` `:&` `:<` `:@` `:~` `:2match`) matched literally.
+- Families the doc covers by a stated rule: `:l…` twins of documented `:c…`, `…N` =
+  `…previous`, `s…` split forms, `…rewind` = `…first`, `:pt…` preview twins, menus,
+  `…mapclear`, Vimscript `end…`, provider `…do` / `…file`.
+- Plugin notation: `<localleader>` → `\`, `<Space>` → leader, `<enter>` → `<CR>`;
+  which-key group prefixes (`+noice`) skipped.
+- An explicit **ALLOW** table for what can only be written in words (keys containing a
+  backtick - can't be a span) or shorthand (`<C-w>h` `j` `k` `l`), each with where it's
+  covered. The script prints this list separately (49 items) - nothing hidden silently.
+- `CHEATSHEET=path` env var to audit any file (defaults to the user's copy).
+
+**Result**: 0 missing in every area - built-in index (all modes + Ex), described
+keymaps, user commands, in-window plugin keys. **Negative test** (so 0 isn't just a
+lenient matcher): with the "Saving & quitting" category deleted from a scratch copy,
+the audit flagged 16 of its items (`ZQ`, `g<C-g>`, `:wa`, `:sav`, `:up`, `:x`, `:wq`,
+`:wqa`, `:checktime`, `:pwd`, `:cd`/`:lcd`/`:tcd` and long forms, `:f`); the rest
+(`ZZ`, `:qa` …) are also documented elsewhere. Now 2745 lines.
