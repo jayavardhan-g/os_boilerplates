@@ -748,3 +748,52 @@ enabled()` false, blink/ghost-text/noice/inlay/Snacks states flipped, typing `(`
 longer auto-closed with autopairs disabled. Confirmed LazyVim's `wrap_spell` autocmd
 still forces wrap+spell on in markdown/text regardless (said so in those entries).
 Real config untouched by the test. 227 entries parse; coverage audit still 0 missing.
+
+## Follow-up: "Only 24?" - Default lines made complete, audit case bug (2026-09-26)
+
+**What**: user questioned whether 24 entries with a `Default:` line was really all.
+It wasn't - the 24 had been picked by reading, not by a systematic check. Now **43**
+entries have one, and the audit checks it.
+
+**Found by a systematic pass** (every entry that uses a real option name as a setting,
+a `<lead>u…` toggle, or says "by default"; noise hand-classified): diagnostics (in the
+Diagnostics category), treesitter colouring (`<lead>uT`), `textwidth` in the reflow
+entry, `spelllang`, case sensitivity (regex), `gdefault`, manual folds, `undofile`,
+`completeopt`, autocomplete in the menu entry, per-language `commentstring`,
+`keywordprg`, `hlsearch`, `path` (for `:find`). Plugin settings (patterns can't see
+them - they're described in words): picker + explorer hidden/ignored files, gitsigns
+line blame, flash in `/` search, bufferline always shown, which-key delay, LeetCode
+language.
+
+**A wrong line of mine, corrected**: "Discover any keybinding" said `timeoutlen`
+controls when the key list appears. which-key v3 has its own `opts.delay`
+(`ctx.plugin and 0 or 200`); `timeoutlen` only governs how long Vim waits for the
+rest of a multi-key mapping. Entry now gives both.
+
+**Two defaults need more than one line (found by testing, not assumed)**:
+- `vim.opt.foldmethod = "manual"` alone is overridden when clangd attaches - LazyVim
+  sets LSP (and treesitter) folds. Needs `folds = { enabled = false }` in the
+  nvim-lspconfig opts (clangd.lua) and `opts.folds = { enable = false }` in the
+  treesitter opts function (languages.lua) as well.
+- Treesitter highlighting off (`opts.highlight = { enable = false }`) works for files
+  opened later, but Snacks **quickfile** colours the file named on the command line
+  before plugins load - also needs `quickfile = { enabled = false }`.
+
+**Audit bug found and fixed**: `norm()` lowercased whole keys, so `<lead>uA` counted as
+`<lead>ua`, `gV` as `gv`, `zX` as `zx`, etc. Now only text inside `<…>` is
+case-folded. That exposed real gaps, all added: `<lead>uA` (tab line), `<lead>uG`
+(git signs), `<lead>fB`, `<lead>sR`, `[A`/`]A`, `[T`/`]T`, visual `[N`/`]N`,
+`<C-w>F`/`<C-w>gF`/`<C-w>P`, `gV`, `gQ`, `{n}go`, `zX`, `zuW`/`zuG`, insert `<C-g>U`.
+
+**Audit section 5** (new): entries that describe a setting without a `Default:` line.
+Pattern detection (full option names used as settings, `<lead>u` toggles, "by
+default" / "starts **off**") plus an `EXPECT_DEFAULT` list of the 43 titles that have
+one - plugin settings are written in words the patterns can't match, so a lost line
+is caught by name. `ALLOW_ENTRIES` covers entries that only mention an option as an
+example. **Negative test**: removing the wrap and signature-help Default lines from a
+scratch copy is flagged for both (pattern-only detection had caught just wrap).
+New entries about a plugin setting still need judgment when written.
+
+**Verified**: every new default line tested in a scratch `XDG_CONFIG_HOME` copy on a
+`.cpp` file with clangd (11 + fold/highlight combos + `path`), all passing. Real file:
+0 in every audit section; 227 entries parse; both cheatsheet files identical.

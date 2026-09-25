@@ -43,13 +43,16 @@ local ALLOW = {
   ["`"] = "backtick key (which-key marks trigger / autopair)", ["g`"] = "backtick key: More marks, in words",
   ["<C-W>J"] = "shorthand after <C-w>H", ["<C-W>K"] = "shorthand after <C-w>H", ["<C-W>L"] = "shorthand after <C-w>H",
   ["<2-LeftMouse>"] = '"double-click - open", in words',
+  ["z{char}"] = "a pointer to the z section of :help index, not a key", ["z"] = "which-key's z trigger, not a key",
 }
 local allowed = {}
 local function allow(key) if ALLOW[key] then allowed[#allowed + 1] = ("  %-18s %s"):format(key, ALLOW[key]); return true end end
 
 local function norm(s)
   s = s:gsub("<lead>", "<leader>"):gsub("<localleader>", "\\"):gsub("<[Ss]pace>", "<leader>")
-  s = s:gsub("<[Ee]nter>", "<cr>"):gsub(" ", ""):lower()
+  -- case matters outside <...> (<lead>uA is not <lead>ua, gJ is not gj);
+  -- inside it, <C-W> and <C-w> are the same key
+  s = s:gsub("<[Ee]nter>", "<cr>"):gsub(" ", ""):gsub("<[^>]+>", string.lower)
   s = s:gsub('^%["x%]', ""):gsub("{[^}]*}", ""):gsub("%[count%]", "")
   return s
 end
@@ -205,6 +208,99 @@ if okg then
 end
 for k, v in pairs(require("lazy.view.config").commands) do
   if v.key and not spans[norm(v.key)] then w(("  lazy-ui        %-16s %s"):format(v.key, k)) end
+end
+
+
+-- 5. entries that describe a setting but don't say how to make it the default
+w("=== SETTINGS WITHOUT A DEFAULT LINE ===")
+-- entries that only use an option name as an example, with why
+local ALLOW_ENTRIES = {
+  ["The help system"] = "`:h 'wrap'` is an example help topic",
+  ["Inspect this setup"] = "`:set shiftwidth?` is an example of reading any option",
+  ["Work on lines"] = "`:>` uses shiftwidth - its default is in Indent and move lines",
+  ["Join, paste and case extras"] = "`:retab` uses tabstop/expandtab - defaults in Indent and move lines",
+  ["Diff commands"] = "`:syncb` mentions scrollbind, a per-window state",
+}
+local optnames = {}
+for name in pairs(vim.api.nvim_get_all_options_info()) do optnames[name] = true end
+local entries, cur, fence = {}, nil, false
+for _, l in ipairs(doc) do
+  if l:match("^%s*```") then fence = not fence end
+  local t = not fence and l:match("^###%s+(.+)$")
+  if t then cur = { title = t, lines = {} }; entries[#entries + 1] = cur
+  elseif not fence and l:match("^##%s") then cur = nil
+  elseif cur then cur.lines[#cur.lines + 1] = l end
+end
+-- entries that had a Default line when this list was made (2026-09-26):
+-- plugin settings are described in words the patterns can't see, so
+-- losing one of these is caught by name instead
+local EXPECT_DEFAULT = {
+  ["Find text in the current file"] = true,
+  ["Find files by name"] = true,
+  ["Clear search highlighting"] = true,
+  ["More buffer commands"] = true,
+  ["Split the window"] = true,
+  ["Scroll the view"] = true,
+  ["Indent and move lines"] = true,
+  ["Copy to the system clipboard"] = true,
+  ["Toggle comments"] = true,
+  ["Using the completion menu"] = true,
+  ["Turn autocomplete on or off"] = true,
+  [ [[Inline "ghost text" is off]] ] = true,
+  ["Turn it off"] = true,
+  ["Format on save"] = true,
+  ["Function parameters (signature help)"] = true,
+  ["See the details"] = true,
+  ["Blame"] = true,
+  ["Browse files in a tree"] = true,
+  ["Common toggles (`<lead>u` prefix)"] = true,
+  ["Discover any keybinding"] = true,
+  ["Things that happen by themselves"] = true,
+  ["Reading the status line"] = true,
+  ["Using the mouse"] = true,
+  ["Look up the word under the cursor"] = true,
+  ["Inspect highlights and syntax"] = true,
+  ["Turn wrap on or off"] = true,
+  ["Nicer-looking wrapping"] = true,
+  ["Long lines with wrap off"] = true,
+  ["Hard wrap: break lines at a width"] = true,
+  ["How folding works here"] = true,
+  ["Make folds by hand"] = true,
+  ["Built-in completion"] = true,
+  ["History and extras"] = true,
+  ["Reflow paragraphs and comments"] = true,
+  ["Turn it on and fix words"] = true,
+  ["More spelling keys and commands"] = true,
+  ["Beyond plain undo"] = true,
+  ["Undo commands"] = true,
+  ["Crash recovery (swap files)"] = true,
+  ["Case sensitivity"] = true,
+  ["Live preview while substituting"] = true,
+  ["Limit a substitution to part of the file"] = true,
+  ["Solve LeetCode inside Neovim"] = true,
+}
+local missing = 0
+for _, e in ipairs(entries) do
+  local body = table.concat(e.lines, "\n")
+  local found = {}
+  for span in body:gmatch("`([^`\n]+)`") do
+    for _, pat in ipairs({ ":set%a*%s+no(%a+)", ":set%a*%s+(%a+)", "vim%.opt%.(%a+)", "vim%.o%.(%a+)", "^(%a+)=", "'(%a+)'" }) do
+      for n in span:gmatch(pat) do if optnames[n] then found[n] = true end end
+    end
+  end
+  for k in body:gmatch("`(<lead>u%a)`") do found[k] = true end
+  local lower = body:lower()
+  if lower:match("by default") or lower:match("starts %*%*off") or lower:match("starts %*%*on") then found["(says: by default)"] = true end
+  local has = body:match("\nDefaults?[ ,:]") or body:match("^Defaults?[ ,:]") or body:match("\nDefault for ")
+  if EXPECT_DEFAULT[e.title] and not has then found["(had a Default line)"] = true end
+  if next(found) and not has then
+    if ALLOW_ENTRIES[e.title] then
+      allowed[#allowed + 1] = ("  %-18s %s"):format("entry", e.title .. ": " .. ALLOW_ENTRIES[e.title])
+    else
+      missing = missing + 1
+      w(("  %-45s %s"):format(e.title, table.concat(vim.tbl_keys(found), ", ")))
+    end
+  end
 end
 
 w("=== COVERED ONLY IN PROSE / SHORTHAND (allowlist, with where) ===")

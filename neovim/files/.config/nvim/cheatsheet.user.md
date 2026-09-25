@@ -91,6 +91,10 @@ already working in.
 
 Fuzzy: typing `cfglua` will match `config/keymaps.lua`.
 
+Default: show hidden and git-ignored files without `<M-h>` / `<M-i>` -
+`picker = { sources = { files = { hidden = true, ignored = true } } }` in
+the `opts` of `lua/plugins/snacks.lua` (see UI toggles for creating it) - true/false (now both `false`).
+
 ### Find recently used files
 - `<lead>fr` - recent files (project root)
 - `<lead>fR` - recent files (cwd)
@@ -153,6 +157,9 @@ Useful when a message flashed past before you could read it.
 - `<lead>ur` - redraw, clear highlight, refresh diff
 - `:noh` - the same, as a command
 
+Default: `vim.opt.hlsearch = false` in `lua/config/options.lua` - true/false; `false`
+never highlights matches at all (now `true`).
+
 ### Search tricks
 - `?pattern` - search **backward** (`n` / `N` follow that direction)
 - `/` then `<CR>` - repeat the last search · `:s//new/` reuses it too
@@ -166,6 +173,7 @@ Useful when a message flashed past before you could read it.
 
 ### Keys inside any picker
 Files, grep, buffers, help - every picker shares these. `?` shows them all.
+`<lead>sR` reopens the last picker with its search intact.
 
 - `<CR>` - open · `<C-s>` / `<C-v>` / `<C-t>` - in a split / vsplit / tab
 - `<Tab>` / `<S-Tab>` - mark several items · `<C-a>` - mark all
@@ -334,7 +342,8 @@ and closing a window doesn't close the buffer.
 - `[b` / `]b` - same thing
 - `<lead>bb` - jump back to the buffer you were just in
 - `<lead>` then a backtick - same thing, one key shorter
-- `<lead>,` or `<lead>fb` - fuzzy-pick from open buffers
+- `<lead>,` or `<lead>fb` - fuzzy-pick from open buffers ·
+  `<lead>fB` - including hidden ones
 - `<lead>bj` - pick a buffer by an on-screen letter label
 
 What you see (the bufferline across the top):
@@ -387,6 +396,10 @@ layout the way `:bdelete` does.
 - `:nos e {file}` - open without a swap file
 - `:fin {name}` - find a file along `path` and open it (`:sf` in a split,
   `:tabf` in a tab) · `:checkp` - list `#include`s that can't be found
+
+Default for where `:find` looks: `vim.opt.path:append("**")` in
+`lua/config/options.lua` - a comma-separated list; `**` searches every
+subfolder (now `".,,"`: this file's folder and the working directory).
 
 ### Bufferline commands
 Tab-complete `:BufferLine` to see them all. The useful ones:
@@ -469,6 +482,9 @@ Zoom is handy for briefly reading a file in a cramped 3-way split.
 ### Open things in a split
 - `<C-w>f` - split and open the file path under the cursor
 - `<C-w>gf` - open it in a new tab instead
+- `<C-w>F` / `<C-w>gF` - the same, also going to the line number after
+  the name
+- `<C-w>P` - jump into the preview window
 - `<C-w>^` - split and open the previous buffer
 - `<C-w>]` - split and jump to the definition under the cursor
 - `<C-w>}` - show it in a preview window · `<C-w>z` (or `:pc`) closes that
@@ -873,6 +889,18 @@ it's right in C, C++, Python, Markdown and so on with no extra config.
 Stock LazyVim uses `<C-/>` to toggle a terminal; that moved aside - the
 terminal is still on `<lead>ft`.
 
+Default comment style for a language - add to `lua/config/autocmds.lua`
+(text in quotes, `%s` is where the text goes; now `"// %s"` for C++):
+
+```lua
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = "cpp",
+  callback = function()
+    vim.bo.commentstring = "/* %s */"
+  end,
+})
+```
+
 ### Add a comment line
 - `gco` - add a comment on a new line below
 - `gcO` - add one above
@@ -903,6 +931,10 @@ Sources: LSP, snippets, file paths, and words from open buffers.
 - `<C-Space>` - open the menu by hand · `<C-b>` / `<C-f>` - scroll the docs
 - `<Tab>` / `<S-Tab>` - jump between snippet placeholders (it does **not**
   accept a suggestion)
+
+Default: `vim.g.blink_cmp_enabled = true` in `lua/config/keymaps.lua` -
+true/false; `true` starts every session with autocomplete on (now
+`false`).
 
 ### Turn autocomplete on or off
 - `<lead>ac` - toggle the whole completion engine (starts **off** in every session) **[custom]**
@@ -1117,6 +1149,10 @@ What you see:
 - `<lead>sD` - diagnostics for this buffer only
 - `<lead>ud` - toggle diagnostics display on/off (starts **off** in every session)
 
+Default: the line `vim.diagnostic.enable(false)` in `lua/config/options.lua` - change
+`false` to `true`, or delete the line, to show them from the start (now
+hidden).
+
 ## Git
 
 ### See changed lines in the gutter
@@ -1198,6 +1234,10 @@ version; this one is custom.
   ╰──────────────────────────────────────────────╯
 ```
 
+Default: blame at the end of every line - `opts.current_line_blame = true`
+inside the `opts = function(_, opts)` of `lua/plugins/gitsigns.lua` -
+true/false (now `false`).
+
 ### GitHub
 - `<lead>gi` / `<lead>gI` - open issues / all issues
 - `<lead>gp` / `<lead>gP` - open pull requests / all
@@ -1270,6 +1310,11 @@ mode).
   ╰─────────────────────────╯
 ```
 
+Default: show hidden and ignored files without `H` / `I` - add
+`explorer = { hidden = true, ignored = true }` next to `files` in the
+`picker.sources` of `lua/plugins/snacks.lua` - true/false (now both
+`false`).
+
 ### More explorer keys
 - `[g` / `]g` - previous / next file with git changes
 - `[d` / `]d`, `[e` / `]e`, `[w` / `]w` - files with diagnostics / errors /
@@ -1302,6 +1347,8 @@ mode).
 - `<lead>uh` - inlay hints
 - `<lead>uc` - conceal level
 - `<lead>ug` - indent guides
+- `<lead>uA` - the tab line (buffer tabs) · `<lead>uG` - git signs in the
+  gutter
 - `<lead>uz` - zen mode · `<lead>uZ` - zoom
 - `<lead>ub` - dark/light background
 - `<lead>uC` - pick a colorscheme
@@ -1331,6 +1378,10 @@ Defaults for these (what each starts as):
   `"light"` (now `"dark"`)
 - colorscheme: `colorscheme = "kitty"` in `lua/plugins/disabled.lua` - text,
   the scheme's name (now `"kitty"`)
+- tab line: create `lua/plugins/bufferline.lua` with `return { {`
+  `"akinsho/bufferline.nvim", opts = { options = { always_show_bufferline`
+  `= true } } } }` - true/false; `true` shows it even with one buffer (now
+  `false`)
 - autocomplete: see "Turn autocomplete on or off"
 - zen, zoom, dimming and dismissing notifications are one-off actions -
   nothing to set
@@ -1350,8 +1401,12 @@ Press `<lead>` (or any prefix) and wait - which-key lists what's available.
 - `<lead>?` - buffer-local keymaps only (what's special where you are)
 - `<lead>sk` - searchable list of every keymap
 
-Default: `vim.opt.timeoutlen = 300` in `lua/config/options.lua` - a number of milliseconds
-to wait before the key list appears (now `300`).
+Defaults:
+- which-key's popup delay: create `lua/plugins/which-key.lua` with
+  `return { { "folke/which-key.nvim", opts = { delay = 500 } } }` - a number
+  of milliseconds (now 200, and instant for plugin keys)
+- `vim.opt.timeoutlen = 300` in `lua/config/options.lua` - milliseconds Vim
+  waits for the rest of a multi-key shortcut (now `300`)
 
 ### Smarter `%` (matchit)
 `%` also jumps between keyword pairs - `#if` / `#else` / `#endif`,
@@ -1421,7 +1476,8 @@ Grows the selection outward following the code's structure, not lines.
 - `<C-Space>` - grow the selection to the next bigger node
 - `<BS>` - shrink it back again (while selecting)
 - `an` / `in` - select the parent (outer) / child (inner) node
-- `]n` / `[n` - next / previous sibling node
+- `]n` / `[n` - next / previous sibling node · `]N` / `[N` (visual) -
+  select the next / previous sibling
 
 What you see:
 
@@ -1538,7 +1594,8 @@ pattern instead of a separate key per feature. The full set of targets:
 `]b` `[b` buffers, `]d` `[d` diagnostics, `]e` `[e` errors, `]w` `[w`
 warnings, `]q` `[q` quickfix, `]l` `[l` loclist, `]a` `[a` arguments,
 `]t` `[t` todo comments, `]h` `[h` git hunks, `]n` `[n` syntax nodes, and
-`]<C-t>` `[<C-t>` the tag stack.
+`]<C-t>` `[<C-t>` the tag stack. Capitals jump to the last / first:
+`]A` `[A` argument-list file, `]T` `[T` tag match.
 
 ## Tools & meta
 
@@ -1557,6 +1614,9 @@ a plugin URL inside a config file.
 - `<lead>K` - run `keywordprg` on the word (man page for shell, etc.)
 
 Different from `K`, which is LSP hover documentation.
+
+Default: `vim.opt.keywordprg = ":help"` in `lua/config/options.lua` - text in quotes: the
+command `<lead>K` runs (now `":Man"`, man pages).
 
 ### Manage plugins and tools
 - `<lead>l` - open Lazy: update, clean, profile startup, see what loaded
@@ -1581,6 +1641,13 @@ per-plugin startup time.
 
 The answer to "why is this word coloured like that?" - `<lead>ui` names the
 exact highlight group in play.
+
+Default for `<lead>uT` (treesitter colouring, now on) - to start with it
+off, both:
+- `opts.highlight = { enable = false }` inside the `opts = function(_, opts)`
+  of `lua/plugins/languages.lua` - true/false
+- `quickfile = { enabled = false }` in the `opts` of `lua/plugins/snacks.lua` (see UI toggles for creating it) - otherwise the file
+  you name on the command line is coloured before your setting applies
 
 ### Browse icons
 - `<lead>si` - search and insert nerd-font icons
@@ -1663,6 +1730,8 @@ Block selection plus `I` or `A` inserts the same text on every selected line.
 ### Select mode
 What snippets use: typing **replaces** the selection, like in other
 editors.
+
+`gV` - in a select-mode mapping, don't reselect the old area afterwards
 
 - `gh` / `gH` / `g<C-h>` - start select mode by character / line / block
 - `<C-g>` - switch between visual and select mode
@@ -1794,7 +1863,8 @@ deeper than this start closed; `0` opens every file fully folded (now
 ### More fold keys
 - `zA` / `zO` / `zC` - toggle / open / close recursively (nested folds too)
 - `zr` / `zm` - open / close one more level everywhere
-- `zi` - folding on/off entirely · `zx` - reset to the calculated folds
+- `zi` - folding on/off entirely · `zx` - reset to the calculated folds ·
+  `zX` - the same without opening the fold you're in
 - `zn` / `zN` - folding off / on (`zi` flips between them)
 - `:foldo` / `:foldc` - open / close the folds in a range
 - `:foldd {cmd}` - run a command on every line **not** inside a closed
@@ -1808,6 +1878,14 @@ The automatic folds here refuse `zf` (`E350`). Switch the window first:
 - `zf{motion}` - fold that text (`zfap` a paragraph, visual `zf` a selection)
 - `zF` - fold n lines · `:{range}fo` - fold a range
 - `zd` / `zD` - delete this fold / nested folds · `zE` - delete every fold
+
+Default - to always fold by hand, all three (a plain `foldmethod` line on
+its own is overridden when a language server attaches):
+- `vim.opt.foldmethod = "manual"` in `lua/config/options.lua` - text in quotes
+- `folds = { enabled = false },` inside `opts = {` in
+  `lua/plugins/clangd.lua`, next to `servers` - true/false
+- `opts.folds = { enable = false }` inside the `opts = function(_, opts)`
+  of `lua/plugins/languages.lua` - true/false
 
 ## Insert-mode tricks
 
@@ -1851,12 +1929,17 @@ selected**: press `<C-n>` to move onto the first match, then `<C-y>`.
 - `<C-x><C-r>` - the contents of registers · `<C-x><C-z>` - stop, keeping
   what you typed
 
+Default: `vim.opt.completeopt = "menu,menuone"` in `lua/config/options.lua` - text in
+quotes; without `noselect` the first match is picked straight away (now
+`"menu,menuone,noselect"`).
+
 ### More insert-mode keys
 - `<C-a>` - type again whatever you typed last time · `<C-@>` - same, then
   leave insert
 - `<C-y>` / `<C-e>` (no menu open) - copy the character from the line
   above / below
-- `<C-g>u` - start a new undo step here, mid-typing
+- `<C-g>u` - start a new undo step here, mid-typing · `<C-g>U` - don't
+  start one on the next arrow-key move (for mappings)
 - `<C-g>j` / `<C-g>k` - line down / up, back at the column you started at
 - `0<C-d>` - remove all indent · `^<C-d>` - just for this line
 - `<C-v>{key}` - insert a key literally, e.g. a real tab with `<C-v><Tab>`
@@ -1885,6 +1968,10 @@ selected**: press `<C-n>` to move onto the first match, then `<C-y>`.
 - `q:` - full history as an editable buffer
 - `<S-CR>` - redirect the command's output into a popup (noice)
 - `<C-s>` - toggle flash search while typing a `/` search
+
+Default for `<C-s>`: `opts = { modes = { search = { enabled = true } } },`
+in the flash spec in `lua/plugins/flash.lua` - true/false; `true` shows
+flash labels in every `/` search (now `false`).
 
 ### Moving and completing on the command line
 - `<Tab>` / `<S-Tab>` - complete commands, files, options … ·
@@ -1945,6 +2032,9 @@ falls back to 79 columns. Set `:setlocal textwidth=72` first if you want a
 specific width. Verified: with `textwidth=60`, `gww` wraps at 60 while `gqq`
 leaves the line untouched.
 
+Default: `vim.opt.textwidth = 72` in `lua/config/options.lua` - a number; `0` falls back
+to 79 for `gw` and never breaks lines as you type (now `0`).
+
 ## Diff mode
 
 ### Compare two files
@@ -1998,13 +2088,17 @@ Defaults, in `lua/config/options.lua`:
   languages (now `"en"`)
 
 ### More spelling keys and commands
-- `zuw` - undo a `zw` · `zG` / `zW` - good / wrong for this session only
+- `zuw` - undo a `zw` · `zG` / `zW` - good / wrong for this session only ·
+  `zuG` / `zuW` - undo those
 - `:spellr` - after fixing one word with `z=`, fix every other copy of it
 - `:spellgood {word}` / `:spellwrong {word}` / `:spellundo {word}` -
   the same as `zg` / `zw` / `zug`, typed · `:spellrare {word}` - mark rare
 - `:setlocal spelllang=en,de` - check against several languages
 - `:spellinfo` - which dictionaries are loaded · `:spelldump` - list every word
 - `:mkspell {out} {wordlist}` - build a spell file from your own word list
+
+Default: `vim.opt.spelllang = "en,de"` in `lua/config/options.lua` - text in quotes,
+comma-separated (now `"en"`).
 
 ## Undo time travel
 
@@ -2020,6 +2114,9 @@ so undo history survives closing and reopening the file.
 - `<lead>su` - browse the whole tree visually
 
 `:earlier 1f` is the "undo everything since my last save" button.
+
+Default: `vim.opt.undofile = true` in `lua/config/options.lua` - true/false: keep undo
+history after closing a file (now `true`).
 
 ### Undo commands
 - `:u {n}` - jump to undo state n (numbers from `:undol`) · `:red` - redo
@@ -2079,7 +2176,8 @@ away, which is exactly what you want.
   ends
 - `:a` / `:i` / `:c` - type lines in after / before / in place of these
   (finish with a line holding just `.`)
-- `:go {n}` - jump to byte n of the file
+- `:go {n}` (or `{n}go`) - jump to byte n of the file
+- `gQ` - Ex mode: type `:` commands one after another (`:vi` leaves)
 
 ### Run a command in many places
 - `:bufdo` / `:windo` / `:tabdo` - every buffer / window / tab
@@ -2455,6 +2553,10 @@ This setup has `ignorecase` **on** with `smartcase` **on** (verified).
 
 `\c` and `\C` work anywhere in the pattern, not just at the start.
 
+Defaults, in `lua/config/options.lua`:
+- `vim.opt.ignorecase = true` / `vim.opt.smartcase = true` - true/false
+  (now both `true`)
+
 ### Live preview while substituting
 `inccommand` is set to `nosplit`, so as you type a `:%s/.../.../` command the
 matches highlight and the replacement is previewed **in the buffer**, before
@@ -2482,6 +2584,9 @@ change, `""` turns it off (now `"nosplit"`).
 
 Without the `g` flag only the **first** match on each line is replaced
 (`gdefault` is off here, which is the standard behaviour).
+
+Default: `vim.opt.gdefault = true` in `lua/config/options.lua` - true/false; `true` makes
+every `:s` replace all matches on a line without `/g` (now `false`).
 
 ### Run a command on every matching line: :g and :v
 `:g` is one of the most powerful things in Vim and has no keybinding - it
@@ -2583,6 +2688,9 @@ LeetCode compiles C++ with `bits/stdc++.h` and `using namespace std`
 implicitly; the plugin adds those two lines to each solution (folded out of
 the way) so clangd doesn't flag every `vector` as undeclared, and strips
 them again before anything is sent.
+
+Default: `lang = "cpp"` in `lua/plugins/leetcode.lua` - text in quotes,
+e.g. `"python3"`, `"java"` (now `"cpp"`).
 
 ### Log in (first time only)
 - `:Leet cookie update`, or the "Sign in" button on the start screen
