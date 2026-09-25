@@ -713,3 +713,38 @@ to. Now:
 - `i<`, `i>` - angle bracket contents
 ```
 After this, `diff` shows the original and the user's copy identical.
+
+## Follow-up: "Default:" lines - how to make each setting permanent (2026-09-26)
+
+**What**: asked whether the cheatsheet says, per setting, which line to change/add to
+change its default, and whether the value is a number or boolean. It didn't (only
+general "put it in options.lua" pointers). Offered three layouts - a separate
+"Changing defaults" category, a line inside each entry, or both - and the user chose
+**inside each entry**: that's where they'd look, and a separate category would
+compete with the real entry in every search.
+
+**Change**: 24 entries (both files) end with a `Default:` line giving the exact line,
+the file, the value type (true/false, a number, text in quotes, with what the values
+mean) and the current value. Covered: wrap, breakindent/showbreak, sidescrolloff,
+textwidth/colorcolumn, every `<lead>u` toggle (numbers, spell, diagnostics, inlay
+hints, conceal, indent guides, smooth scroll, animations, background, colorscheme;
+zen/zoom/dim/notifications noted as one-off actions), autocomplete, ghost text,
+signature popup, autopairs, format on save, ignorecase/smartcase, inccommand,
+clipboard, foldlevel, spell/spelllang, mouse, scrolloff, indent width/expandtab
+(+ `~/.clang-format`), splitbelow/splitright, undofile/undolevels, swapfile,
+timeoutlen, laststatus, bigfile size.
+
+**How each is stored was read from source, not assumed**: LazyVim's `<lead>u` toggles
+are mostly plain options, but autoformat and animations are `vim.g.autoformat` /
+`vim.g.snacks_animate`, autopairs is `vim.g.minipairs_disable`, inlay hints are the
+nvim-lspconfig `opts.inlay_hints.enabled`, indent guides / smooth scroll / bigfile are
+Snacks opts (a new `lua/plugins/snacks.lua`, following the one-file-per-plugin
+convention).
+
+**Verified**: copied the whole config to a scratch `XDG_CONFIG_HOME`, wrote every
+proposed line there with a non-default value, and started Neovim on a `.cpp` file with
+clangd: **41/41 checks passed** - every option read back as set, `LazyVim.format.
+enabled()` false, blink/ghost-text/noice/inlay/Snacks states flipped, typing `(` no
+longer auto-closed with autopairs disabled. Confirmed LazyVim's `wrap_spell` autocmd
+still forces wrap+spell on in markdown/text regardless (said so in those entries).
+Real config untouched by the test. 227 entries parse; coverage audit still 0 missing.

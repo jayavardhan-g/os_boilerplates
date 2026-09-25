@@ -51,6 +51,11 @@ What you see:
 Search is case-smart: an all-lowercase pattern matches any case, but adding
 a capital makes it case-sensitive. `<Esc>` clears the highlighting.
 
+Defaults, in `lua/config/options.lua`:
+- `vim.opt.ignorecase = true` - true/false: ignore case in searches
+- `vim.opt.smartcase = true` - true/false: …unless the pattern has a capital
+(now both `true`)
+
 ### Find text across the whole project
 - `<lead>sg` - live grep from the project root (ripgrep)
 - `<lead>/` - same thing, shorter key
@@ -421,6 +426,10 @@ What you see:
    <C-h>  ←→  <C-l>              <C-k> ↑↓ <C-j>
 ```
 
+Defaults, in `lua/config/options.lua`:
+- `vim.opt.splitbelow = true` / `vim.opt.splitright = true` - true/false:
+  new splits open below / to the right (now both `true`)
+
 ### Move between splits
 - `<C-h>` / `<C-j>` / `<C-k>` / `<C-l>` - focus left / down / up / right
 - `<C-w>` then `<lead>` - window "hydra" mode: repeatable window commands
@@ -554,6 +563,9 @@ and substitute-line. Moved here so `s` / `S` keep working normally.
 
 `zz` is the one worth building a habit around - it re-centres the line
 you're working on without moving the cursor.
+
+Default: `vim.opt.scrolloff = 4` in `lua/config/options.lua` - a number: lines kept visible
+above and below the cursor (now `4`). Smooth scrolling: see UI toggles.
 
 ### Jump list (go back and forward)
 - `<C-o>` - go back to where you were
@@ -696,6 +708,13 @@ replaces word after word.
 
 Indent width here is **4 spaces** (LazyVim's default is 2) **[custom]**.
 
+Defaults - these lines are already in `lua/config/options.lua`, change the numbers:
+- `vim.opt.shiftwidth = 4` / `vim.opt.tabstop = 4` - numbers (now `4`)
+- `vim.opt.expandtab = true` - true/false: spaces instead of tabs (now
+  `true`)
+C/C++ formatting (`<lead>cf`) reads `IndentWidth: 4` in `~/.clang-format`
+instead - change it there too.
+
 ### Replace mode and one-key edits
 - `r{char}` - replace the character under the cursor (`3rx` = three x's)
 - `R` - replace mode: typing overwrites; `<BS>` restores the old text
@@ -782,6 +801,10 @@ the system clipboard - only `x` doesn't (see below). `<lead>y` is for
 **SSH**, where that syncing is switched off: it sends the text through
 OSC 52 to your **local** machine's clipboard, with no X or Wayland
 forwarding.
+
+Default: `vim.opt.clipboard = "unnamedplus"` in `lua/config/options.lua` - text in quotes;
+`""` keeps plain yanks inside Neovim (now `"unnamedplus"`, or `""` over
+SSH). A line in options.lua applies over SSH too.
 
 ### Delete without clobbering the clipboard
 - `x` deletes into the black-hole register **[custom]**
@@ -887,6 +910,9 @@ Sources: LSP, snippets, file paths, and words from open buffers.
 Added because the menu gets in the way when writing prose or moving fast.
 Shows an on/off notification and stays that way until you flip it back.
 
+Default: `vim.g.blink_cmp_enabled = false` in `lua/config/keymaps.lua` -
+true/false (now `false`).
+
 ### Inline "ghost text" is off
 Stock LazyVim previews the top candidate as greyed-out text ahead of your
 cursor (`ghost_text` follows `vim.g.ai_cmp`, on by default). Disabled here
@@ -896,6 +922,9 @@ cursor (`ghost_text` follows `vim.g.ai_cmp`, on by default). Disabled here
   stock:  os.pa|th          ← "th" shown ghosted ahead of the cursor
   here:   os.pa|            ← nothing until you pick from the menu
 ```
+
+Default: `ghost_text = { enabled = false }` in `lua/plugins/completion.lua` -
+true/false (now `false`).
 
 ## Autopairs
 
@@ -911,6 +940,9 @@ cursor (`ghost_text` follows `vim.g.ai_cmp`, on by default). Disabled here
 
 ### Turn it off
 - `<lead>up` - toggle autopairs (a stock LazyVim toggle, not custom)
+
+Default: `vim.g.minipairs_disable = true` in `lua/config/options.lua` - true/false; `true`
+starts with autopairs off (now not set, so autopairs is on).
 
 ## Formatting
 
@@ -933,6 +965,8 @@ On by default. Toggles:
 
 Turn it off temporarily when touching a file whose existing style you don't
 want to churn.
+
+Default: `vim.g.autoformat = false` in `lua/config/options.lua` - true/false (now `true`).
 
 ### Which formatter runs
 - C / C++ -> `clang-format` **[custom]** (already on the system via `clang`)
@@ -987,6 +1021,9 @@ What you see:
 
 It no longer pops up by itself when you type `(` or `,` - turned off in
 `lua/plugins/noice.lua`. Ask for it when you need it.
+
+Default: `auto_open = { enabled = false }` in `lua/plugins/noice.lua` -
+true/false; `true` brings back the automatic popup (now `false`).
 
 ### Change code
 - `<lead>ca` - code actions (quick fixes, refactors)
@@ -1274,6 +1311,30 @@ mode).
 
 Press `<lead>u` and pause to see the whole list with on/off state.
 
+Defaults for these (what each starts as):
+- numbers: `vim.opt.number = true` / `vim.opt.relativenumber = true` in
+  `lua/config/options.lua` - true/false (now both `true`)
+- spell: `vim.opt.spell = true` in `lua/config/options.lua` - true/false (now `false`;
+  markdown and text turn it on regardless)
+- diagnostics: the line `vim.diagnostic.enable(false)` in `lua/config/options.lua` -
+  change `false` to `true`, or delete the line (now hidden)
+- inlay hints: add `inlay_hints = { enabled = false },` inside `opts = {`
+  in `lua/plugins/clangd.lua`, next to `servers` - true/false (now `true`)
+- conceal: `vim.opt.conceallevel = 0` in `lua/config/options.lua` - a number 0-3; 0 shows
+  markdown symbols as typed (now `2`)
+- indent guides / smooth scroll: create `lua/plugins/snacks.lua` with
+  `return { { "folke/snacks.nvim", opts = { indent = { enabled = false },`
+  `scroll = { enabled = false } } } }` - true/false (now both `true`)
+- animations: `vim.g.snacks_animate = false` in `lua/config/options.lua` - true/false (now
+  `true`)
+- background: `vim.opt.background = "light"` in `lua/config/options.lua` - `"dark"` or
+  `"light"` (now `"dark"`)
+- colorscheme: `colorscheme = "kitty"` in `lua/plugins/disabled.lua` - text,
+  the scheme's name (now `"kitty"`)
+- autocomplete: see "Turn autocomplete on or off"
+- zen, zoom, dimming and dismissing notifications are one-off actions -
+  nothing to set
+
 ### Discover any keybinding
 Press `<lead>` (or any prefix) and wait - which-key lists what's available.
 
@@ -1288,6 +1349,9 @@ Press `<lead>` (or any prefix) and wait - which-key lists what's available.
 
 - `<lead>?` - buffer-local keymaps only (what's special where you are)
 - `<lead>sk` - searchable list of every keymap
+
+Default: `vim.opt.timeoutlen = 300` in `lua/config/options.lua` - a number of milliseconds
+to wait before the key list appears (now `300`).
 
 ### Smarter `%` (matchit)
 `%` also jumps between keyword pairs - `#if` / `#else` / `#endif`,
@@ -1309,6 +1373,10 @@ Press `<lead>` (or any prefix) and wait - which-key lists what's available.
 - `:NoMatchParen` / `:DoMatchParen` - stop / restart highlighting the
   matching bracket
 
+Default for big files: `bigfile = { size = 3 * 1024 * 1024 }` in the
+`opts` of `lua/plugins/snacks.lua` (see UI toggles) - a number of bytes
+(now 1.5 MB). Smooth scroll and indent guides: see UI toggles.
+
 ### Reading the status line
 Left to right:
 
@@ -1317,6 +1385,9 @@ Left to right:
 - Keys you've typed so far · `recording @q` while recording a macro
 - Plugin updates waiting · git changes `+~-` for this file
 - How far through the file (%) · `line:column` · the clock
+
+Default: `vim.opt.laststatus = 3` in `lua/config/options.lua` - a number: `3` one line for
+all windows, `2` one per window, `0` none (now `3`).
 
 ### Using the mouse
 The mouse works everywhere (`mouse=a`).
@@ -1329,6 +1400,9 @@ The mouse works everywhere (`mouse=a`).
 - Drag a window border or status line to resize
 
 Hold `<S-…>` (Shift) while dragging to use kitty's own selection instead.
+
+Default: `vim.opt.mouse = "a"` in `lua/config/options.lua` - text in quotes: `"a"`
+everywhere, `"n"` normal mode only, `""` off (now `"a"`).
 
 ## Scratch buffers
 
@@ -1646,6 +1720,9 @@ check). `linebreak` is on, so lines wrap between words, not mid-word.
 This is soft wrap: only the display changes - the file still has one long
 line. To actually split lines at a width, see "Hard wrap" below.
 
+Default: `vim.opt.wrap = true` in `lua/config/options.lua` - true/false (now `false`).
+Markdown, text and git commits turn it on regardless.
+
 ### Moving through wrapped lines
 - `j` / `k` - move by **screen** line when a line wraps (LazyVim makes them
   `gj`/`gk`). With a count, `5j` still moves 5 real lines, so relative line
@@ -1659,8 +1736,9 @@ line. To actually split lines at a width, see "Hard wrap" below.
 - `:setlocal breakindent` - wrapped parts keep the line's indentation
 - `:set showbreak=↪\ ` - mark where a line continues with ↪
 
-Both last until you close Neovim - add them to `lua/config/options.lua` to
-keep them.
+Defaults, in `lua/config/options.lua`:
+- `vim.opt.breakindent = true` - true/false (now `false`)
+- `vim.opt.showbreak = "↪ "` - text in quotes (now `""`, no marker)
 
 ### Long lines with wrap off
 - `zl` / `zh` - scroll the view right / left one column (`10zl` for ten)
@@ -1670,6 +1748,9 @@ keep them.
 The view also follows the cursor by itself, keeping 8 columns of context
 on either side.
 
+Default: `vim.opt.sidescrolloff = 8` in `lua/config/options.lua` - a number: columns kept
+visible either side of the cursor (now `8`).
+
 ### Hard wrap: break lines at a width
 - `:setlocal textwidth=80` - typing past column 80 starts a new line by
   itself, and `gw` reflows to 80
@@ -1677,6 +1758,12 @@ on either side.
   comments")
 - `:setlocal colorcolumn=80` - draw a guide line at column 80
 - `:setlocal textwidth=0` - back to the default (no automatic breaking)
+
+Defaults, in `lua/config/options.lua`:
+- `vim.opt.textwidth = 80` - a number; `0` means no automatic breaking
+  (now `0`)
+- `vim.opt.colorcolumn = "80"` - text in quotes; `"80,120"` for two lines,
+  `""` for none (now `""`)
 
 ## Folding
 
@@ -1699,6 +1786,10 @@ means everything starts **open** - you only see folds once you close them.
         run()
         log()
 ```
+
+Default: `vim.opt.foldlevel = 99` in `lua/config/options.lua` - a number: folds nested
+deeper than this start closed; `0` opens every file fully folded (now
+`99`). How folds are found is picked per file automatically.
 
 ### More fold keys
 - `zA` / `zO` / `zC` - toggle / open / close recursively (nested folds too)
@@ -1900,6 +1991,12 @@ text and git commit messages.
     Type number and <Enter>:
 ```
 
+Defaults, in `lua/config/options.lua`:
+- `vim.opt.spell = true` - true/false (now `false`; markdown and text are
+  on regardless)
+- `vim.opt.spelllang = "en,de"` - text in quotes, comma-separated
+  languages (now `"en"`)
+
 ### More spelling keys and commands
 - `zuw` - undo a `zw` · `zG` / `zW` - good / wrong for this session only
 - `:spellr` - after fixing one word with `z=`, fix every other copy of it
@@ -1930,10 +2027,19 @@ so undo history survives closing and reopening the file.
 - `:wundo {file}` / `:rundo {file}` - save / load the undo history
   (`undofile` already keeps it between sessions)
 
+Defaults, in `lua/config/options.lua`:
+- `vim.opt.undofile = true` - true/false: keep undo history after closing
+  a file (now `true`)
+- `vim.opt.undolevels = 10000` - a number: how many changes are kept (now
+  `10000`)
+
 ### Crash recovery (swap files)
 - `nvim -r {file}` or `:rec` - recover unsaved edits from a swap file
 - `:pre` - write the swap file right now · `:sw` - show its path
 - `nvim -r` - list every swap file that can be recovered
+
+Default: `vim.opt.swapfile = false` in `lua/config/options.lua` - true/false (now `true`).
+LeetCode sessions already turn it off.
 
 ## Terminal mode
 
@@ -2359,6 +2465,10 @@ you press Enter.
      ▲ every match already shows as "delay" while you type;
        press <Esc> and nothing was ever changed
 ```
+
+Default: `vim.opt.inccommand = "nosplit"` in `lua/config/options.lua` - text in quotes:
+`"nosplit"` previews in place, `"split"` adds a window listing every
+change, `""` turns it off (now `"nosplit"`).
 
 ### Limit a substitution to part of the file
 ```text
