@@ -1151,6 +1151,50 @@ Far easier than arrowing through history for something long.
 - `:sort n` - numeric sort (so 9 comes before 10)
 - `:'<,'>sort` - sort just the selection
 
+## Word wrap & long lines
+
+### Turn wrap on or off
+- `<lead>uw` - toggle wrap for this window
+- `:set wrap` / `:set nowrap` - the same by command
+
+Off by default for code, so long lines run off the right edge. Markdown,
+text and git commit messages turn it **on** by themselves (along with spell
+check). `linebreak` is on, so lines wrap between words, not mid-word.
+
+This is soft wrap: only the display changes - the file still has one long
+line. To actually split lines at a width, see "Hard wrap" below.
+
+### Moving through wrapped lines
+- `j` / `k` - move by **screen** line when a line wraps (LazyVim makes them
+  `gj`/`gk`). With a count, `5j` still moves 5 real lines, so relative line
+  numbers keep working
+- `gj` / `gk` - always by screen line
+- `g0` / `g$` - start / end of the screen line (`0` / `$` use the real line)
+- `gm` - middle of the screen · `gM` - middle of the whole line
+
+### Nicer-looking wrapping
+- `:setlocal breakindent` - wrapped parts keep the line's indentation
+- `:set showbreak=↪\ ` - mark where a line continues with ↪
+
+Both last until you close Neovim - add them to `lua/config/options.lua` to
+keep them.
+
+### Long lines with wrap off
+- `zl` / `zh` - scroll the view right / left one column (`10zl` for ten)
+- `zL` / `zH` - half a screen right / left
+- `zs` / `ze` - scroll so the cursor is at the left / right edge
+
+The view also follows the cursor by itself, keeping 8 columns of context
+on either side.
+
+### Hard wrap: break lines at a width
+- `:setlocal textwidth=80` - typing past column 80 starts a new line by
+  itself, and `gw` reflows to 80
+- `gwip` - reflow a paragraph to that width (see "Reflow paragraphs and
+  comments")
+- `:setlocal colorcolumn=80` - draw a guide line at column 80
+- `:setlocal textwidth=0` - back to the default (no automatic breaking)
+
 ## Folding
 
 ### How folding works here

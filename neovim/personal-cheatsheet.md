@@ -574,3 +574,22 @@ signature-help entry (see [[languages-and-lsp]]). Handled by inserting the ident
 entry into the copy at the same spot - purely additive, the user's own edit untouched;
 `diff` original vs copy afterwards shows only the user's edit. Do the same for future
 entries rather than asking the user to restore (which would discard their edits).
+
+## Follow-up: "Word wrap & long lines" category (2026-09-25)
+
+**What**: user pointed out the cheatsheet should cover Vim features generally, and word
+wrap was missing - only a one-line `<lead>uw` toggle and the `gw` hard-reflow entry
+existed. Audit found none of `gj`/`gk`/`g0`/`g$`/`gm`, `linebreak`/`breakindent`/
+`showbreak`/`colorcolumn`, or `zh`/`zl`/`zs`/`ze` anywhere. Added a category (5 entries,
+placed before "Folding"): turn wrap on/off, moving through wrapped lines, nicer-looking
+wrapping, long lines with wrap off, hard wrap at a width. Inserted identically into the
+original and the user's copy (additive; user's edit untouched). 163 entries now.
+
+**Facts checked live before writing** (not from memory): LazyVim sets `wrap=false`,
+`linebreak=true`, `sidescrolloff=8`; its `wrap_spell` autocmd turns wrap+spell on for
+text/plaintex/typst/gitcommit/markdown (confirmed on a `.txt`: `wrap=true spell=true`);
+`j`/`k` are mapped to `v:count == 0 ? 'gj' : 'j'`; `<leader>uw` is "Toggle Wrap";
+`formatoptions=jcroqlnt` includes `t`, and with `textwidth=20` typing a long sentence
+broke it at 20; `gM` lands mid-line.
+
+**Not done**: a full coverage audit against all of Vim's features - offered.
