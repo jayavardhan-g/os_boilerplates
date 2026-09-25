@@ -160,22 +160,76 @@ hl.bind(mainMod .. " + SHIFT + E", colresize("0.95"))
 
 -- Change focus.
 --
--- These do NOT cross to the other monitor at the screen edge, and making them
--- do so was tried and abandoned on 2026-09-21 — see [[monitor-gap-blocks-
--- directional-focus]] in the configs repo for the full reasoning. Short
--- version: the 100px dead zone in monitors.lua is 50x Hyprland's 2px adjacency
--- threshold, so its built-in binds:window_direction_monitor_fallback can never
--- see a window on the far screen; and a Lua fallback can't detect the edge
--- either, because the scrolling layout WRAPS focus to the first column instead
--- of refusing to move. Use SUPER+bracketleft / SUPER+bracketright to change
--- monitor deliberately.
-hl.bind(mainMod .. " + Left", hl.dsp.focus({ direction = "left" }))
-hl.bind(mainMod .. " + Right", hl.dsp.focus({ direction = "right" }))
+-- Left/right cross to the neighbouring monitor at the screen edge (added
+-- 2026-09-26, see [[monitor-gap-blocks-directional-focus]] in the configs repo).
+-- Hyprland's own binds:window_direction_monitor_fallback can't do this: the
+-- dead zone in monitors.lua is far wider than its 2px adjacency threshold, and
+-- with it on, it matched scrolled-off columns on the other monitor instead, so
+-- it's disabled in misc.lua. That's also what makes this helper possible. With
+-- the fallback off, focus at the edge STAYS PUT instead of wrapping (the
+-- blocker for the 2026-09-21 attempt), so "focused window didn't change" now
+-- reliably means "at the edge".
+--
+-- On the far monitor it picks the nearest window actually on screen (leftmost
+-- when going right, rightmost when going left), or the on-screen fullscreen
+-- window if there is one. Scrolled-off columns are skipped, so crossing never
+-- changes what that monitor shows. Known gap: if the scratchpad is open on the
+-- far monitor, the window underneath is picked, since the Lua API doesn't say
+-- whether a special workspace is shown.
+local function focus_across(dir)
+	return function()
+		local before = hl.get_active_window()
+		hl.dispatch(hl.dsp.focus({ direction = dir }))
+		local after = hl.get_active_window()
+		if before and after and before.address ~= after.address then return end
+
+		local cur
+		for _, m in ipairs(hl.get_monitors()) do
+			if (before and m.name == before.monitor.name) or (not before and m.focused) then cur = m end
+		end
+		if not cur then return end
+
+		local target
+		for _, m in ipairs(hl.get_monitors()) do
+			if dir == "right" and m.x > cur.x and (not target or m.x < target.x) then target = m end
+			if dir == "left" and m.x < cur.x and (not target or m.x > target.x) then target = m end
+		end
+		if not target then return end
+
+		-- monitor x/width are physical px; window coordinates are logical
+		local x0, x1 = target.x, target.x + target.width / target.scale
+		local pick
+		for _, w in ipairs(hl.get_windows({})) do
+			if w.workspace and w.workspace.id == target.active_workspace.id and w.mapped and not w.hidden then
+				local wx0, wx1 = w.at.x, w.at.x + w.size.x
+				if wx1 > x0 and wx0 < x1 then
+					if w.fullscreen ~= 0 then
+						pick = w
+						break
+					end
+					if not pick
+						or (dir == "right" and wx0 < pick.at.x)
+						or (dir == "left" and wx1 > pick.at.x + pick.size.x) then
+						pick = w
+					end
+				end
+			end
+		end
+
+		if pick then
+			hl.dispatch(hl.dsp.focus({ window = pick }))
+		else
+			hl.dispatch(hl.dsp.focus({ monitor = target.name }))
+		end
+	end
+end
+hl.bind(mainMod .. " + Left", focus_across("left"))
+hl.bind(mainMod .. " + Right", focus_across("right"))
 hl.bind(mainMod .. " + Up", hl.dsp.focus({ direction = "up" }))
 hl.bind(mainMod .. " + Down", hl.dsp.focus({ direction = "down" }))
 -- vim-style focus movement
-hl.bind(mainMod .. " + H", hl.dsp.focus({ direction = "left" }))
-hl.bind(mainMod .. " + L", hl.dsp.focus({ direction = "right" }))
+hl.bind(mainMod .. " + H", focus_across("left"))
+hl.bind(mainMod .. " + L", focus_across("right"))
 hl.bind(mainMod .. " + K", hl.dsp.focus({ direction = "up" }))
 hl.bind(mainMod .. " + J", hl.dsp.focus({ direction = "down" }))
 hl.bind("ALT + Tab", hl.dsp.window.cycle_next())
