@@ -1,7 +1,7 @@
 # Languages, formatters and language servers
 
 **Category:** neovim
-**Files touched:** `lua/plugins/languages.lua`, `lua/plugins/formatting.lua`, `lua/plugins/clangd.lua`, `lua/config/options.lua` (all under `~/.config/nvim/`), `~/.clang-format`; copies in [`files/`](files/)
+**Files touched:** `lua/plugins/languages.lua`, `lua/plugins/formatting.lua`, `lua/plugins/clangd.lua`, `lua/config/options.lua`, `lua/plugins/noice.lua` (all under `~/.config/nvim/`), `~/.clang-format`; copies in [`files/`](files/)
 
 Which languages this setup supports and how: the treesitter trim, formatters (clang-format, ruff) and the clangd language server. Part of the LazyVim setup - see [[lazyvim-migration]] for the migration itself and the index of all topic files.
 
@@ -212,3 +212,39 @@ column 2.
 LeetCode-shaped `.cpp` under `$HOME`: body indented 4, `public:` at column 0.
 
 **Notes**: files outside `$HOME` (e.g. `/tmp`) still get LLVM's 2-space default.
+
+## Follow-up: signature help no longer pops up by itself (2026-09-25)
+
+**What**: the floating window showing a function's parameters while typing a call
+(e.g. `max(const Tp &a, const Tp &b) -> const Tp &` after `std::max(`) is noice.nvim's
+LSP signature help - LazyVim enables noice, and noice's default
+`lsp.signature.auto_open` opens it on every LSP trigger character (`(`, `,`). Turned
+the auto-open off; it's shown on demand with `<C-k>` (insert) / `gK` (normal), both
+LazyVim's existing "Signature Help" keys. Not blink.cmp: its signature feature is left
+disabled by LazyVim, and its documentation window only accompanies the completion menu
+(itself off by default now).
+
+**Why**: user wanted it only when asked for, same as diagnostics and autocomplete.
+
+**Change** - `~/.config/nvim/lua/plugins/noice.lua` (new; copy in
+[`files/`](files/.config/nvim/lua/plugins/noice.lua)):
+```lua
+return {
+  {
+    "folke/noice.nvim",
+    opts = {
+      lsp = {
+        signature = {
+          auto_open = { enabled = false },
+        },
+      },
+    },
+  },
+}
+```
+Cheatsheet: new "Function parameters (signature help)" entry in the LSP category, added
+to both the original and the user's copy (see [[personal-cheatsheet]]).
+
+**Verified live**: headless Neovim, clangd attached, forced `VeryLazy`: merged
+`auto_open.enabled` is `false`; typing `std::max(1, ` opened no float; `<C-k>` then
+opened the noice float reading `max(const Tp &a, const Tp &b) -> const Tp &`.

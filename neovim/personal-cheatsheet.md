@@ -559,3 +559,18 @@ cleaned up after `q`. 157 entries parse.
   restore picks them up but loses the edits.
 - `cheatsheet.user.md` doesn't exist yet. Once it does, it's a real dotfile worth storing
   in `files/` alongside the original (rule 7) - copy it whenever a session touches nvim.
+
+## Follow-up: user's copy now exists and is stored here (2026-09-25)
+
+`~/.config/nvim/cheatsheet.user.md` was created by the user on 2026-09-24 (first `<C-e>`
+edit). Their one edit so far: the bracket text-objects line in "Text objects" now reads
+`` `i(`/`ib`, `i[`, `i{`/`iB` `` plus a new `` `i<`, `i>` `` line. Stored in
+[`files/`](files/.config/nvim/cheatsheet.user.md) from now on - re-copy whenever it
+changes.
+
+**Adding new entries while a copy exists**: the picker reads the copy, so a new entry
+added only to the original is invisible (the tradeoff noted above). First real case: the
+signature-help entry (see [[languages-and-lsp]]). Handled by inserting the identical
+entry into the copy at the same spot - purely additive, the user's own edit untouched;
+`diff` original vs copy afterwards shows only the user's edit. Do the same for future
+entries rather than asking the user to restore (which would discard their edits).
