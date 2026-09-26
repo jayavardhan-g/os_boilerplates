@@ -1,8 +1,8 @@
 # Unlock BitLocker drives via Bitwarden + cryptsetup, no retyped passwords
 
-**Date:** 2026-09-20 (updated 2026-09-20 — renamed `bw-*` → `bit-*`, added interactive menu, `laptop` drive moved out to a plain `fstab` auto-mount since it's no longer BitLocker-encrypted)
+**Date:** 2026-09-20 (updated 2026-09-20 — renamed `bw-*` → `bit-*`, added interactive menu, `laptop` drive moved out to a plain `fstab` auto-mount since it's no longer BitLocker-encrypted; updated 2026-09-27 — `nani` permanently decrypted too, moved to `fstab` at `/mnt/study`)
 **Category:** bitlocker (portable — works on any Linux distro/WM, `cryptsetup` + `bw` CLI only)
-**Files touched:** `~/.local/bin/bit-unlock`, `~/.local/bin/bit-lock`, `/etc/fstab`
+**Files touched:** `~/.local/bin/bit-unlock`, `~/.local/bin/bit-lock`, `/etc/fstab` — stored copies in `bitlocker/files/.local/bin/` and `bitlocker/files/etc/fstab`
 
 ## What
 Two scripts to unlock and mount **actually BitLocker-encrypted** NTFS partitions from
@@ -22,19 +22,14 @@ Known drives (hardcoded in both scripts):
 
 | Name | Partition | Bitwarden item | Mount point |
 |---|---|---|---|
-| `nani` | `/dev/nvme0n1p6` | `BitLocker - NANI New Volume` | `/mnt/nani-newvolume` |
 | `desktop-c` | `/dev/nvme0n1p3` | `BitLocker - DESKTOP-8PKDU07 C:` | `/mnt/desktop-c` |
 
-`nani`/`nani-newvolume` is internally labeled `Study` (NTFS volume label) — the BitLocker
-container's outer label (`NANI New Volume`) is just a legacy hostname from whenever it was
-originally encrypted, unrelated to what the volume is actually used for.
-
 `desktop-c` is the actual live dual-booted Windows OS partition (`DESKTOP-8PKDU07`), not a
-data-only drive like `nani` — worth being more deliberate about writes there.
+data-only drive — worth being more deliberate about writes there.
 
-**`laptop` (`/dev/nvme0n1p5`) is deliberately not in this tool at all anymore** — see
-Notes for why, and how it's mounted instead (a plain `/etc/fstab` entry, always mounted,
-no unlock step of any kind since there's nothing to unlock).
+**`laptop` (`/dev/nvme0n1p5`, now `Data`) and `nani` (`/dev/nvme0n1p6`, now `Study`) are
+deliberately not in this tool at all anymore** — both were permanently decrypted, so
+they're plain `/etc/fstab` entries, always mounted, no unlock step of any kind. See Notes.
 
 ## Why
 Wanted to stop retyping BitLocker passwords/recovery keys by hand every time, since all of
@@ -68,11 +63,11 @@ single unlock, without ever writing the vault's session key to persistent disk.
 #   bit-unlock <name> [<name>...]  unlock one or more specific drives
 set -uo pipefail
 
-KNOWN_DRIVES=(nani desktop-c)
+KNOWN_DRIVES=(desktop-c)
 
 usage() {
     echo "usage: bit-unlock [all|both]" >&2
-    echo "   or: bit-unlock <name> [<name>...]   (nani | desktop-c)" >&2
+    echo "   or: bit-unlock <name> [<name>...]   (desktop-c)" >&2
     echo "   with no arguments, shows an interactive menu" >&2
     exit 1
 }
@@ -115,18 +110,13 @@ unlock_one() {
     local NAME="$1" PART LABEL ITEM
 
     case "$NAME" in
-        nani)
-            PART="/dev/nvme0n1p6"
-            LABEL="nani-newvolume"
-            ITEM="BitLocker - NANI New Volume"
-            ;;
         desktop-c)
             PART="/dev/nvme0n1p3"
             LABEL="desktop-c"
             ITEM="BitLocker - DESKTOP-8PKDU07 C:"
             ;;
         *)
-            echo "unknown drive '$NAME' — known: nani, desktop-c" >&2
+            echo "unknown drive '$NAME' — known: desktop-c" >&2
             return 1
             ;;
     esac
@@ -197,11 +187,11 @@ exit "$STATUS"
 #   bit-lock <name> [<name>...]  close one or more specific drives
 set -uo pipefail
 
-KNOWN_DRIVES=(nani desktop-c)
+KNOWN_DRIVES=(desktop-c)
 
 usage() {
     echo "usage: bit-lock [all|both]" >&2
-    echo "   or: bit-lock <name> [<name>...]   (nani | desktop-c)" >&2
+    echo "   or: bit-lock <name> [<name>...]   (desktop-c)" >&2
     echo "   with no arguments, shows an interactive menu" >&2
     exit 1
 }
@@ -242,7 +232,6 @@ prompt_drives() {
 
 label_for() {
     case "$1" in
-        nani) echo "nani-newvolume" ;;
         desktop-c) echo "desktop-c" ;;
         *) return 1 ;;
     esac
@@ -251,7 +240,7 @@ label_for() {
 lock_one() {
     local NAME="$1" LABEL
     LABEL="$(label_for "$NAME")" || {
-        echo "unknown drive '$NAME' — known: nani, desktop-c" >&2
+        echo "unknown drive '$NAME' — known: desktop-c" >&2
         return 1
     }
 
@@ -286,12 +275,14 @@ done
 exit "$STATUS"
 ```
 
-`/etc/fstab` (appended line, for `laptop`, now labeled `Data`):
+`/etc/fstab` (appended lines — `laptop`, now labeled `Data`; `nani`, now labeled `Study`):
 ```
-UUID=5AAAE353AAE32A69 /mnt/data ntfs3 uid=1000,gid=1000,nofail 0 0
+UUID=5AAAE353AAE32A69  /mnt/data   ntfs3  uid=1000,gid=1000,nofail                 0  0
+UUID=1246765146763597  /mnt/study  ntfs3  uid=1000,gid=1000,nofail,x-mount.mkdir  0  0
 ```
-Confirmed working: `findmnt --verify` reports success, mounted read-write at `/mnt/data`
-owned by the invoking user, auto-mounts on boot with no interaction needed.
+Both confirmed working after a reboot: mounted read-write, owned by the invoking user,
+no interaction needed. `x-mount.mkdir` creates the mount point if it's missing, so a fresh
+setup doesn't need a separate `mkdir`.
 
 Both scripts are `chmod 755`; `~/.local/bin` is already on `PATH`.
 
@@ -342,6 +333,16 @@ into the password field, named to match the table above.
   `fstab` line uses the new UUID (`5AAAE353AAE32A69`), confirmed via `lsblk`. The old
   Bitwarden item (`BitLocker - LAPTOP-ADN3BT6B New Volume`) is unused now; left in the
   vault as a historical record rather than deleted, but its password is meaningless.
+- **`nani` also permanently decrypted on 2026-09-27 and moved to `fstab` at `/mnt/study`.**
+  Unlike `laptop`, this was a choice, not a technical dead end: it's a data-only drive
+  judged not to hold anything sensitive, and the unlock step wasn't worth it. Decrypted
+  from Windows (`DESKTOP-8PKDU07`) with `manage-bde -off <letter>:` after unlocking it
+  there — the same route as `laptop`. `cryptsetup` can only open/close a BitLocker
+  container, it can't safely remove one. The NTFS UUID (`1246765146763597`) stayed the same
+  after decryption, unlike `laptop`'s. The mount point changed from `/mnt/nani-newvolume` to
+  `/mnt/study`, matching its `Study` label the way `Data` is at `/mnt/data`. The old
+  `/mnt/nani-newvolume` and `/mnt/laptop-newvolume` directories are empty leftovers.
+  Bitwarden item `BitLocker - NANI New Volume` is now unused.
 - **Dolphin can't unlock the BitLocker drives via its own GUI prompt** — no polkit
   authentication agent is installed on this machine (only bare `polkitd`, no
   `polkit-kde-agent`/`polkit-gnome`/etc.), so udisks2's encrypted-unlock authorization
@@ -356,18 +357,16 @@ into the password field, named to match the table above.
   prompts with a numbered list (space-separated numbers, or `a` for all) instead of
   requiring drive names as command-line arguments. Direct arguments (`all`/`both`, or one
   or more names) still work unprompted, for scripting/muscle-memory use.
-- **Future plan, not yet decided/scheduled — may decrypt `nani` and `desktop-c` too and
-  migrate to VeraCrypt.** Thinking about using VeraCrypt instead of BitLocker for
-  encrypting drives going forward — plausibly prompted by the two BitLocker limitations hit
-  above (the unrepairable size-mismatch metadata, and Windows 10 Home being unable to
-  re-enable BitLocker on a data volume at all, which is what led to `laptop`/`Data` staying
-  unencrypted). VeraCrypt is cross-platform and edition-independent, which would sidestep
-  both. As of 2026-09-20, the plan if this happens: decrypt `nani` (`/dev/nvme0n1p6`) and
-  `desktop-c` (`/dev/nvme0n1p3`) — the two remaining BitLocker drives — and re-encrypt them
-  with VeraCrypt instead, "if necessary" (not committed to a timeline). If/when this
+- **Future plan, not yet decided/scheduled — may decrypt `desktop-c` and migrate it to
+  VeraCrypt.** Thinking about using VeraCrypt instead of BitLocker for encrypting drives
+  going forward — plausibly prompted by the two BitLocker limitations hit above (the
+  unrepairable size-mismatch metadata, and Windows 10 Home being unable to re-enable
+  BitLocker on a data volume at all). VeraCrypt is cross-platform and edition-independent,
+  which would sidestep both. The 2026-09-20 version of this plan covered `nani` too; `nani`
+  has since been left unencrypted instead (see above), so `desktop-c` (`/dev/nvme0n1p3`) is
+  the only remaining candidate, "if necessary" (not committed to a timeline). If/when this
   happens, `bit-unlock`/`bit-lock` would need real changes, not just a new table row —
   they're built specifically around `cryptsetup --type bitlk`, and VeraCrypt volumes aren't
   unlocked that way (VeraCrypt has its own CLI/format, not handled by `cryptsetup`'s
   `bitlk` support). `desktop-c` is the live Windows OS partition, not just a data volume —
-  worth extra care/planning if it's ever actually decrypted, unlike the two data-only
-  drives.
+  worth extra care/planning if it's ever actually decrypted.

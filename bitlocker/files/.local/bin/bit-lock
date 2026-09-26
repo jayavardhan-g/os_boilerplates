@@ -1,0 +1,95 @@
+#!/usr/bin/env bash
+# Cleanly unmount and close drives previously opened with bit-unlock.
+# With no arguments, shows an interactive menu to pick which drive(s).
+# Usage:
+#   bit-lock                     interactive menu
+#   bit-lock all | both          close every known drive
+#   bit-lock <name> [<name>...]  close one or more specific drives
+set -uo pipefail
+
+KNOWN_DRIVES=(desktop-c)
+
+usage() {
+    echo "usage: bit-lock [all|both]" >&2
+    echo "   or: bit-lock <name> [<name>...]   (desktop-c)" >&2
+    echo "   with no arguments, shows an interactive menu" >&2
+    exit 1
+}
+
+prompt_drives() {
+    echo "Which drive(s) to lock?" >&2
+    local i=1
+    for d in "${KNOWN_DRIVES[@]}"; do
+        echo "  $i) $d" >&2
+        i=$((i + 1))
+    done
+    echo "  a) all" >&2
+    read -r -p "Enter numbers separated by spaces, or 'a' for all: " REPLY
+
+    local choice DRIVES=()
+    for choice in $REPLY; do
+        case "$choice" in
+            a|all|both)
+                DRIVES=("${KNOWN_DRIVES[@]}")
+                break
+                ;;
+            ''|*[!0-9]*)
+                echo "ignoring invalid choice '$choice'" >&2
+                ;;
+            *)
+                if [ "$choice" -ge 1 ] && [ "$choice" -le "${#KNOWN_DRIVES[@]}" ]; then
+                    DRIVES+=("${KNOWN_DRIVES[$((choice - 1))]}")
+                else
+                    echo "ignoring out-of-range choice '$choice'" >&2
+                fi
+                ;;
+        esac
+    done
+
+    [ "${#DRIVES[@]}" -gt 0 ] || { echo "nothing selected" >&2; exit 1; }
+    printf '%s\n' "${DRIVES[@]}"
+}
+
+label_for() {
+    case "$1" in
+        desktop-c) echo "desktop-c" ;;
+        *) return 1 ;;
+    esac
+}
+
+lock_one() {
+    local NAME="$1" LABEL
+    LABEL="$(label_for "$NAME")" || {
+        echo "unknown drive '$NAME' — known: desktop-c" >&2
+        return 1
+    }
+
+    local MAPPER="bitlocker-$LABEL"
+    local MOUNTPOINT="/mnt/$LABEL"
+
+    if mountpoint -q "$MOUNTPOINT" 2>/dev/null; then
+        sudo umount "$MOUNTPOINT"
+    fi
+
+    if [ -e "/dev/mapper/$MAPPER" ]; then
+        sudo cryptsetup close "$MAPPER"
+    fi
+
+    echo "closed $NAME"
+}
+
+if [ "$#" -eq 0 ]; then
+    mapfile -t DRIVES < <(prompt_drives)
+elif [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+    usage
+elif [ "$1" = "all" ] || [ "$1" = "both" ]; then
+    DRIVES=("${KNOWN_DRIVES[@]}")
+else
+    DRIVES=("$@")
+fi
+
+STATUS=0
+for d in "${DRIVES[@]}"; do
+    lock_one "$d" || STATUS=1
+done
+exit "$STATUS"
