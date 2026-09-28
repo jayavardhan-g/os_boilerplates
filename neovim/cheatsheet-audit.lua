@@ -235,6 +235,7 @@ end
 -- plugin settings are described in words the patterns can't see, so
 -- losing one of these is caught by name instead
 local EXPECT_DEFAULT = {
+  ["Find text in the current line"] = true,
   ["Find text in the current file"] = true,
   ["Find files by name"] = true,
   ["Clear search highlighting"] = true,

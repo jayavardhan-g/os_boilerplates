@@ -7,9 +7,11 @@ Boxes labelled "What you see" are sketches of the real UI, not pixel-exact.
 ## Find & Search
 
 ### Find text in the current line
-Stays on the line the cursor is on - never moves you elsewhere.
+Starts on the cursor's line - but here Flash extends these: if the
+character isn't on this line, `f` keeps going onto the lines after it.
 
 - `f{char}` / `F{char}` - jump to next / previous `{char}` on this line
+- `f` / `F` again - the next / previous match (as well as `;` / `,`)
 - `t{char}` / `T{char}` - jump just before next / after previous `{char}`
 - `;` / `,` - repeat that jump forward / backward
 - `0`, `^`, `$` - start of line, first non-blank, end of line
@@ -27,6 +29,10 @@ What you see:
 
 Combine with operators: `df(` deletes up to and including the `(`, `dt(`
 stops just before it.
+
+Default: keep `f` / `t` on the current line - `opts = { modes = { char = {
+multi_line = false } } }` on the flash spec in `lua/plugins/flash.lua` -
+true/false (now `true`).
 
 ### Find text in the current file
 - `/pattern` then `<CR>` - search forward from the cursor
@@ -559,13 +565,13 @@ What you see:
 - two backticks in a row - jump back to where you just were
 
 ### Jump to any visible spot on screen
-- `gs` then 2 characters - labels appear on matches; press one to jump **[custom]**
-- `gS` - same, but jumps between code structures (treesitter)
+- `s` then 2 characters - labels appear on matches; press one to jump
+- `S` - same, but jumps between code structures (treesitter)
 
 What you see:
 
 ```text
-  press  gs  then type  re
+  press  s  then type  re
 
     local result = compute(rate, offset)
           ▔▔a                   ▔▔s
@@ -575,8 +581,9 @@ What you see:
   now press a / s / d / f to jump straight to that spot
 ```
 
-Stock LazyVim binds these to `s` / `S`, which steals Vim's substitute-char
-and substitute-line. Moved here so `s` / `S` keep working normally.
+This is LazyVim's default. It takes over Vim's own `s` / `S` - use `cl`
+(change one character) and `cc` (change the whole line) instead, which do
+exactly the same, counts included.
 
 ### Scroll the view
 - `<C-d>` / `<C-u>` - half page down / up
@@ -749,7 +756,8 @@ instead - change it there too.
 - `r{char}` - replace the character under the cursor (`3rx` = three x's)
 - `R` - replace mode: typing overwrites; `<BS>` restores the old text
 - `gR` - like `R`, but by screen width (tabs behave sensibly)
-- `s` - delete the character and insert · `S` - clear the line and insert
+- `cl` - delete the character and insert · `cc` - clear the line (indent
+  kept) and insert - Vim's `s` / `S`, which are Flash here
 - `C` / `D` - change / delete to the end of the line
 - `X` - delete the character **before** the cursor
 - `<Insert>` in insert mode - switch between insert and replace
@@ -1180,6 +1188,7 @@ save anything.
        delete marker sits between lines
 ```
 
+- `<lead>gS` - git stash picker (`<CR>` applies the stash)
 - `<lead>gs` - git status picker · in it, `<Tab>` stages / unstages the
   file and `<C-r>` restores it (throws its changes away)
 - `<lead>gd` - diff of current hunks · `<Tab>` / `<C-r>` work here too
@@ -2301,6 +2310,7 @@ Permanent mappings live in `lua/config/keymaps.lua`.
 
 ### Rarely needed
 - `:redir @a` … `:redir END` - capture command output into a register
+- `gs` - pause for a second (Vim's "go to sleep"; `3gs` = three seconds)
 - `:dl` - delete a line and print the next one (old line-editor habit)
 - `:exe {string}` - run a command built from a string
 - `:sil {cmd}` - run quietly · `:noa {cmd}` - without autocommands
@@ -2864,7 +2874,6 @@ it.
 
 ### Keys changed from stock LazyVim
 ```text
-  s / S        flash jump          →  gs / gS  (s/S back to substitute)
   <C-/>        terminal            →  toggle comment  (terminal: <lead>ft)
   x            deletes into "" reg →  black hole (your yank survives)
   <lead>st/sT  Telescope todo      →  Snacks grep (no Telescope here)
