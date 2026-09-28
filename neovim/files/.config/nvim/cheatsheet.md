@@ -564,7 +564,7 @@ What you see:
 - `{n}G` or `:{n}` - go to line n
 - two backticks in a row - jump back to where you just were
 
-### Jump to any visible spot on screen
+### Jump anywhere on screen - Flash (s / S)
 - `s` then 2 characters - labels appear on matches; press one to jump
 - `S` - same, but jumps between code structures (treesitter)
 

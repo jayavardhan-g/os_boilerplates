@@ -337,7 +337,7 @@ end
 --- Pull the `backtick spans` out of a body - the keys and commands an entry
 --- is about, without the surrounding prose.
 ---@param body string
----@return string
+---@return string[]
 local function key_terms(body)
   -- Strip fenced blocks first. A ``` fence is three backticks, so leaving
   -- them in shifts the pairing of every inline `span` that follows and the
@@ -360,12 +360,32 @@ local function key_terms(body)
       out[#out + 1] = term
     end
   end
-  return table.concat(out, " ")
+  return out
+end
+
+--- The exact strings a search can equal to put this entry first: each key
+--- span, plus leader keys without the leader (`<lead>sm` -> "sm") and spelled
+--- the way people type it ("<leader>sm"). Case-sensitive on purpose, so `s`
+--- and `S` stay different keys.
+---@param terms string[]
+---@return table<string, boolean>
+local function exact_keys(terms)
+  local set = {}
+  for _, t in ipairs(terms) do
+    set[t] = true
+    local rest = t:match("^<lead>(.+)$")
+    if rest then
+      set[rest] = true
+      set["<leader>" .. rest] = true
+    end
+  end
+  return set
 end
 
 function M.open()
   local items = {}
   for i, entry in ipairs(M.entries()) do
+    local terms = key_terms(entry.body)
     items[#items + 1] = {
       idx = i,
       score = 0,
@@ -373,7 +393,8 @@ function M.open()
       -- entry mentions - so "ghP" or "ciw" find the right entry. The prose
       -- body is deliberately excluded: including it made a search for
       -- "find" return 69 noisy hits with the wrong one ranked first.
-      text = entry.title .. " " .. entry.category .. " " .. key_terms(entry.body),
+      text = entry.title .. " " .. entry.category .. " " .. table.concat(terms, " "),
+      keys = exact_keys(terms),
       title = entry.title,
       category = entry.category,
       n = entry.n,
@@ -393,8 +414,28 @@ function M.open()
     ["<c-o>"] = { "cheatsheet_edit_original", mode = { "n", "i" } },
   }
 
-  Snacks.picker({
+  -- Typing a key exactly (`s`, `x`, `gd`, `sm`) puts the entries that list
+  -- that key first. Plain fuzzy matching can't do this for short keys: a
+  -- one-letter search matches nearly every entry, which left the `s` (Flash)
+  -- entry at rank 74. Everything else keeps the normal fuzzy order.
+  local picker ---@type snacks.Picker?
+  local function exact(item)
+    local q = picker and vim.trim(picker.input.filter.pattern or "") or ""
+    return q ~= "" and item.keys[q] == true
+  end
+
+  picker = Snacks.picker({
     source = "cheatsheet",
+    sort = function(a, b)
+      local ea, eb = exact(a), exact(b)
+      if ea ~= eb then
+        return ea
+      end
+      if a.score ~= b.score then
+        return a.score > b.score
+      end
+      return a.idx < b.idx
+    end,
     title = has_copy() and "Cheatsheet (your copy)" or "Cheatsheet",
     items = items,
     preview = "preview",

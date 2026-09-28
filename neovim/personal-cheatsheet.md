@@ -822,3 +822,24 @@ must appear as a span **inside the entry for that picker** (mapped in `PICKER_MA
 a source with keys but no mapped entry is reported. **Negative test**: against the
 cheatsheet from before this fix it flags 40 keys, including marks `<C-x>` and all
 explorer operations; the current file reports 0 in all six sections.
+
+## Follow-up: exact-key search - typing `s` finds the `s` entry first (2026-09-28)
+
+**What**: user couldn't find `s` / `S` after flash moved back. The entry existed, but:
+- searching `flash` didn't match it at all - the picker searches title + category +
+  key spans, and "Flash" was in none of them (title was "Jump to any visible spot
+  on screen");
+- searching `s` ranked it **74th** - a one-letter fuzzy query matches ~220 entries,
+  and any short key (`x`, `u`, `gd`) has the same problem.
+
+**Change** - `lua/cheatsheet.lua` (copy in [`files/`](files/.config/nvim/lua/cheatsheet.lua)):
+each item carries `keys`, the exact set of its key spans (plus leader keys without
+the leader, `<lead>sm` → `sm`, and spelled `<leader>sm`); a custom `sort` puts items
+whose `keys` contain the query **exactly** first (case-sensitive, so `s` ≠ `S`), then
+the normal fuzzy score, then file order. `key_terms()` now returns a list. The entry
+is retitled "Jump anywhere on screen - Flash (s / S)" (both files).
+
+**Verified** in the real picker (`input:set()` + `find()`; feedkeys don't reach a
+headless picker mid-script): `s`, `S`, `flash` → the Flash entry first (was 74th /
+not found); `sm` → marks; `dm` → Marks; `x` → "Delete, change, yank"; `gd` → "Go to
+things"; `wrap` → the wrap entries.
