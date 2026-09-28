@@ -95,3 +95,17 @@ end, { desc = "Set Buffer Language" })
 -- is indistinguishable from <BS> and needs fixing on the terminal side.
 vim.keymap.set({ "i", "c" }, "<C-BS>", "<C-w>", { noremap = true, desc = "Delete word before cursor" })
 vim.keymap.set({ "i", "c" }, "<C-h>", "<C-w>", { noremap = true, desc = "Delete word before cursor" })
+
+-- dm{mark} deletes a mark - the mirror of m{mark} setting one (a convention
+-- from mark plugins; Vim itself only has :delmarks). dm- clears every
+-- lowercase mark in this buffer. `dm` was free: `m` isn't a motion, so the
+-- `d` operator never used it, and dd/dw/d$ etc. still run instantly since
+-- no other mapping starts with "d".
+vim.keymap.set("n", "dm", function()
+  local char = vim.fn.getcharstr()
+  if char == "-" then
+    vim.cmd("delmarks!")
+  elseif char:match("^[%a%d]$") then
+    pcall(vim.cmd.delmarks, char)
+  end
+end, { desc = "Delete mark (dm{mark}, dm- = all in buffer)" })

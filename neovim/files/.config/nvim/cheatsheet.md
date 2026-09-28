@@ -98,11 +98,15 @@ the `opts` of `lua/plugins/snacks.lua` (see UI toggles for creating it) - true/f
 ### Find recently used files
 - `<lead>fr` - recent files (project root)
 - `<lead>fR` - recent files (cwd)
-- `<lead>fp` - switch between projects
+- `<lead>fp` - switch between projects · in it, each key first makes the
+  project this tab's working directory: `<C-f>` find files · `<C-g>` grep
+  · `<C-r>` recent files · `<C-e>` explorer · `<C-w>` just switch ·
+  `<C-t>` a new tab for another project
 
 ### Find help, keymaps and commands
 - `<lead>sh` - search Neovim's `:help` pages
-- `<lead>sk` - search every keymap currently bound
+- `<lead>sk` - search every keymap currently bound · in it, `<M-g>` /
+  `<M-b>` hide or show global / this buffer's keymaps
 - `<lead>sC` - search available commands
 - `<lead>sa` - search autocommands
 - `<lead>sM` - man pages
@@ -147,7 +151,7 @@ need plugins that aren't installed here.
 Useful when a message flashed past before you could read it.
 
 ### Find marks, jumps, registers
-- `<lead>sm` - list marks
+- `<lead>sm` - list marks (`<C-x>` deletes the highlighted one)
 - `<lead>sj` - list the jump list
 - `<lead>s"` - list register contents
 - `<lead>su` - browse the undo tree
@@ -342,6 +346,8 @@ and closing a window doesn't close the buffer.
 - `[b` / `]b` - same thing
 - `<lead>bb` - jump back to the buffer you were just in
 - `<lead>` then a backtick - same thing, one key shorter
+- in the buffer list, `<C-x>` (or `dd` after `<Esc>`) closes the
+  highlighted buffer
 - `<lead>,` or `<lead>fb` - fuzzy-pick from open buffers ·
   `<lead>fB` - including hidden ones
 - `<lead>bj` - pick a buffer by an on-screen letter label
@@ -593,7 +599,14 @@ Works across files, so it's the "back button" after a go-to-definition.
 ### Marks
 - `m{a-z}` - set a mark at the cursor
 - a backtick then `{a-z}` - jump to that mark
-- `<lead>sm` - list all marks
+- `<lead>sm` - list all marks · in that list, `<C-x>` deletes the
+  highlighted one
+- `dm{a-z}` - delete a mark (`dmi` removes mark i) · `dm-` - delete every
+  lowercase mark in this file **[custom]**
+- `:delm {a-z}` - the built-in way to delete one
+
+A mark shows as its letter just left of the line number, so a stray
+letter there means you pressed `m` and then that letter.
 
 ```text
   ma        set mark "a" here
@@ -696,7 +709,8 @@ actually want.
 ### Undo and redo
 - `u` - undo
 - `<C-r>` - redo
-- `<lead>su` - browse the full undo tree
+- `<lead>su` - browse the full undo tree · in it, `<C-y>` copies the lines
+  that change added, `<C-S-y>` the lines it removed
 
 The undo tree matters because Vim never throws branches away: undo, type
 something else, and the old branch is still reachable through `<lead>su`.
@@ -1166,8 +1180,11 @@ save anything.
        delete marker sits between lines
 ```
 
-- `<lead>gs` - git status picker
-- `<lead>gd` - diff of current hunks
+- `<lead>gs` - git status picker · in it, `<Tab>` stages / unstages the
+  file and `<C-r>` restores it (throws its changes away)
+- `<lead>gd` - diff of current hunks · `<Tab>` / `<C-r>` work here too
+- `:lua Snacks.picker.git_branches()` - branches (no key bound):
+  `<CR>` switch · `<C-a>` create · `<C-x>` delete
 - `<lead>gD` - diff against origin
 - `<lead>gl` / `<lead>gL` - git log (project / cwd)
 - `<lead>gf` - history of just the current file
@@ -1243,6 +1260,9 @@ true/false (now `false`).
 - `<lead>gp` / `<lead>gP` - open pull requests / all
 - `<lead>gB` - open the current file on GitHub in a browser
 - `<lead>gY` - copy that link instead
+- in the issue / PR lists: `<M-b>` open in the browser · `<C-y>` (or `y`
+  in the list) copy its URL · in a PR's diff preview, `a` comments on the
+  line and `<CR>` shows what else you can do
 
 `<lead>gB` opens the exact line you're on, which makes it an easy way to
 link a colleague to code.
@@ -1314,6 +1334,19 @@ Default: show hidden and ignored files without `H` / `I` - add
 `explorer = { hidden = true, ignored = true }` next to `files` in the
 `picker.sources` of `lua/plugins/snacks.lua` - true/false (now both
 `false`).
+
+### File operations in the explorer
+With the cursor on a file or folder in `<lead>e`:
+
+- `<CR>` or `l` - open the file / expand the folder · `h` - collapse
+- `a` - add a file; end the name with `/` for a folder (`src/util/` makes
+  both)
+- `r` - rename · `d` - delete (asks first, then moves it to the trash)
+- `c` - copy under a new name · `m` - move the marked files here (with
+  nothing marked, it renames)
+- `y` - copy the path(s) · `p` - paste files whose paths you copied
+- `<Tab>` - mark several files first, then `d`, `c`, `m` or `y` act on all
+- `o` - open with the system's default app · `u` - refresh the tree
 
 ### More explorer keys
 - `[g` / `]g` - previous / next file with git changes
@@ -1463,7 +1496,8 @@ everywhere, `"n"` normal mode only, `""` off (now `"a"`).
 
 ### Quick throwaway notes
 - `<lead>.` - toggle a scratch buffer
-- `<lead>S` - pick from existing scratch buffers
+- `<lead>S` - pick from existing scratch buffers · in it, `<C-n>` makes a
+  new one and `<C-x>` deletes the highlighted one
 
 Scratch buffers persist per project - useful for notes or trying a snippet
 without creating a file.
@@ -2842,6 +2876,7 @@ it.
   new  <lead>h     this cheatsheet
   new  <lead>ch    switch C/C++ source <-> header (clangd)
   new  <lead>cL    set the language of the current buffer
+  new  dm{mark}     delete a mark (dm- = all lowercase marks)
   new  \r / \s     LeetCode run / submit (solution files only)
   new  <C-BS>      insert/cmdline: delete the previous word (also <C-h>)
   new  <C-e> <C-x> <C-o>   in this cheatsheet: edit / restore / edit original

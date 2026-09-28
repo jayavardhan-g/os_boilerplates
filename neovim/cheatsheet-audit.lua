@@ -303,6 +303,57 @@ for _, e in ipairs(entries) do
   end
 end
 
+
+-- 6. keys that belong to ONE picker must be written in that picker's entry -
+-- a global match is meaningless (<C-x> is also "decrement", "restore", ...)
+w("=== PER-PICKER KEYS NOT IN THEIR PICKER'S ENTRY ===")
+local PICKER_MARK = { -- source -> a span that identifies its entry
+  marks = "<lead>sm", buffers = "<lead>fb", git_status = "<lead>gs", git_diff = "<lead>gd",
+  git_branches = ":lua Snacks.picker.git_branches()", keymaps = "<lead>sk", undo = "<lead>su",
+  scratch = "<lead>S", projects = "<lead>fp", gh_issue = "<lead>gY", gh_pr = "<lead>gY",
+  gh_diff = "<lead>gY", explorer = "File operations in the explorer|More explorer keys",
+}
+local function entry_spans(pred)
+  local set = {}
+  for _, e in ipairs(entries) do
+    if pred(e) then
+      for sp in table.concat(e.lines, "\n"):gmatch("`([^`\n]+)`") do
+        set[norm(sp)] = true
+        for piece in sp:gmatch("[^%s/·,]+") do set[norm(piece)] = true end
+      end
+    end
+  end
+  return set
+end
+local sources = require("snacks.picker.config.sources")
+local snames = vim.tbl_keys(sources); table.sort(snames)
+for _, name in ipairs(snames) do
+  local src = sources[name]
+  local keys = {}
+  if type(src) == "table" and type(src.win) == "table" then
+    for _, wn in ipairs({ "input", "list", "preview" }) do
+      for lhs, spec in pairs(src.win[wn] and src.win[wn].keys or {}) do
+        if spec ~= false then keys[#keys + 1] = lhs end
+      end
+    end
+  end
+  if #keys > 0 then
+    local mark = PICKER_MARK[name]
+    if not mark then
+      w(("  %-14s has its own keys but no entry is mapped (add to PICKER_MARK)"):format(name))
+    else
+      local set = entry_spans(function(e)
+        for alt in mark:gmatch("[^|]+") do
+          if e.title == alt or table.concat(e.lines, "\n"):find("`" .. alt .. "`", 1, true) then return true end
+        end
+      end)
+      for _, lhs in ipairs(keys) do
+        if not set[norm(lhs)] and not allow(lhs) then w(("  %-14s %s"):format(name, lhs)) end
+      end
+    end
+  end
+end
+
 w("=== COVERED ONLY IN PROSE / SHORTHAND (allowlist, with where) ===")
 table.sort(allowed)
 local last

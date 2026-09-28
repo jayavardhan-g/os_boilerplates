@@ -797,3 +797,28 @@ New entries about a plugin setting still need judgment when written.
 **Verified**: every new default line tested in a scratch `XDG_CONFIG_HOME` copy on a
 `.cpp` file with clangd (11 + fold/highlight combos + `path`), all passing. Real file:
 0 in every audit section; 227 entries parse; both cheatsheet files identical.
+
+## Follow-up: per-picker keys and explorer file operations were missing (2026-09-28)
+
+**How they were missed**: audit section 4 only read keys **shared** by every picker
+(plus the explorer), and matched them against spans anywhere in the doc. Keys defined
+on one picker (the marks picker's `<C-x>`) were never read, and single-letter or
+common keys (`a` `d` `r` `c` `m` `y` in the explorer, `<C-x>`) were "found" in
+unrelated entries (`<C-x>` = decrement / restore). The explorer entry had **no file
+operations at all** as a result.
+
+**Added** (both files): marks picker `<C-x>`, `dm{mark}` / `dm-` [custom], `:delm`,
+and that marks show left of the line number; buffers `<C-x>` / `dd`; git status and
+git diff `<Tab>` stage / `<C-r>` restore; git branches (no key: `:lua
+Snacks.picker.git_branches()`, `<C-a>` / `<C-x>`); keymaps `<M-g>` / `<M-b>`; undo
+`<C-y>` / `<C-S-y>`; scratch `<C-n>` / `<C-x>`; projects `<C-f>` `<C-g>` `<C-r>` `<C-e>`
+`<C-w>` `<C-t>`; GitHub lists `<M-b>` / `<C-y>` / `y` and PR diff `a` / `<CR>`; new
+entry "File operations in the explorer" (`<CR>`/`l`, `h`, `a` with `/` for folders,
+`r`, `d` → trash via `gio` after a confirm, `c`, `m` (moves marked, else renames),
+`y`, `p`, `<Tab>` multi-mark, `o`, `u`) - behaviour read from Snacks' action source.
+
+**Audit section 6** (new): every Snacks source's own keys (`win.input/list/preview`)
+must appear as a span **inside the entry for that picker** (mapped in `PICKER_MARK`);
+a source with keys but no mapped entry is reported. **Negative test**: against the
+cheatsheet from before this fix it flags 40 keys, including marks `<C-x>` and all
+explorer operations; the current file reports 0 in all six sections.
