@@ -90,6 +90,9 @@ the user rather than changed.
 
 ## Follow-up: colorscheme reloads live when Noctalia changes kitty's theme (2026-10-01)
 
+> **Superseded the same day** by the next follow-up (transparent `NONE` backgrounds, no
+> live reload). Kept for the root cause and the libuv findings.
+
 **What**: with Neovim open, a wallpaper change turned the see-through editor into a solid
 dark box until Neovim was reopened.
 
@@ -123,3 +126,32 @@ throwaway `$HOME` with `nvim -u NONE`: 500 rewrites in a burst → 1 reload, han
 2, Lua memory +1.1 KB, ~12 ms CPU; empty file → no reload, scheme stays `kitty`;
 themes dir deleted → handles 2 → 0, recreated + `:colorscheme kitty` → watch works
 again; 50× `:colorscheme kitty` → still 2 handles.
+
+## Follow-up: open Neovim keeps its colours, transparency via NONE (2026-10-01)
+
+**What**: asked to drop the live reload - an open Neovim should keep the theme it
+started with (no colour change mid-session) but stay see-through when kitty's theme
+changes; the new theme applies on the next launch.
+
+**Change** - `colors/kitty.lua`: every editor-background highlight (`Normal`,
+`NormalFloat`, `FloatBorder`, `SignColumn`, `DiffAdd/Delete/Change/Text`) now uses
+`bg = "NONE"` instead of kitty's background hex. `NONE` means "terminal default
+background", which kitty always draws at `background_opacity`, whatever colour its
+theme has - so a theme change can no longer make it solid. The fs_event watcher from
+the previous follow-up is removed; the theme is read once, at load. Foregrounds,
+`Pmenu`, `CursorLine`, statusline etc. still come from kitty's palette as before.
+Full file: [`files/.config/nvim/colors/kitty.lua`](files/.config/nvim/colors/kitty.lua).
+
+**Plugins that read `Normal`'s background** (checked before switching): mason.nvim and
+noice.nvim detect a missing bg and switch to their transparent mode; lazy.nvim just
+skips its dimmed backdrop; leetcode.nvim's test-case chips become see-through. No
+other installed plugin reads it.
+
+**Verified**: real config loads with no messages; `Normal`/`NormalFloat`/`SnacksNormal`
+bg = NONE; no fs_event handle left. Sandbox (`nvim -u NONE`, throwaway `$HOME`): theme
+file changed while open → 0 reloads, colours unchanged, bg still NONE; reloading the
+scheme (= next launch) picks up the new theme. Not checked visually in a live kitty
+window from here.
+
+**Trade-off**: until Neovim is reopened, its old text colours sit on kitty's new
+background colour, so contrast can be a little off after a big palette change.
