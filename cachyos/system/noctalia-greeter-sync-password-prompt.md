@@ -29,7 +29,8 @@ every file in the config dir and would defeat the watcher).
 
 Script `~/.config/hypr/scripts/rotation-pauses-greeter-sync.sh` (executable; full
 commented version in the stored copy): reads `wallpaper.automation.enabled` from
-`noctalia config export` and writes, only if different from what's there:
+`noctalia config export` and writes, only if different from what's there (checks once
+immediately, then again 1 s later — see Notes):
 ```toml
 # ~/.config/noctalia/rotation-pauses-greeter-sync.toml
 [shell.greeter_sync]
@@ -42,6 +43,7 @@ restart is needed.
 ```ini
 [Unit]
 Description=Pause Noctalia greeter auto-sync while wallpaper rotation is on
+StartLimitIntervalSec=0
 
 [Service]
 Type=oneshot
@@ -70,6 +72,18 @@ systemctl --user start rotation-pauses-greeter-sync.service   # create the file 
   wallpaper changes while paused produced no prompt; turning rotation off flipped it
   back to true. `settings.toml` writes (Settings UI / `noctalia msg wallpaper-set`) do
   trigger the path unit.
+- **Bug found and fixed the same day — watcher died on a burst of saves.** Noctalia saved
+  `settings.toml` 6 times in ~5 s while rotation was being turned on in Settings; the
+  service hit systemd's default start limit (5 starts / 10 s, `start-limit-hit`), the
+  path unit went `failed`, and the save with `enabled = true` was never seen — so
+  `auto_sync` stayed true and every manual wallpaper change with rotation on still
+  prompted. Fix: `StartLimitIntervalSec=0` on the service (each run is ~40 ms and
+  idempotent), and the script applies twice (immediately + after 1 s) because systemd
+  drops path events that arrive while the service is still running. Re-tested with 8
+  saves in ~2 s: 2 runs, no failure, correct value. If it ever looks stuck:
+  `systemctl --user status rotation-pauses-greeter-sync.path`, then
+  `systemctl --user reset-failed rotation-pauses-greeter-sync.{path,service}` and
+  `systemctl --user start rotation-pauses-greeter-sync.path`.
 - **Possible single prompt when switching rotation on:** enabling rotation makes
   Noctalia jump to a new wallpaper immediately, racing the watcher (in the test the
   watcher won by ~1s and nothing prompted). If a prompt ever appears right at that

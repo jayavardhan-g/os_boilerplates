@@ -1,5 +1,9 @@
 [Unit]
 Description=Pause Noctalia greeter auto-sync while wallpaper rotation is on
+# Noctalia can save settings.toml several times a second (e.g. while clicking around
+# Settings). The default start limit (5 starts / 10 s) then killed the watcher, so the
+# rotation toggle was never seen. The script is cheap and idempotent - no limit.
+StartLimitIntervalSec=0
 
 [Service]
 Type=oneshot
