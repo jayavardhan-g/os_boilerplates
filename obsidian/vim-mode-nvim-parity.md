@@ -36,6 +36,8 @@ Key map (nvim key → Obsidian action):
 | `<Space>e` / `<Space>E` | toggle left sidebar (explorer) / right sidebar (backlinks, outline, tags, git) |
 | `<Space>bd`, `<Space>wd` / `<Space>bo` | close tab / close others |
 | `<Space>fn`, `<Space>cr`, `<Space>ul` | new note, rename note, toggle line numbers |
+| `<Space>m` | move note to another folder (restored from the original leader block) |
+| Ctrl+- / Ctrl+\| | split below / right — Obsidian hotkeys in `hotkeys.json` (work outside normal mode too) |
 | `<Space>gg`, `<Space>gb`, `]h` / `[h` | obsidian-git view, blame, next/prev hunk |
 | `<Space>y` / `<Space>Y`, `<Space>-` / `<Space>\|` | `"+y` / `"+y$`, split below / right |
 | `H` / `L`, `[b` / `]b`, `gt` / `gT` | prev / next tab |
@@ -68,5 +70,16 @@ Ctrl+Shift+F, Ctrl+Shift+M, Ctrl+O/I history, zo/zc/zR/zM folds, Alt+P paste-as-
   `gsaw`, or the command palette). Search & replace is still in the palette, and `:s` works.
 - Superseded: the 2026-09-20 layout had H/L = `^`/`$`, Alt+hjkl pane focus, `,` = `:nohl`,
   surround on `s"`/`sb`/`sw`…, and a truncated `map <A-p> :pasteinto` with no `<CR>` (fixed).
+- Ctrl+- replaces Obsidian's zoom-out. Zoom-out is only an app-menu accelerator
+  (`CommandOrControl+-`), and a matched Obsidian hotkey calls `preventDefault`, so the
+  hotkey wins. Ctrl+| is stored as `Mod+Shift` + `\`, matching Obsidian's own recorder
+  (keyCode 220). A vimrc map can't express it.
+- Original bindings, for reference. The user's pre-2026-09-20 vimrc leader block:
+  `<Space>h/l` sidebars, `<Space>m` move file, `<Space>q` close, `<Space>z` zen
+  (plugin not installed), `<Space>/` search, `<Space>|`/`<Space>-` splits. Older
+  `hotkeys.json` (removed in the vault's 2026-04-10 backup commit): Ctrl+M move,
+  Ctrl+D delete file, Alt+N / Alt+Shift+N new file, Alt+D new folder, Alt+C / Alt+B
+  sidebars, Ctrl+\ / Ctrl+Shift+F6 splits. On 2026-10-02 only `<Space>m` and the
+  Ctrl+- / Ctrl+| splits were brought back.
 - Alternative not taken (for now): editing the vault from nvim with
   [obsidian.nvim](https://github.com/obsidian-nvim/obsidian.nvim), the maintained fork.

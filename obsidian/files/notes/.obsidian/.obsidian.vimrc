@@ -92,6 +92,8 @@ nmap <C-S-f> :search<CR>
 
 exmap movefile obcommand file-explorer:move-file
 nmap <C-S-m> :movefile<CR>
+" <Space>m restored from the original pre-2026-09-20 leader block (mapped
+" below, after unmap <Space>)
 
 " --- LEADER (Space) - same keys as LazyVim ---
 " Bare <Space> already has a built-in full match (Space -> l, move right,
@@ -106,6 +108,11 @@ exmap vsplit obcommand workspace:split-vertical
 nmap <Space>| :vsplit<CR>
 exmap hsplit obcommand workspace:split-horizontal
 nmap <Space>- :hsplit<CR>
+" (also Ctrl+- / Ctrl+| as Obsidian hotkeys in hotkeys.json - Ctrl+| can't be
+" expressed in a vimrc map)
+
+" Move note to another folder
+nmap <Space>m :movefile<CR>
 
 " Find files / recent -> quick switcher (it lists recent notes first)
 nmap <Space><Space> :quickswitch<CR>
