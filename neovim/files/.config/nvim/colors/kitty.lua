@@ -31,7 +31,7 @@ local function read_kitty_theme()
 
   local tf = io.open(theme_path, "r")
   if not tf then
-    return nil
+    return nil, theme_path
   end
   local c = {}
   for line in tf:lines() do
@@ -41,10 +41,43 @@ local function read_kitty_theme()
     end
   end
   tf:close()
-  return c
+  return c, theme_path
 end
 
-local c = read_kitty_theme()
+-- Reload this colorscheme whenever the theme file changes while Neovim is open.
+-- Noctalia rewrites it on a wallpaper change and SIGUSR1-reloads every kitty, so
+-- kitty switches to the new background at once. Without this, Neovim kept painting
+-- the OLD background colour, which kitty no longer treats as its own (only cells in
+-- exactly kitty's background colour get background_opacity) - so the see-through
+-- editor turned into a solid dark box until Neovim was reopened.
+-- Watches the directory, not the file: a file replaced via rename would otherwise
+-- silently drop the watch. Started once per Neovim (the guard survives reloads).
+local function watch_theme(theme_path)
+  if vim.g.kitty_theme_watched or not theme_path then
+    return
+  end
+  local dir, name = vim.fs.dirname(theme_path), vim.fs.basename(theme_path)
+  local watcher, timer = vim.uv.new_fs_event(), vim.uv.new_timer()
+  if not watcher or not timer then
+    return
+  end
+  vim.g.kitty_theme_watched = true
+  watcher:start(dir, {}, function(_, fname)
+    if fname ~= name then
+      return
+    end
+    -- Debounce: one regeneration can fire several events, and the file may be
+    -- mid-write on the first one.
+    timer:start(150, 0, vim.schedule_wrap(function()
+      if vim.g.colors_name == "kitty" then
+        vim.cmd.colorscheme("kitty")
+      end
+    end))
+  end)
+end
+
+local c, theme_path = read_kitty_theme()
+watch_theme(theme_path)
 if not c or not c.background then
   vim.cmd("colorscheme habamax") -- kitty theme file unreadable - fall back rather than error
   return

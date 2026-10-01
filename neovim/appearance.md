@@ -87,3 +87,28 @@ verifiable headlessly.
 background (the editor colour, see-through) differed from the grey panel. With the
 panel now the same colour, inline code is distinguished only by its colour. Flagged to
 the user rather than changed.
+
+## Follow-up: colorscheme reloads live when Noctalia changes kitty's theme (2026-10-01)
+
+**What**: with Neovim open, a wallpaper change turned the see-through editor into a solid
+dark box until Neovim was reopened.
+
+**Root cause**: `colors/kitty.lua` read kitty's theme only when the colorscheme loaded.
+On a wallpaper change Noctalia rewrites `~/.config/kitty/themes/noctalia.conf` and its
+kitty `post_hook` (`/usr/share/noctalia/assets/templates/kitty/apply.sh`) sends
+`pkill -USR1 kitty`, so kitty switches background at once. Neovim kept painting the
+*old* background, and kitty only applies `background_opacity` to cells in exactly its
+own current background colour - so everything drew solid.
+
+**Change** - `colors/kitty.lua` now starts a `vim.uv` fs_event watcher (once per
+Neovim, guarded by `vim.g.kitty_theme_watched`) on the theme file's **directory** (a
+file replaced via rename would drop a file watch), filtered to the theme's file name,
+debounced 150 ms, which re-runs `:colorscheme kitty` if it's still the active scheme.
+That fires `ColorScheme`, so plugins re-derive their colours too (leetcode.nvim's
+`Theme.load` already listens for it). Full file:
+[`files/.config/nvim/colors/kitty.lua`](files/.config/nvim/colors/kitty.lua).
+
+**Verified (headless, real config)**: rewriting the theme with `background #123456`
+reloaded the scheme by itself (`Normal`/`NormalFloat` bg → `#123456`); restoring the
+original reloaded it back (`#0f150a`). Theme file restored byte-identical, kitty not
+signalled. The visual result in a live kitty window wasn't checked from here.
