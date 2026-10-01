@@ -112,3 +112,14 @@ That fires `ColorScheme`, so plugins re-derive their colours too (leetcode.nvim'
 reloaded the scheme by itself (`Normal`/`NormalFloat` bg → `#123456`); restoring the
 original reloaded it back (`#0f150a`). Theme file restored byte-identical, kitty not
 signalled. The visual result in a live kitty window wasn't checked from here.
+
+**Hardening (same day, asked: no runaway processes/leaks/hogging)** - exactly one
+fs_event + one timer per Neovim, reused for every event; the reload callback is built
+once. Reloads only from a complete file (an empty/half-written one would otherwise drop
+to the `habamax` fallback and stop following kitty). If the watched dir disappears -
+which libuv reports as an ordinary event, not an error, verified - both handles are
+closed and the guard cleared, so the next `:colorscheme kitty` re-watches. Tested in a
+throwaway `$HOME` with `nvim -u NONE`: 500 rewrites in a burst → 1 reload, handles 2 →
+2, Lua memory +1.1 KB, ~12 ms CPU; empty file → no reload, scheme stays `kitty`;
+themes dir deleted → handles 2 → 0, recreated + `:colorscheme kitty` → watch works
+again; 50× `:colorscheme kitty` → still 2 handles.

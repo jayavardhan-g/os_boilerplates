@@ -48,6 +48,7 @@ StartLimitIntervalSec=0
 [Service]
 Type=oneshot
 ExecStart=%h/.config/hypr/scripts/rotation-pauses-greeter-sync.sh
+TimeoutStartSec=30s
 ```
 `~/.config/systemd/user/rotation-pauses-greeter-sync.path`:
 ```ini
@@ -84,6 +85,16 @@ systemctl --user start rotation-pauses-greeter-sync.service   # create the file 
   `systemctl --user status rotation-pauses-greeter-sync.path`, then
   `systemctl --user reset-failed rotation-pauses-greeter-sync.{path,service}` and
   `systemctl --user start rotation-pauses-greeter-sync.path`.
+- **Resource safety (audited 2026-10-01):** nothing runs between changes — the `.path`
+  unit is an inotify watch held by the already-running systemd user manager. The
+  service is oneshot, so at most one instance ever runs (triggers during a run are
+  dropped, not queued), each run is ~1 s wall / ~40 ms CPU and leaves no process
+  behind. `TimeoutStartSec=30s` (oneshot default is infinite) so a hung
+  `noctalia config export` can't stall the watcher forever. No feedback loop: the
+  generated file isn't watched, and rewriting it doesn't make Noctalia re-save
+  `settings.toml` (tested: 1 write → 1 run). Worst case if something rewrote
+  `settings.toml` nonstop: ~1 run/s (bounded by the run's own `sleep 1`), and past 200
+  triggers in 2 s systemd's own path `TriggerLimit` stops the unit.
 - **Possible single prompt when switching rotation on:** enabling rotation makes
   Noctalia jump to a new wallpaper immediately, racing the watcher (in the test the
   watcher won by ~1s and nothing prompted). If a prompt ever appears right at that

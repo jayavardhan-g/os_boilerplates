@@ -51,29 +51,69 @@ end
 -- exactly kitty's background colour get background_opacity) - so the see-through
 -- editor turned into a solid dark box until Neovim was reopened.
 -- Watches the directory, not the file: a file replaced via rename would otherwise
--- silently drop the watch. Started once per Neovim (the guard survives reloads).
+-- silently drop the watch. Exactly one watcher + one timer per Neovim (the guard
+-- survives reloads); both are reused for every event, so nothing accumulates.
 local function watch_theme(theme_path)
   if vim.g.kitty_theme_watched or not theme_path then
     return
   end
   local dir, name = vim.fs.dirname(theme_path), vim.fs.basename(theme_path)
   local watcher, timer = vim.uv.new_fs_event(), vim.uv.new_timer()
+  local function close_all()
+    for _, h in ipairs({ watcher, timer }) do
+      if h and not h:is_closing() then
+        h:close()
+      end
+    end
+  end
   if not watcher or not timer then
+    close_all()
+    return
+  end
+
+  local reload = vim.schedule_wrap(function()
+    -- Only reload from a complete file. A half-written one has no background, which
+    -- would drop the scheme to its habamax fallback - and this watcher only follows
+    -- "kitty", so it would stay stuck there. The write's final event retries.
+    local t = read_kitty_theme()
+    if vim.g.colors_name == "kitty" and t and t.background then
+      vim.cmd.colorscheme("kitty")
+    end
+  end)
+
+  local function give_up()
+    -- Free both handles; the next `:colorscheme kitty` (or a new Neovim) starts a
+    -- fresh watch.
+    close_all()
+    vim.schedule(function()
+      vim.g.kitty_theme_watched = nil
+    end)
+  end
+
+  local ok = watcher:start(dir, {}, function(err, fname)
+    -- Runs in libuv's loop: only uv calls here, editor state goes via vim.schedule.
+    if err then
+      give_up()
+      return
+    end
+    if fname ~= name then
+      -- Deleting the watched dir arrives as an ordinary event (no err) and leaves a
+      -- dead watch behind - verified. Only other names in the dir get here, so the
+      -- stat is rare.
+      if not vim.uv.fs_stat(dir) then
+        give_up()
+      end
+      return
+    end
+    -- Debounce: one regeneration fires several events. Restarting the same timer
+    -- means a burst of writes costs one reload, 150 ms after the last of them.
+    timer:start(150, 0, reload)
+  end)
+  if not ok then
+    close_all() -- dir missing/unwatchable: nothing started, nothing left open
     return
   end
   vim.g.kitty_theme_watched = true
-  watcher:start(dir, {}, function(_, fname)
-    if fname ~= name then
-      return
-    end
-    -- Debounce: one regeneration can fire several events, and the file may be
-    -- mid-write on the first one.
-    timer:start(150, 0, vim.schedule_wrap(function()
-      if vim.g.colors_name == "kitty" then
-        vim.cmd.colorscheme("kitty")
-      end
-    end))
-  end)
 end
 
 local c, theme_path = read_kitty_theme()
