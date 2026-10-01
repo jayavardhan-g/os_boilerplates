@@ -13,5 +13,6 @@
   ],
   "editor:open-search-replace": [],
   "editor:insert-link": [],
-  "editor:toggle-checklist-status": []
+  "editor:toggle-checklist-status": [],
+  "editor:delete-paragraph": []
 }

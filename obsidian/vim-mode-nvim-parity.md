@@ -25,7 +25,8 @@ Prereqs (vault-local, travel with the `~/notes` git repo):
   into `.obsidian/plugins/mrj-jump-to-link/`, then added to `community-plugins.json`).
 - Default hotkeys cleared in `hotkeys.json` because Obsidian hotkeys fire *before*
   vimrc maps: Ctrl+O (quick switcher), Ctrl+I/B (italic/bold), Ctrl+H (search & replace),
-  Ctrl+K (insert link), Ctrl+L (toggle checklist).
+  Ctrl+K (insert link), Ctrl+L (toggle checklist), Ctrl+D (delete paragraph — otherwise
+  Ctrl+D deletes text instead of scrolling).
 
 Key map (nvim key → Obsidian action):
 
@@ -35,9 +36,24 @@ Key map (nvim key → Obsidian action):
 | `<Space>/`, `<Space>sg` / `<Space>sb` | Omnisearch vault / this note |
 | `<Space>e` / `<Space>E` | toggle left sidebar (explorer) / right sidebar (backlinks, outline, tags, git) |
 | `<Space>bd`, `<Space>wd` / `<Space>bo` | close tab / close others |
-| `<Space>fn`, `<Space>cr`, `<Space>ul` | new note, rename note, toggle line numbers |
+| `<Space>fn`, `<Space>fN`, `<Space>cr`, `<Space>ul` | new note, new folder, rename note, toggle line numbers |
+| `<Space>fe`, `<Space>fd` | reveal note in explorer, delete note (Obsidian confirms) |
 | `<Space>m` | move note to another folder (restored from the original leader block) |
+| `<Space>bp`, `<Space>bu`, `<Space>ba` | pin tab, reopen closed tab, bookmark note |
+| `<Space>um` | toggle reading view / live preview |
+| `<Space>x`, `<Space>>` | tick checkbox, toggle blockquote (line or selection) |
+| `<Space>od`, `[d` / `]d` | today's daily note, prev / next daily note |
+| `<Space>ob` (also `gr`), `<Space>oB` | backlinks sidebar, backlinks at bottom of note |
+| `<Space>oo` (also `gO`, `<Space>cs`), `<Space>ot` | outline, tags |
+| `<Space>og` / `<Space>oG` | graph / local graph |
+| `<Space>oi`, `<Space>oM` | insert template, bookmarks list |
+| `<Space>op` / `<Space>oP` | fold frontmatter / open properties panel |
 | `<Space>gg`, `<Space>gb`, `]h` / `[h` | obsidian-git view, blame, next/prev hunk |
+| `<Space>gl`, `<Space>gd`, `<Space>gc` | git history view, diff view, commit-and-sync (commit + pull + push) |
+| `gf`, `go`, `gD` | follow link, open link in new tab, open link in split |
+| `za`, `zm` / `zr` | toggle fold, fold more / less |
+| `<C-d>` / `<C-u>`, `n` / `N` | half-page scroll / search jump, kept centered (`zz`) |
+| `:q`, `:wq`, `:vs`, `:sp` | close tab, close tab, split right, split below |
 | `<Space>y` / `<Space>Y`, `<Space>-` / `<Space>\|` | `"+y` / `"+y$`, split below / right |
 | `H` / `L`, `[b` / `]b`, `gt` / `gT` | prev / next tab |
 | `<C-h/j/k/l>` | focus pane left/down/up/right |
@@ -81,5 +97,13 @@ Ctrl+Shift+F, Ctrl+Shift+M, Ctrl+O/I history, zo/zc/zR/zM folds, Alt+P paste-as-
   Ctrl+D delete file, Alt+N / Alt+Shift+N new file, Alt+D new folder, Alt+C / Alt+B
   sidebars, Ctrl+\ / Ctrl+Shift+F6 splits. On 2026-10-02 only `<Space>m` was
   brought back.
+- Centered scrolling (`nnoremap n nzz` etc.) is the one deliberate difference from nvim,
+  which doesn't center. It must be `nnoremap`: the engine's keyToKey recursion guard
+  (`vim.js` `doKeyToKey`) drops a mapping's own key, so `nmap n nzz` would only do `zz`.
+- Ex aliases work because `matchCommand_` looks up the exact typed name first, so `:q`
+  isn't shadowed by `:quickswitch`. Only `:w` (and `:image`) existed before.
+- Ideas taken from a popular community vimrc: ex aliases, gf/go, blockquote toggle, a
+  checkbox key. Skipped: the parts needing Pane Relief / VimEx / obsidian-zoom / Stille /
+  JS commands, and `[`/`]` → `{`/`}`, which would break `[b`, `[h` and `[[`.
 - Alternative not taken (for now): editing the vault from nvim with
   [obsidian.nvim](https://github.com/obsidian-nvim/obsidian.nvim), the maintained fork.

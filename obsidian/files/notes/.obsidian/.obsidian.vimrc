@@ -18,6 +18,21 @@ set clipboard=unnamed
 " x deletes a character without yanking it (nvim keymaps.lua: x -> "_x)
 nnoremap x "_x
 
+" Keep the cursor line centered after half-page scrolls and search jumps.
+" Must be nnoremap: with nmap, the engine's recursion guard swallows the
+" inner n/N/<C-d>/<C-u>, leaving only zz. Ctrl+D needs Obsidian's default
+" Ctrl+D (delete paragraph) hotkey cleared in hotkeys.json.
+nnoremap <C-d> <C-d>zz
+nnoremap <C-u> <C-u>zz
+nnoremap n nzz
+nnoremap N Nzz
+
+" Vim ex aliases - :q / :wq close the tab, :vs / :sp split right / below
+exmap q obcommand workspace:close
+exmap wq obcommand workspace:close
+exmap vs obcommand workspace:split-vertical
+exmap sp obcommand workspace:split-horizontal
+
 " Go back and forward with Ctrl+O and Ctrl+I
 " (requires clearing Obsidian's default Quick switcher / Toggle italic
 " hotkeys from Ctrl+O / Ctrl+I in Settings -> Hotkeys first)
@@ -118,6 +133,14 @@ nmap <Space>ff :quickswitch<CR>
 nmap <Space>fr :quickswitch<CR>
 exmap newfile obcommand file-explorer:new-file
 nmap <Space>fn :newfile<CR>
+exmap newfolder obcommand file-explorer:new-folder
+nmap <Space>fN :newfolder<CR>
+" Reveal this note in the explorer (nvim: <leader>fe explorer)
+exmap revealfile obcommand file-explorer:reveal-active-file
+nmap <Space>fe :revealfile<CR>
+" Delete this note (Obsidian asks first; goes to trash)
+exmap deletefile obcommand app:delete-file
+nmap <Space>fd :deletefile<CR>
 
 " Grep -> Omnisearch picker (vault / this note)
 exmap grep obcommand omnisearch:show-modal
@@ -136,6 +159,14 @@ nmap <Space>bd :close<CR>
 nmap <Space>wd :close<CR>
 exmap closeothers obcommand workspace:close-others
 nmap <Space>bo :closeothers<CR>
+" Pin tab (LazyVim <leader>bp), reopen closed tab
+exmap togglepin obcommand workspace:toggle-pin
+nmap <Space>bp :togglepin<CR>
+exmap reopentab obcommand workspace:undo-close-pane
+nmap <Space>bu :reopentab<CR>
+" Bookmarks (harpoon-style): add this note / list on <Space>oM
+exmap bookmarkadd obcommand bookmarks:bookmark-current-view
+nmap <Space>ba :bookmarkadd<CR>
 
 " Yank to system clipboard (nvim: "+y)
 nmap <Space>y "+y
@@ -149,6 +180,48 @@ nmap <Space>cr :rename<CR>
 " Toggles
 exmap togglelinenumbers obcommand editor:toggle-line-numbers
 nmap <Space>ul :togglelinenumbers<CR>
+" Reading view / live preview (LazyVim markdown extra: <leader>um)
+exmap togglepreview obcommand markdown:toggle-preview
+nmap <Space>um :togglepreview<CR>
+
+" Markdown editing: tick checkbox, toggle blockquote (line or selection)
+exmap toggletask obcommand editor:toggle-checklist-status
+map <Space>x :toggletask<CR>
+exmap toggleblockquote obcommand editor:toggle-blockquote
+map <Space>> :toggleblockquote<CR>
+
+" --- OBSIDIAN (<Space>o - group is free in nvim) ---
+exmap dailynote obcommand daily-notes
+nmap <Space>od :dailynote<CR>
+exmap prevdaily obcommand daily-notes:goto-prev
+nmap [d :prevdaily<CR>
+exmap nextdaily obcommand daily-notes:goto-next
+nmap ]d :nextdaily<CR>
+
+exmap backlinks obcommand backlink:open
+nmap <Space>ob :backlinks<CR>
+exmap docbacklinks obcommand backlink:toggle-backlinks-in-document
+nmap <Space>oB :docbacklinks<CR>
+" Outline also on gO (nvim: document symbols) and <Space>cs (LazyVim symbols)
+exmap outline obcommand outline:open
+nmap <Space>oo :outline<CR>
+nmap <Space>cs :outline<CR>
+exmap tags obcommand tag-pane:open
+nmap <Space>ot :tags<CR>
+exmap graph obcommand graph:open
+nmap <Space>og :graph<CR>
+exmap localgraph obcommand graph:open-local
+nmap <Space>oG :localgraph<CR>
+
+exmap template obcommand templates:insert-template
+nmap <Space>oi :template<CR>
+exmap bookmarklist obcommand bookmarks:open
+nmap <Space>oM :bookmarklist<CR>
+" Properties: op folds the frontmatter block, oP opens the properties panel
+exmap foldprops obcommand editor:toggle-fold-properties
+nmap <Space>op :foldprops<CR>
+exmap propspanel obcommand properties:open-local
+nmap <Space>oP :propspanel<CR>
 
 " Git (obsidian-git): lazygit view, blame, hunks
 exmap gitview obcommand obsidian-git:open-git-view
@@ -159,12 +232,28 @@ exmap nexthunk obcommand obsidian-git:next-hunk
 nmap ]h :nexthunk<CR>
 exmap prevhunk obcommand obsidian-git:prev-hunk
 nmap [h :prevhunk<CR>
+exmap githistory obcommand obsidian-git:open-history-view
+nmap <Space>gl :githistory<CR>
+exmap gitdiff obcommand obsidian-git:open-diff-view
+nmap <Space>gd :gitdiff<CR>
+" Commit everything, pull and push (obsidian-git "Commit-and-sync")
+exmap gitsync obcommand obsidian-git:push
+nmap <Space>gc :gitsync<CR>
 
 " --- LINKS ---
 " gd / gx follow the link under the cursor (nvim: go to definition / open URI)
 exmap followlink obcommand editor:follow-link
 nmap gd :followlink<CR>
 nmap gx :followlink<CR>
+nmap gf :followlink<CR>
+" go: link in a new tab, gD: link in a split
+exmap linknewtab obcommand editor:open-link-in-new-leaf
+nmap go :linknewtab<CR>
+exmap linksplit obcommand editor:open-link-in-new-split
+nmap gD :linksplit<CR>
+" gr: backlinks (LazyVim gr = references), gO: outline (nvim document symbols)
+nmap gr :backlinks<CR>
+nmap gO :outline<CR>
 
 " --- WINDOW FOCUS (Ctrl+hjkl, like LazyVim) ---
 " Requires Obsidian's default Ctrl+H (search & replace), Ctrl+K (insert
@@ -189,6 +278,13 @@ nmap <A-k> :lineup<CR>
 exmap togglefold obcommand editor:toggle-fold
 nmap zo :togglefold<CR>
 nmap zc :togglefold<CR>
+nmap za :togglefold<CR>
+
+" zm / zr: fold one heading level more / less
+exmap foldmore obcommand editor:fold-more
+nmap zm :foldmore<CR>
+exmap foldless obcommand editor:fold-less
+nmap zr :foldless<CR>
 
 exmap unfoldall obcommand editor:unfold-all
 nmap zR :unfoldall<CR>
