@@ -33,7 +33,7 @@ Key map (nvim key → Obsidian action):
 |---|---|
 | `<Space><Space>`, `<Space>ff`, `<Space>fr` | quick switcher |
 | `<Space>/`, `<Space>sg` / `<Space>sb` | Omnisearch vault / this note |
-| `<Space>e` | toggle left sidebar (explorer) |
+| `<Space>e` / `<Space>E` | toggle left sidebar (explorer) / right sidebar (backlinks, outline, tags, git) |
 | `<Space>bd`, `<Space>wd` / `<Space>bo` | close tab / close others |
 | `<Space>fn`, `<Space>cr`, `<Space>ul` | new note, rename note, toggle line numbers |
 | `<Space>gg`, `<Space>gb`, `]h` / `[h` | obsidian-git view, blame, next/prev hunk |

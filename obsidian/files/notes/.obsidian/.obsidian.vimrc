@@ -121,8 +121,10 @@ nmap <Space>sg :grep<CR>
 exmap grepbuffer obcommand omnisearch:show-modal-infile
 nmap <Space>sb :grepbuffer<CR>
 
-" Explorer
+" Explorer (left) / other sidebar (right: backlinks, outline, tags, git) -
+" e/E pair like nvim's two explorer keys
 nmap <Space>e :toggleleftsidebar<CR>
+nmap <Space>E :togglerightsidebar<CR>
 
 " Buffers / windows -> tabs / panes
 nmap <Space>bd :close<CR>
