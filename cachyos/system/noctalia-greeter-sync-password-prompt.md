@@ -1,64 +1,79 @@
 # Noctalia greeter-sync password prompt
 
-**Date:** 2026-08-29 (resolved 2026-09-13)
+**Date:** 2026-08-29 (resolved 2026-09-13, reworked 2026-10-01)
 **Category:** system
-**Files touched:** `~/.config/noctalia/config.toml`
+**Files touched:** `~/.config/noctalia/config.toml` (stored: [files/.config/noctalia/config.toml](../files/.config/noctalia/config.toml)), `~/.config/hypr/scripts/greeter-sync-on-wallpaper.sh` (stored: [files/.config/hypr/scripts/greeter-sync-on-wallpaper.sh](../files/.config/hypr/scripts/greeter-sync-on-wallpaper.sh))
 
 ## What
-Every small settings change in Noctalia (wallpaper, theme, etc.) pops a password prompt.
-Investigated the cause and a possible polkit fix; user chose to accept the friction
-rather than continue debugging, so nothing was kept. Documenting the dead end so a future
-session doesn't repeat the same investigation from scratch.
+Syncing Noctalia's appearance to the login/lock-screen greeter needs the admin
+password every time. Noctalia's built-in `auto_sync` stays **off**; instead a
+`wallpaper_changed` hook syncs the greeter after a **manual** wallpaper change (one
+password prompt per change), and does nothing while automatic wallpaper rotation is on.
 
-## Why it happens
-`[shell.greeter_sync] auto_sync = true` in `~/.config/noctalia/config.toml` (default)
-fires `scheduleGreeterAutoSync()` on basically any settings change, which runs:
-```
-run0 /usr/bin/noctalia-greeter-apply-appearance /run/user/1000/noctalia-greeter-sync
-```
-`run0` (systemd's sudo-alternative, authenticates via polkit) elevates this to root by
-spinning up a **brand-new, randomly-named transient systemd unit** each time (e.g.
-`run-p80513-i95137.service` — confirmed via `journalctl`). The polkit action requested is
-the generic `org.freedesktop.systemd1.manage-units`, not anything greeter- or
-noctalia-specific, and it is NOT restarting/reloading `greetd.service` (its
-`ActiveEnterTimestamp` doesn't change) — it's just the transient-unit-creation check.
+## Why
+`auto_sync` syncs on every wallpaper/colors/theme/font change. With 30-min wallpaper
+rotation that meant a password prompt every 30 minutes, so it was turned off — but then
+the greeter never followed hand-picked wallpapers either. Jayavardhan's rule: rotation on
+→ never sync; rotation off → sync on wallpaper change, asking for the password is fine.
+Noctalia has no such option, so it's done with a hook.
 
-## Why the obvious fix doesn't work
-A polkit rule that grants `org.freedesktop.systemd1.manage-units` when
-`action.lookup("unit") == "greetd.service"` **never matches**, because the unit being
-managed is the random transient wrapper unit, not greetd. Since that name is different on
-every invocation, there's no stable unit name to key a scoped polkit rule on.
-
-Also: polkit's own `auth_admin_keep` caching (which should avoid re-prompting for ~a few
-minutes) never kicks in here either, because the cache is keyed to the *calling process*,
-and `run0` creates a fresh short-lived process/subject every single time — there's never a
-repeat identity for the cache to recognize.
-
-## What would be needed to actually fix it
-Confirming whether polkit exposes any other identifying detail for this action (e.g. a
-`description` field, since `run0` defaults the transient unit's description to the command
-line per `man run0`) requires enabling polkit's debug-level logging (`polkit.log()` calls
-are emitted at GLib DEBUG level, silently dropped at the daemon's default `notice` level).
-That means temporarily overriding `polkit.service`'s `ExecStart` to add
-`--log-level=debug`, restarting it, reading `journalctl -u polkit`, then reverting the
-override — user decided this wasn't worth it for a cosmetic annoyance and stopped here.
+## How the sync elevates (as of noctalia 5.2.0 / noctalia-greeter 1.5.0)
+`pkexec /usr/bin/noctalia-greeter-apply-appearance --sync /run/user/1000/noctalia-greeter-sync`
+under its own polkit action `org.noctalia.greeter.sync-appearance`
+(`/usr/share/polkit-1/actions/org.noctalia.greeter.apply-appearance.policy`, default
+`auth_admin`). Confirmed 2026-10-01 from the journal + Noctalia log on a real
+`noctalia msg greeter-sync`.
 
 ## Change
+`~/.config/noctalia/config.toml`:
 ```toml
-[shell.greeter_sync]
-auto_sync = false
+[hooks]
+wallpaper_changed = [ "$HOME/.config/hypr/scripts/greeter-sync-on-wallpaper.sh" ]
+
+[shell]
+    [shell.greeter_sync]
+    auto_sync = false
 ```
-Trades away automatic login/lock-screen background updates: run `noctalia msg
-greeter-sync` by hand whenever you actually want the greeter to match the current
-wallpaper/theme.
+
+`~/.config/hypr/scripts/greeter-sync-on-wallpaper.sh` (executable) — see the stored copy
+for the full commented version. Logic:
+1. `flock -n` on `$XDG_RUNTIME_DIR/greeter-sync-on-wallpaper.lock` — the hook fires
+   **once per monitor**, so only the first call proceeds.
+2. `sleep 3` — lets both monitors' events and the wallpaper-derived palette settle.
+3. Read `noctalia config export` (config.toml + Settings-UI settings.toml merged) with
+   Python `tomllib`: exit if `wallpaper.automation.enabled` is true.
+4. Exit if the default + per-monitor wallpaper paths equal those recorded at the last
+   sync (`~/.local/state/noctalia/greeter-sync-last-wallpaper`).
+5. `noctalia msg greeter-sync` (password prompt), then record the current paths.
 
 ## Notes
-- Re-triggered by turning on 30-min wallpaper rotation (auto_sync fires on every
-  wallpaper/theme change, so 30-min rotation meant a prompt every 30 min).
-- If revisiting the "real" fix later (a properly scoped polkit rule instead of just
-  disabling auto_sync): start from the debug-logging step above (still not attempted)
-  rather than re-deriving the whole "why doesn't unit==greetd.service work" chain again.
-- Also considered but not chosen: a polkit rule granting
-  `org.freedesktop.systemd1.manage-units` password-free for this user — rejected because
-  it isn't scopable to just this command (transient unit name is random each call), so it
-  would skip the password check for any `run0`/transient-unit action, not just Noctalia's.
+- **Verified 2026-10-01:** with rotation temporarily on, switching wallpaper fired the
+  hook (lock file created → `$HOME` in the hook command is expanded by a shell) and
+  produced no prompt. The manual-change path (prompt once, greeter updated) is the part
+  to watch on first real use.
+- Re-setting the *same* wallpaper (`noctalia msg wallpaper-set <current path>`) does not
+  fire `wallpaper_changed`.
+- Step 4 exists so a hook event that isn't a real change (e.g. wallpapers re-created at
+  shell startup — not confirmed whether that fires the hook) can't pop a prompt at login.
+  If the prompt is cancelled, `greeter-sync` may still exit 0 and the paths get recorded
+  anyway; just run `noctalia msg greeter-sync` by hand.
+- Only wallpaper changes trigger a sync. A palette/theme/font change on its own doesn't —
+  run `noctalia msg greeter-sync` manually for those.
+- Hook keys and defaults come from `noctalia config export full`. Noctalia's config is
+  TOML only; Lua in Noctalia is just for scripted bar widgets.
+- **Password-free alternative (not chosen):** since the sync now has its own polkit
+  action, a rule granting `org.noctalia.greeter.sync-appearance` to this user
+  (`subject.local && subject.active`) in `/etc/polkit-1/rules.d/` would make every sync
+  silent and allow `auto_sync = true` again. It wasn't chosen because any process running
+  as the user could then trigger the root helper, and a future helper version would
+  inherit the grant.
+- **History (2026-08-29, noctalia 5.0 beta / greeter 1.2.1):** back then auto_sync went
+  through `run0`, i.e. the generic `org.freedesktop.systemd1.manage-units` action on a
+  randomly-named transient unit (`run-pNNN-iNNN.service`). No scoped polkit rule was
+  possible (no stable unit name; `auth_admin_keep` never cached because each `run0` is a
+  fresh subject), so the only option was `auto_sync = false` plus manual
+  `noctalia msg greeter-sync`. Re-triggered by turning on 30-min rotation. The newer
+  dedicated polkit action makes that whole investigation obsolete.
+- Unrelated to [[greetd-pam-gnome-keyring-unlock]]: that prompt was gnome-keyring
+  (decrypting secrets), this one is polkit (authorizing root) — unlocking the keyring
+  grants no root authorization.
