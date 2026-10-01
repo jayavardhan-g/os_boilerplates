@@ -1,0 +1,9 @@
+[Unit]
+Description=Watch Noctalia settings for the wallpaper rotation toggle
+
+[Path]
+PathChanged=%h/.local/state/noctalia/settings.toml
+PathChanged=%h/.config/noctalia/config.toml
+
+[Install]
+WantedBy=default.target

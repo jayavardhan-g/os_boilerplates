@@ -23,19 +23,11 @@ thickness = 35
     opacity = 1.0
     padding = 6.0
 
-[hooks]
-# Syncs the greeter after a manual wallpaper change only — skipped while
-# [wallpaper.automation] rotation is on. See the script header for why.
-wallpaper_changed = [ "$HOME/.config/hypr/scripts/greeter-sync-on-wallpaper.sh" ]
-
 [shell]
 clipboard_image_action_command = "satty -f -"
 launch_apps_as_systemd_services = true
 polkit_agent = true
 settings_show_advanced = true
-
-    [shell.greeter_sync]
-    auto_sync = false
 
     [shell.panel]
     open_near_click_control_center = true

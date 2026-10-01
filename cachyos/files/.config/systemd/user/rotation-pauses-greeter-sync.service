@@ -1,0 +1,6 @@
+[Unit]
+Description=Pause Noctalia greeter auto-sync while wallpaper rotation is on
+
+[Service]
+Type=oneshot
+ExecStart=%h/.config/hypr/scripts/rotation-pauses-greeter-sync.sh
