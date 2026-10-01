@@ -108,8 +108,6 @@ exmap vsplit obcommand workspace:split-vertical
 nmap <Space>| :vsplit<CR>
 exmap hsplit obcommand workspace:split-horizontal
 nmap <Space>- :hsplit<CR>
-" (also Ctrl+- / Ctrl+| as Obsidian hotkeys in hotkeys.json - Ctrl+| can't be
-" expressed in a vimrc map)
 
 " Move note to another folder
 nmap <Space>m :movefile<CR>

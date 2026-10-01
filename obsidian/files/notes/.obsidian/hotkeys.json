@@ -13,22 +13,5 @@
   ],
   "editor:open-search-replace": [],
   "editor:insert-link": [],
-  "editor:toggle-checklist-status": [],
-  "workspace:split-horizontal": [
-    {
-      "modifiers": [
-        "Mod"
-      ],
-      "key": "-"
-    }
-  ],
-  "workspace:split-vertical": [
-    {
-      "modifiers": [
-        "Mod",
-        "Shift"
-      ],
-      "key": "\\"
-    }
-  ]
+  "editor:toggle-checklist-status": []
 }
