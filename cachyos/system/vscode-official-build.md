@@ -54,8 +54,9 @@ end)
 - **Why the keyring daemon needs an explicit `exec-once`-equivalent**: gnome-keyring ships
   a D-Bus service-activation file for `org.freedesktop.secrets`, so in theory nothing
   needs to start it manually — but that activation depends on a login keyring having been
-  unlocked via a PAM session module, which Hyprland's login flow doesn't set up. Starting
-  it explicitly at Hyprland startup sidesteps that.
+  unlocked via a PAM session module, which greetd's PAM stack originally didn't set up
+  (since fixed — see [[greetd-pam-gnome-keyring-unlock]]). Starting it explicitly at
+  Hyprland startup sidesteps that, and is harmless now that PAM unlocks it.
 - **Tried and reverted: `"password-store": "gnome-libsecret"` in `~/.config/Code/argv.json`.**
   Electron/Chromium's automatic keyring-backend detection
   (`base::nix::GetDesktopEnvironment`) only recognizes a hardcoded list of desktop

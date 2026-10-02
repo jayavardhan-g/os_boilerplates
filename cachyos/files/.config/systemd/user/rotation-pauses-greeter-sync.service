@@ -1,0 +1,14 @@
+[Unit]
+Description=Pause Noctalia greeter auto-sync while wallpaper rotation is on
+# Noctalia can save settings.toml several times a second (e.g. while clicking around
+# Settings). The default start limit (5 starts / 10 s) then killed the watcher, so the
+# rotation toggle was never seen. The script is cheap and idempotent - no limit.
+StartLimitIntervalSec=0
+
+[Service]
+Type=oneshot
+ExecStart=%h/.config/hypr/scripts/rotation-pauses-greeter-sync.sh
+# Oneshot services have no start timeout by default. A hung `noctalia config export`
+# would sit forever, and path triggers are ignored while this is still running, so the
+# watcher would silently stop working. A normal run takes ~1 s (two checks + sleep 1).
+TimeoutStartSec=30s
