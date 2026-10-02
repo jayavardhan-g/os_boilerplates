@@ -46,14 +46,17 @@ Key map (nvim key → Obsidian action):
 | `<Space>ob` (also `gr`), `<Space>oB` | backlinks sidebar, backlinks at bottom of note |
 | `<Space>oo` (also `gO`, `<Space>cs`), `<Space>ot` | outline, tags |
 | `<Space>og` / `<Space>oG` | graph / local graph |
-| `<Space>oi`, `<Space>oM` | insert template, bookmarks list |
+| `<Space>oi`, `<Space>om` | insert template, bookmarks list |
+| `<Space>sr` | search & replace in this note |
+| `<Space>ce`, `<Space>cl` | extract heading into new note, cycle list type (plain → `-` → `1.` → `[ ]`) |
+| `<Space>ghs` / `<Space>ghr` / `<Space>ghp` | stage / reset / preview git hunk |
 | `<Space>op` / `<Space>oP` | fold frontmatter / open properties panel |
 | `<Space>gg`, `<Space>gb`, `]h` / `[h` | obsidian-git view, blame, next/prev hunk |
 | `<Space>gl`, `<Space>gd`, `<Space>gc` | git history view, diff view, commit-and-sync (commit + pull + push) |
 | `gf`, `go`, `gD` | follow link, open link in new tab, open link in split |
 | `za`, `zm` / `zr` | toggle fold, fold more / less |
 | `<C-d>` / `<C-u>`, `n` / `N` | half-page scroll / search jump, kept centered (`zz`) |
-| `:q`, `:wq`, `:vs`, `:sp` | close tab, close tab, split right, split below |
+| `:w`, `:q`, `:wq`, `:vs`, `:sp` | save, close tab, close tab, split right, split below |
 | `<Space>y` / `<Space>Y`, `<Space>-` / `<Space>\|` | `"+y` / `"+y$`, split below / right |
 | `H` / `L`, `[b` / `]b`, `gt` / `gT` | prev / next tab |
 | `<C-h/j/k/l>` | focus pane left/down/up/right |
@@ -101,7 +104,12 @@ Ctrl+Shift+F, Ctrl+Shift+M, Ctrl+O/I history, zo/zc/zR/zM folds, Alt+P paste-as-
   which doesn't center. It must be `nnoremap`: the engine's keyToKey recursion guard
   (`vim.js` `doKeyToKey`) drops a mapping's own key, so `nmap n nzz` would only do `zz`.
 - Ex aliases work because `matchCommand_` looks up the exact typed name first, so `:q`
-  isn't shadowed by `:quickswitch`. Only `:w` (and `:image`) existed before.
+  isn't shadowed by `:quickswitch`. Only `:w` (and `:image`) existed before, and the
+  built-in `:w` calls `CodeMirror.commands.save`, which Obsidian never defines, so it
+  was a silent no-op until `exmap w` pointed it at `editor:save-file`.
+- Declined from a second review: `<Space>bb` for bookmarks (nvim: other buffer),
+  `<Space>ol` insert wikilink (`[[` in insert mode already opens the picker), a canvas key,
+  and `<Space>hs/hr/hp` (moved to LazyVim's `<Space>gh…`; `<Space>h` is the nvim cheatsheet).
 - Ideas taken from a popular community vimrc: ex aliases, gf/go, blockquote toggle, a
   checkbox key. Skipped: the parts needing Pane Relief / VimEx / obsidian-zoom / Stille /
   JS commands, and `[`/`]` → `{`/`}`, which would break `[b`, `[h` and `[[`.

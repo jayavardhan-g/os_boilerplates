@@ -27,7 +27,10 @@ nnoremap <C-u> <C-u>zz
 nnoremap n nzz
 nnoremap N Nzz
 
-" Vim ex aliases - :q / :wq close the tab, :vs / :sp split right / below
+" Vim ex aliases - :w saves, :q / :wq close the tab, :vs / :sp split right /
+" below. The engine's built-in :w calls a CodeMirror save hook Obsidian never
+" sets, so it's a silent no-op without this.
+exmap w obcommand editor:save-file
 exmap q obcommand workspace:close
 exmap wq obcommand workspace:close
 exmap vs obcommand workspace:split-vertical
@@ -148,6 +151,9 @@ nmap <Space>/ :grep<CR>
 nmap <Space>sg :grep<CR>
 exmap grepbuffer obcommand omnisearch:show-modal-infile
 nmap <Space>sb :grepbuffer<CR>
+" Search & replace in this note (LazyVim <leader>sr; replaces freed Ctrl+H)
+exmap searchreplace obcommand editor:open-search-replace
+nmap <Space>sr :searchreplace<CR>
 
 " Explorer (left) / other sidebar (right: backlinks, outline, tags, git) -
 " e/E pair like nvim's two explorer keys
@@ -164,7 +170,7 @@ exmap togglepin obcommand workspace:toggle-pin
 nmap <Space>bp :togglepin<CR>
 exmap reopentab obcommand workspace:undo-close-pane
 nmap <Space>bu :reopentab<CR>
-" Bookmarks (harpoon-style): add this note / list on <Space>oM
+" Bookmarks (harpoon-style): add this note / list on <Space>om
 exmap bookmarkadd obcommand bookmarks:bookmark-current-view
 nmap <Space>ba :bookmarkadd<CR>
 
@@ -176,6 +182,10 @@ nmap <Space>Y "+y$
 " Rename note (nvim: <leader>cr = LSP rename)
 exmap rename obcommand workspace:edit-file-title
 nmap <Space>cr :rename<CR>
+" Extract the heading under the cursor (+ its content) into a new note,
+" leaving a [[link]] behind
+exmap extractheading obcommand note-composer:extract-heading
+nmap <Space>ce :extractheading<CR>
 
 " Toggles
 exmap togglelinenumbers obcommand editor:toggle-line-numbers
@@ -189,6 +199,9 @@ exmap toggletask obcommand editor:toggle-checklist-status
 map <Space>x :toggletask<CR>
 exmap toggleblockquote obcommand editor:toggle-blockquote
 map <Space>> :toggleblockquote<CR>
+" Cycle line/selection: plain -> bullet -> numbered -> checkbox -> plain
+exmap cyclelist obcommand editor:cycle-list-checklist
+map <Space>cl :cyclelist<CR>
 
 " --- OBSIDIAN (<Space>o - group is free in nvim) ---
 exmap dailynote obcommand daily-notes
@@ -216,7 +229,7 @@ nmap <Space>oG :localgraph<CR>
 exmap template obcommand templates:insert-template
 nmap <Space>oi :template<CR>
 exmap bookmarklist obcommand bookmarks:open
-nmap <Space>oM :bookmarklist<CR>
+nmap <Space>om :bookmarklist<CR>
 " Properties: op folds the frontmatter block, oP opens the properties panel
 exmap foldprops obcommand editor:toggle-fold-properties
 nmap <Space>op :foldprops<CR>
@@ -232,6 +245,13 @@ exmap nexthunk obcommand obsidian-git:next-hunk
 nmap ]h :nexthunk<CR>
 exmap prevhunk obcommand obsidian-git:prev-hunk
 nmap [h :prevhunk<CR>
+" Hunk actions on LazyVim's gitsigns keys (<leader>gh...)
+exmap stagehunk obcommand obsidian-git:stage-hunk
+nmap <Space>ghs :stagehunk<CR>
+exmap resethunk obcommand obsidian-git:reset-hunk
+nmap <Space>ghr :resethunk<CR>
+exmap previewhunk obcommand obsidian-git:preview-hunk
+nmap <Space>ghp :previewhunk<CR>
 exmap githistory obcommand obsidian-git:open-history-view
 nmap <Space>gl :githistory<CR>
 exmap gitdiff obcommand obsidian-git:open-diff-view
