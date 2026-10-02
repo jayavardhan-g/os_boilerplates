@@ -26,6 +26,7 @@ Personal runbook of system/config decisions, split by scope:
 | [`noctalia/`](noctalia/palette-source-not-persisting.md) | Noctalia shell — wallpaper-based palette source not persisting to settings.toml |
 | [`zen-browser/`](zen-browser/windows-profile-migration.md) | Zen Browser (Flatpak) — migrating profiles from a Windows install: `profiles.ini`, the in-app profile-switcher DB, and per-profile app launchers |
 | [`obsidian/`](obsidian/vim-mode-nvim-parity.md) | Obsidian (vault `~/notes`) — vim mode + `.obsidian.vimrc` mirroring the nvim/LazyVim keymaps, Jump to link as the flash stand-in |
+| [`fish/`](fish/btop-force-utf-alias.md) | fish shell — `~/.config/fish/config.fish`; the `btop --force-utf` alias, why fish (not bash/zsh) is the login shell here, and why `source ~/.zshrc` from fish always errors |
 
 **Every folder above also has a `files/` subtree** holding actual copies of the real
 config files each entry touches, mirroring their real path under `$HOME` (e.g.
