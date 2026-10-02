@@ -24,8 +24,9 @@ per-install database not derived from `profiles.ini`.
 ## Change
 
 ### 1. Get the Windows profiles readable
-The Windows `C:` drive is BitLocker-encrypted; unlocking/mounting it (dislocker +
-`dm-mapper`, mounted at `/mnt/desktop-c`) was already set up from an earlier session —
+The Windows `C:` drive is BitLocker-encrypted; unlocking/mounting it (`cryptsetup
+--type bitlk` via `bit-unlock`, mounted at `/mnt/desktop-c` — see
+[[bit-unlock-cryptsetup]] in `bitlocker/`) was already set up from an earlier session —
 not part of this change. Windows Zen profiles live under
 `<C:>\Users\<user>\AppData\Roaming\zen\Profiles\`, listed in
 `<same>\zen\profiles.ini`.
