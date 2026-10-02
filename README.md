@@ -14,6 +14,7 @@ Personal runbook of system/config decisions, split by scope:
 |---|---|
 | [`vim/`](vim/vimrc-minimal-visual-config.md) | `~/.vimrc` — minimal chrome, terminal-native colors |
 | [`neovim/`](neovim/lazyvim-migration.md) | `~/.config/nvim/` — migrated to LazyVim 2026-09-15. Start at `lazyvim-migration.md`: it has the migration, fresh-machine steps, and an index of the topic files (keybindings, appearance, languages/LSP, plugin review, cheatsheet, GhostText, LeetCode). Older entries cover the pre-migration setup and Vim-side parity decisions still current |
+| [`kitty/`](kitty/ctrl-backspace-delete-word.md) | kitty terminal — Ctrl+Backspace sends Ctrl+W so it deletes a word in every program (replaced a Neovim-only mapping) |
 | [`ssh/`](ssh/ssh-term-mismatch-fix.md) | `~/.ssh/config` fixes |
 | [`vpn/`](vpn/fortinet-vpn-client.md) | Fortinet SSL-VPN client (`openfortivpn` + a fish function) |
 | [`cloudflare-warp/`](cloudflare-warp/cloudflare-warp-client.md) | Cloudflare WARP (1.1.1.1) client — AUR build via `makepkg` (no repo/Flatpak package), `warp-svc` + `warp-cli` |
