@@ -1,7 +1,7 @@
 # Languages, formatters and language servers
 
 **Category:** neovim
-**Files touched:** `lua/plugins/languages.lua`, `lua/plugins/formatting.lua`, `lua/plugins/clangd.lua` (all under `~/.config/nvim/`; copies in [`files/`](files/))
+**Files touched:** `lua/plugins/languages.lua`, `lua/plugins/formatting.lua`, `lua/plugins/clangd.lua`, `lua/config/options.lua`, `lua/plugins/noice.lua` (all under `~/.config/nvim/`), `~/.clang-format`; copies in [`files/`](files/)
 
 Which languages this setup supports and how: the treesitter trim, formatters (clang-format, ruff) and the clangd language server. Part of the LazyVim setup - see [[lazyvim-migration]] for the migration itself and the index of all topic files.
 
@@ -161,3 +161,90 @@ replaced with a clangd entry covering `<lead>ch`, the `--clang-tidy` behaviour, 
 `compile_commands.json` caveat (CMake's `-DCMAKE_EXPORT_COMPILE_COMMANDS=ON`; without it
 clangd falls back to weaker single-file analysis). Also added a "Language servers"
 section to the customizations summary. Coverage re-checked: 279/283, no regression.
+
+## Follow-up: diagnostics hidden by default (2026-09-23)
+
+**What**: LSP diagnostics (signs, underlines, virtual text) now start disabled in every
+Neovim session; `<leader>ud` (LazyVim's `Snacks.toggle.diagnostics()`) turns them back on.
+Asked whether this should be global or LeetCode-only - answer was everywhere.
+
+**Why**: user wanted them out of the way by default, enabled on demand.
+
+**Change** - `~/.config/nvim/lua/config/options.lua`, appended (copy in
+[`files/`](files/.config/nvim/lua/config/options.lua)):
+```lua
+vim.diagnostic.enable(false)
+```
+`~/.config/nvim/cheatsheet.md`: the `<lead>ud` line notes it starts off.
+
+**Verified live**: headless Neovim on a `.cpp` file with an undeclared call, clangd
+attached, forced `VeryLazy`: `vim.diagnostic.is_enabled()` is `false` while
+`vim.diagnostic.get(0)` still holds the 1 error (clangd keeps computing them - toggling
+on shows them instantly); `<leader>ud` is "Toggle Diagnostics", and toggling flips it to
+`true`. Confirmed nothing in LazyVim re-enables diagnostics globally after startup.
+
+**Notes**: the toggle is per session - every new Neovim starts with them off again.
+
+## Follow-up: clang-format indents 4 spaces, not 2 (2026-09-23)
+
+**What**: `<leader>cf` (conform -> clang-format) was indenting C/C++ with 2 spaces despite
+`shiftwidth=4`. Added a home-wide `~/.clang-format`.
+
+**Why**: clang-format never reads Vim's `shiftwidth`; with no `.clang-format` found it
+falls back to LLVM style (`IndentWidth: 2`). `--fallback-style` in conform's args was
+tried first - it only accepts predefined style names, not inline `{...}` settings
+("Invalid fallback style"). `--style={...}` would work but overrides every project's own
+`.clang-format`. A file in `$HOME` is found by clang-format's parent-directory search for
+anything under home (including leetcode.nvim's `~/.local/share/nvim/leetcode/`), while a
+project's closer `.clang-format` still wins.
+
+**Change** - `~/.clang-format` (new; copy in [`files/`](files/.clang-format)):
+```yaml
+BasedOnStyle: LLVM
+IndentWidth: 4
+AccessModifierOffset: -4
+```
+`AccessModifierOffset: -4` keeps `public:`/`private:` flush left, as before and as
+LeetCode's templates write them - LLVM's `-2` with 4-space indent would put them at
+column 2.
+
+**Verified live**: headless Neovim, forced `VeryLazy`, `conform.format()` on a
+LeetCode-shaped `.cpp` under `$HOME`: body indented 4, `public:` at column 0.
+
+**Notes**: files outside `$HOME` (e.g. `/tmp`) still get LLVM's 2-space default.
+
+## Follow-up: signature help no longer pops up by itself (2026-09-25)
+
+**What**: the floating window showing a function's parameters while typing a call
+(e.g. `max(const Tp &a, const Tp &b) -> const Tp &` after `std::max(`) is noice.nvim's
+LSP signature help - LazyVim enables noice, and noice's default
+`lsp.signature.auto_open` opens it on every LSP trigger character (`(`, `,`). Turned
+the auto-open off; it's shown on demand with `<C-k>` (insert) / `gK` (normal), both
+LazyVim's existing "Signature Help" keys. Not blink.cmp: its signature feature is left
+disabled by LazyVim, and its documentation window only accompanies the completion menu
+(itself off by default now).
+
+**Why**: user wanted it only when asked for, same as diagnostics and autocomplete.
+
+**Change** - `~/.config/nvim/lua/plugins/noice.lua` (new; copy in
+[`files/`](files/.config/nvim/lua/plugins/noice.lua)):
+```lua
+return {
+  {
+    "folke/noice.nvim",
+    opts = {
+      lsp = {
+        signature = {
+          auto_open = { enabled = false },
+        },
+      },
+    },
+  },
+}
+```
+Cheatsheet: new "Function parameters (signature help)" entry in the LSP category, added
+to both the original and the user's copy (see [[personal-cheatsheet]]).
+
+**Verified live**: headless Neovim, clangd attached, forced `VeryLazy`: merged
+`auto_open.enabled` is `false`; typing `std::max(1, ` opened no float; `<C-k>` then
+opened the noice float reading `max(const Tp &a, const Tp &b) -> const Tp &`.

@@ -1,7 +1,7 @@
 # Keybindings and editing behaviour
 
 **Category:** neovim
-**Files touched:** `lua/config/keymaps.lua`, `lua/config/options.lua`, `lua/plugins/completion.lua` (all under `~/.config/nvim/`; copies in [`files/`](files/))
+**Files touched:** `lua/config/keymaps.lua`, `cheatsheet.md`, `lua/config/options.lua`, `lua/plugins/completion.lua` (all under `~/.config/nvim/`; copies in [`files/`](files/))
 
 Key remaps and editing defaults layered on top of LazyVim: the old-vs-LazyVim key comparison, OSC 52 clipboard yank, VSCode-style comment toggle, 4-space indent, and the autocomplete toggle. Part of the LazyVim setup - see [[lazyvim-migration]] for the migration itself and the index of all topic files.
 
@@ -269,3 +269,54 @@ than have one picked unilaterally - fair, a keybinding is a pure preference call
 something to decide alone. Proposed `<leader>ac` ("autocomplete"); confirmed live that
 nothing at all is bound under `<leader>a`, so no collision risk. Re-verified the same way
 as the original binding - registers correctly, toggle behavior unchanged.
+
+## Follow-up: autocomplete starts off (2026-09-23)
+
+**What**: the `<leader>ac` autocomplete toggle (above) now starts **off** in every
+session instead of on - user wants it out of the way until asked for.
+
+**Change** - `~/.config/nvim/lua/config/keymaps.lua` (copy in
+[`files/`](files/.config/nvim/lua/config/keymaps.lua)): the toggle's backing global now
+initialises to `false`; the `Snacks.toggle` block and `completion.lua`'s
+`enabled = function() return vim.g.blink_cmp_enabled ~= false end` are unchanged.
+```lua
+vim.g.blink_cmp_enabled = false
+```
+`~/.config/nvim/cheatsheet.md`: the `<lead>ac` line notes it starts off.
+
+**Verified live**: headless Neovim, forced `VeryLazy`:
+`require("blink.cmp.config").enabled()` is `false` at startup; invoking the `<leader>ac`
+mapping ("Toggle Autocomplete") flips it to `true`.
+
+**Notes**: previously initialised to `true` (on by default, toggle to hide). Per session -
+every new Neovim starts with it off again.
+
+## Follow-up: `dm{mark}` deletes a mark (2026-09-28)
+
+**What**: a stray letter appeared left of a line number - a mark (`m` + letter pressed
+by accident; LazyVim's statuscolumn shows marks). Vim has no key to delete one, only
+`:delmarks`. Added `dm{mark}` (mirror of `m{mark}`, the usual mark-plugin convention;
+offered as the suggestion, user approved), and `dm-` clears every lowercase mark in
+the buffer. Also: in `<lead>sm` (Snacks marks picker) `<C-x>` already deletes the
+highlighted mark - now in the cheatsheet.
+
+**Change** - `~/.config/nvim/lua/config/keymaps.lua` (copy in
+[`files/`](files/.config/nvim/lua/config/keymaps.lua)):
+```lua
+vim.keymap.set("n", "dm", function()
+  local char = vim.fn.getcharstr()
+  if char == "-" then
+    vim.cmd("delmarks!")
+  elseif char:match("^[%a%d]$") then
+    pcall(vim.cmd.delmarks, char)
+  end
+end, { desc = "Delete mark (dm{mark}, dm- = all in buffer)" })
+```
+
+**Why `dm` is safe**: `m` isn't a motion, so the `d` operator never used `dm`; checked
+`dm`/`dmi` unmapped before adding. No other mapping starts with `d`, so `dd`, `dw`,
+`d$` still run with no wait.
+
+**Verified live** (headless, full config): `mi` then `dmi` removes mark i and leaves
+j; `dm-` clears j and k; `dmA` removes a file mark; `dw` and `dd` still behave; the
+mapping carries a which-key description. 9/9.

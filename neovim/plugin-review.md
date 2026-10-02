@@ -9,6 +9,9 @@ Entries are in the order they happened. They were split out of `lazyvim-migratio
 
 ## Follow-up: freed s/S from flash.nvim, moved it to gs/gS (2026-09-22)
 
+> **Superseded 2026-09-28**: flash is back on LazyVim's default `s`/`S` - see
+> "flash back on s/S" below. The rest of this entry is the history.
+
 **What**: began going through LazyVim's optional plugins one at a time (test live, then
 decide keep/remove) as a review process - `flash.nvim` (jump-to-visible-location) was
 first. It works well, but its default LazyVim binding is `s`/`S` in normal/visual/
@@ -297,3 +300,34 @@ already have runtime toggles (`<leader>ac`, `<leader>up`) instead.
 **Still flagged, not addressed**: C++ has no LSP (`clangd`) attached at all - no
 diagnostics/go-to-def/hover for C/C++. Bigger, separate decision from anything in this
 review pass.
+
+## Follow-up: flash back on s/S (2026-09-28)
+
+**What**: user asked to move flash back to LazyVim's default `s`/`S`. Asked first what
+replaces native `s`/`S` - the answer: `cl` (= `s`) and `cc` (= `S`), identical including
+counts; `C` / `D` (cursor to end of line) are unaffected, which was the user's actual
+worry about `S`. Offered keeping native `s`/`S` on `gs`/`gS` as a swap; declined, so
+`gs` is Vim's own "sleep" again and `gS` is unmapped.
+
+**Change** - `~/.config/nvim/lua/plugins/flash.lua` (copy in
+[`files/`](files/.config/nvim/lua/plugins/flash.lua)): the `keys` overrides removed;
+the file stays as a one-line spec so flash options have an obvious home (the
+cheatsheet's `Default:` lines for flash point here):
+```lua
+return {
+  { "folke/flash.nvim" },
+}
+```
+
+**Verified live**: `s` = "Flash" and `S` = "Flash Treesitter" in n/x/o modes; `gs`/`gS`
+native in all three. Also checked while here: flash's char mode has
+`multi_line = true`, so `f(` pressed on line 1 landed on the `(` on line 3 - the
+cheatsheet's "stays on the line" was wrong, now corrected, with `f`/`F` again = next /
+previous match (verified) and a `Default:` line for `multi_line = false` (verified in a
+scratch config: `f(` then stays on line 1).
+
+**Cheatsheet**: flash entry now `s`/`S` (not custom) with the `cl`/`cc` note; replace-mode
+entry lists `cl`/`cc`; the `s/S → gs/gS` row removed from "Keys changed from stock
+LazyVim"; `f`/`t` entry corrected; `gs` (sleep) added; the re-run audit also exposed
+`<lead>gS` (git stash picker, `<CR>` = `git stash apply`) - previously masked by the
+flash `gS` span - now added. Audit: 0 in every section.
