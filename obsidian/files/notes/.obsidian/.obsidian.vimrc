@@ -187,6 +187,12 @@ nmap <Space>cr :rename<CR>
 exmap extractheading obcommand note-composer:extract-heading
 nmap <Space>ce :extractheading<CR>
 
+" Cheatsheet note (nvim: <leader>h). Command comes from the "Hotkeys for
+" specific files" plugin - its id is the note's path, and obcommand splits on
+" spaces, so the path must not contain any.
+exmap cheatsheet obcommand obsidian-hotkeys-for-specific-files:Tools/Obsidian-Cheatsheet.md
+nmap <Space>h :cheatsheet<CR>
+
 " Toggles
 exmap togglelinenumbers obcommand editor:toggle-line-numbers
 nmap <Space>ul :togglelinenumbers<CR>

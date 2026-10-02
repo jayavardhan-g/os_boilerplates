@@ -22,7 +22,13 @@ Prereqs (vault-local, travel with the `~/notes` git repo):
 - Community plugins: **Vimrc Support** (`obsidian-vimrc-support`, 0.10.2), **Omnisearch**,
   **Git** (`obsidian-git`), **Jump to link** (`mrj-jump-to-link`, 0.6.1 — installed from
   the GitHub release: `gh release download 0.6.1 -R mrjackphil/obsidian-jump-to-link`
-  into `.obsidian/plugins/mrj-jump-to-link/`, then added to `community-plugins.json`).
+  into `.obsidian/plugins/mrj-jump-to-link/`, then added to `community-plugins.json`),
+  **Hotkeys for specific files** (`obsidian-hotkeys-for-specific-files`, 1.4.1 — same
+  install route from `vinzent03/obsidian-hotkeys-for-specific-files`; its `data.json`
+  registers `Tools/Obsidian-Cheatsheet.md`).
+- Cheatsheet note `~/notes/Tools/Obsidian-Cheatsheet.md` (copy:
+  `obsidian/files/notes/Tools/Obsidian-Cheatsheet.md`), opened with `<Space>h` like
+  nvim's cheatsheet. Same `## Category` / `### Entry` layout; search it with `<Space>sb`.
 - Default hotkeys cleared in `hotkeys.json` because Obsidian hotkeys fire *before*
   vimrc maps: Ctrl+O (quick switcher), Ctrl+I/B (italic/bold), Ctrl+H (search & replace),
   Ctrl+K (insert link), Ctrl+L (toggle checklist), Ctrl+D (delete paragraph — otherwise
@@ -107,6 +113,12 @@ Ctrl+Shift+F, Ctrl+Shift+M, Ctrl+O/I history, zo/zc/zR/zM folds, Alt+P paste-as-
   isn't shadowed by `:quickswitch`. Only `:w` (and `:image`) existed before, and the
   built-in `:w` calls `CodeMirror.commands.save`, which Obsidian never defines, so it
   was a silent no-op until `exmap w` pointed it at `editor:save-file`.
+- `<Space>h` → `obcommand obsidian-hotkeys-for-specific-files:Tools/Obsidian-Cheatsheet.md`.
+  That plugin's command id is the note path, and Vimrc Support's `obcommand` takes exactly
+  one argument split on whitespace (no quoting), so the path can't contain a space —
+  hence the hyphen. Chosen over enabling the Vimrc plugin's JS commands (flagged risky
+  by the plugin, and the vimrc syncs via git) to open the note with one line of JS.
+- Keep the cheatsheet note in sync when keys change.
 - Declined from a second review: `<Space>bb` for bookmarks (nvim: other buffer),
   `<Space>ol` insert wikilink (`[[` in insert mode already opens the picker), a canvas key,
   and `<Space>hs/hr/hp` (moved to LazyVim's `<Space>gh…`; `<Space>h` is the nvim cheatsheet).
