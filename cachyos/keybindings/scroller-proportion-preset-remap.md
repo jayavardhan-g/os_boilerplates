@@ -46,3 +46,5 @@ showed no keybinding-conflict warnings.
   [`files/.config/mango/cfg/keybinds.conf`](../files/.config/mango/cfg/keybinds.conf).
 - `SUPER+SHIFT+E` (reset scroller window to full width, `set_proportion 1.0`)
   is unaffected and stays as-is.
+- Hyprland port: both resize binds now un-maximize the window first, see
+  [[colresize-unmaximize-first]].
