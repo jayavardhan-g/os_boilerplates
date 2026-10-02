@@ -1,5 +1,10 @@
 # Config & decisions log
 
+See **[`KEYBINDS.md`](KEYBINDS.md)** for a single searchable list of every keybind on
+this machine (Hyprland, Mango, Vim, Neovim) — that file is a live reference of *what's
+currently bound*, kept in sync with the actual configs; everything else in this repo
+explains *why*/*when* a decision was made.
+
 Personal runbook of system/config decisions, split by scope:
 
 - **[`cachyos/`](cachyos/README.md)** — anything specific to *this* CachyOS + Hyprland
@@ -23,10 +28,12 @@ Personal runbook of system/config decisions, split by scope:
 | [`limine/`](limine/windows-dual-boot-order-and-bitlocker.md) | Limine bootloader — Windows dual-boot NVRAM order + BitLocker chainload fix |
 | [`xpad/`](xpad/xpad-sticky-notes.md) | Xpad desktop sticky notes — install, `--no-new`/`--quit` flags, why `sticky` (x-apps) doesn't work here |
 | [`mpv/`](mpv/mpv-video-player.md) | mpv video player — plain repo install, no player was present by default |
-| [`noctalia/`](noctalia/palette-source-not-persisting.md) | Noctalia shell — wallpaper-based palette source not persisting to settings.toml |
+| [`noctalia/`](noctalia/palette-source-not-persisting.md) | Noctalia shell — wallpaper-based palette source not persisting to settings.toml; [Theme Mode pinned to Dark](noctalia/theme-mode-pinned-dark.md) instead of time-of-day `Auto` |
 | [`zen-browser/`](zen-browser/windows-profile-migration.md) | Zen Browser (Flatpak) — migrating profiles from a Windows install (`profiles.ini`, profile-switcher DB, app launchers) and [vim-flavored keyboard shortcuts](zen-browser/vim-style-keyboard-shortcuts.md) (the actual shortcut file lives in the separate `~/dotfiles` repo, not here) |
 | [`obsidian/`](obsidian/vim-mode-nvim-parity.md) | Obsidian (vault `~/notes`) — vim mode + `.obsidian.vimrc` mirroring the nvim/LazyVim keymaps, Jump to link as the flash stand-in. Earlier: [migrating the vault](obsidian/vault-setup-and-migration.md) from Windows (clone from its own git remote, not a file copy) and the [first vimrc pass](obsidian/vimrc-keybindings.md) with its `codemirror-vim` dispatcher gotchas |
 | [`fish/`](fish/btop-force-utf-alias.md) | fish shell — `~/.config/fish/config.fish`; the `btop --force-utf` alias, why fish (not bash/zsh) is the login shell here, and why `source ~/.zshrc` from fish always errors |
+| [`mango/`](mango/keybinds.md) | MangoWM (tried alongside Hyprland) — keybinds/appearance/input matched to the Hyprland setup, the 0.16.1→0.17.0 AUR upgrade story |
+| [`bitlocker/`](bitlocker/bit-unlock-cryptsetup.md) | Unlock BitLocker drives via `cryptsetup` + Bitwarden CLI, no retyped passwords or plaintext keyfiles |
 
 **Every folder above also has a `files/` subtree** holding actual copies of the real
 config files each entry touches, mirroring their real path under `$HOME` (e.g.

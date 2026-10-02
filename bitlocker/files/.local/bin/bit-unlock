@@ -1,0 +1,120 @@
+#!/usr/bin/env bash
+# Unlock BitLocker-encrypted partitions and mount them, using a passphrase
+# stored in Bitwarden. With no arguments, shows an interactive menu.
+# Usage:
+#   bit-unlock                     interactive menu
+#   bit-unlock all | both          unlock every known drive
+#   bit-unlock <name> [<name>...]  unlock one or more specific drives
+set -uo pipefail
+
+KNOWN_DRIVES=(desktop-c)
+
+usage() {
+    echo "usage: bit-unlock [all|both]" >&2
+    echo "   or: bit-unlock <name> [<name>...]   (desktop-c)" >&2
+    echo "   with no arguments, shows an interactive menu" >&2
+    exit 1
+}
+
+prompt_drives() {
+    echo "Which drive(s) to unlock?" >&2
+    local i=1
+    for d in "${KNOWN_DRIVES[@]}"; do
+        echo "  $i) $d" >&2
+        i=$((i + 1))
+    done
+    echo "  a) all" >&2
+    read -r -p "Enter numbers separated by spaces, or 'a' for all: " REPLY
+
+    local choice DRIVES=()
+    for choice in $REPLY; do
+        case "$choice" in
+            a|all|both)
+                DRIVES=("${KNOWN_DRIVES[@]}")
+                break
+                ;;
+            ''|*[!0-9]*)
+                echo "ignoring invalid choice '$choice'" >&2
+                ;;
+            *)
+                if [ "$choice" -ge 1 ] && [ "$choice" -le "${#KNOWN_DRIVES[@]}" ]; then
+                    DRIVES+=("${KNOWN_DRIVES[$((choice - 1))]}")
+                else
+                    echo "ignoring out-of-range choice '$choice'" >&2
+                fi
+                ;;
+        esac
+    done
+
+    [ "${#DRIVES[@]}" -gt 0 ] || { echo "nothing selected" >&2; exit 1; }
+    printf '%s\n' "${DRIVES[@]}"
+}
+
+unlock_one() {
+    local NAME="$1" PART LABEL ITEM
+
+    case "$NAME" in
+        desktop-c)
+            PART="/dev/nvme0n1p3"
+            LABEL="desktop-c"
+            ITEM="BitLocker - DESKTOP-8PKDU07 C:"
+            ;;
+        *)
+            echo "unknown drive '$NAME' — known: desktop-c" >&2
+            return 1
+            ;;
+    esac
+
+    local MAPPER="bitlocker-$LABEL"
+    local MOUNTDEV="/dev/mapper/$MAPPER"
+    local MOUNTPOINT="/mnt/$LABEL"
+    local SESSION_FILE="/run/user/$(id -u)/bw-cli-session"
+
+    if [ -e "$MOUNTDEV" ]; then
+        echo "[$NAME] already unlocked at $MOUNTDEV" >&2
+    else
+        # Reuse a cached session (tmpfs only, never touches disk, cleared on
+        # logout/reboot) if it's still valid; otherwise unlock fresh and
+        # cache it.
+        if [ -z "${BW_SESSION:-}" ] && [ -f "$SESSION_FILE" ]; then
+            BW_SESSION="$(cat "$SESSION_FILE")"
+        fi
+        if [ -z "${BW_SESSION:-}" ] || [ "$(bw status --session "$BW_SESSION" 2>/dev/null | jq -r '.status')" != "unlocked" ]; then
+            BW_SESSION="$(bw unlock --raw)"
+            install -m 600 /dev/null "$SESSION_FILE"
+            printf '%s' "$BW_SESSION" > "$SESSION_FILE"
+        fi
+        export BW_SESSION
+
+        local PASSWORD
+        PASSWORD="$(bw get password "$ITEM" --session "$BW_SESSION")"
+        printf '%s' "$PASSWORD" | sudo cryptsetup open --type bitlk --key-file=- "$PART" "$MAPPER"
+        unset PASSWORD
+    fi
+
+    sudo mkdir -p "$MOUNTPOINT"
+    if mountpoint -q "$MOUNTPOINT"; then
+        echo "[$NAME] already mounted at $MOUNTPOINT" >&2
+    else
+        sudo mount -o uid="$(id -u)",gid="$(id -g)" "$MOUNTDEV" "$MOUNTPOINT"
+        echo "[$NAME] mounted at $MOUNTPOINT"
+    fi
+}
+
+if [ "$#" -eq 0 ]; then
+    mapfile -t DRIVES < <(prompt_drives)
+elif [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+    usage
+elif [ "$1" = "all" ] || [ "$1" = "both" ]; then
+    DRIVES=("${KNOWN_DRIVES[@]}")
+else
+    DRIVES=("$@")
+fi
+
+STATUS=0
+for d in "${DRIVES[@]}"; do
+    echo "=== $d ==="
+    unlock_one "$d" || STATUS=1
+    echo
+done
+exit "$STATUS"

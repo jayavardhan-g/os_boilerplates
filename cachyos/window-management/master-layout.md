@@ -44,6 +44,9 @@ hl.bind(mainMod .. " + M", hl.dsp.layout("swapwithmaster"))
 - The vim hjkl focus/move binds ([[vim-navigation]]) and resize binds ([[resize]]) all
   continue to work unchanged under master — `hl.dsp.focus`/`window.move`/`window.resize`
   are layout-agnostic.
+- `SUPER+N` now cycles this live between `master`, `dwindle`, and `scrolling` — see
+  [[layout-cycle]]. `master` remains the startup default set here; the bind only changes
+  it for the running session.
 - **Stack resize is a shared-boundary operation, not independent sizing.** Resizing a
   stack window's height/width changes the boundary it shares with its neighbor — grow one,
   shrink the other. For a window at the edge of the stack (nothing beyond it but the
