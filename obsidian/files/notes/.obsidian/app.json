@@ -1,0 +1,10 @@
+{
+  "vimMode": true,
+  "alwaysUpdateLinks": true,
+  "showLineNumber": true,
+  "rightToLeft": false,
+  "strictLineBreaks": true,
+  "attachmentFolderPath": "attachments",
+  "readableLineLength": false,
+  "livePreview": true
+}
