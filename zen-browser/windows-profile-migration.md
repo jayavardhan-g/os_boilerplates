@@ -2,14 +2,15 @@
 
 **Date:** 2026-09-20
 **Category:** zen-browser
-**Files touched:** `~/.var/app/app.zen_browser.zen/.zen/profiles.ini`, `~/.var/app/app.zen_browser.zen/.zen/Profile Groups/<StoreID>.sqlite`, `~/.local/share/applications/zen-*.desktop`
+**Files touched:** `~/.var/app/app.zen_browser.zen/.zen/profiles.ini`, `~/.var/app/app.zen_browser.zen/.zen/Profile Groups/<StoreID>.sqlite`, `~/.local/share/applications/zen-*.desktop`, `~/.local/bin/zen-*`
 
 ## What
 Copied all 4 Zen Browser profiles (Windows profile names: Nani, Nightmare, Study, Fake)
 from a BitLocker-encrypted Windows install into the CachyOS flatpak install of Zen
 (`app.zen_browser.zen`), registered them as launchable profiles, made one (Nani) the
 default, and added per-profile app-launcher entries. The pre-existing Linux Zen profile
-was left untouched — this was an additive import, not a merge/overwrite.
+was initially left untouched (an additive import, not a merge/overwrite) and later
+deleted outright the same day once Nani was confirmed sufficient — see Notes.
 
 ## Why
 Wanted browsing history, bookmarks, logins, and Zen's own "Spaces" carried over from the
@@ -119,28 +120,47 @@ belonged to a Windows-side profile group) end up in the same switcher panel — 
 profile with no `StoreID` won't offer this at all.
 
 ### 7. Add app-launcher entries
-One `.desktop` file per imported profile in `~/.local/share/applications/`, built from
-Zen's own installed entry's `Exec=` pattern
-(`/var/lib/flatpak/exports/share/applications/app.zen_browser.zen.desktop`) with
-`-P <Name> --new-instance` inserted:
+One `.desktop` file per imported profile in `~/.local/share/applications/`, each launching
+a small per-profile wrapper script in `~/.local/bin/` rather than an inline flatpak
+command:
+
+```sh
+# ~/.local/bin/zen-nani  (chmod +x)
+#!/bin/sh
+exec /usr/bin/flatpak run --branch=stable --arch=x86_64 --command=launch-script.sh --file-forwarding app.zen_browser.zen -P Nani --new-instance "$@"
+```
 
 ```ini
 [Desktop Entry]
 Name=Zen (Nani)
 Comment=Zen Browser — Nani profile
-Exec=/usr/bin/flatpak run --branch=stable --arch=x86_64 --command=launch-script.sh --file-forwarding app.zen_browser.zen -P Nani --new-instance @@u %u @@
+Exec=/home/jayavardhan/.local/bin/zen-nani %u
 Icon=app.zen_browser.zen
 Type=Application
 Categories=Network;WebBrowser;
-StartupWMClass=zen
 StartupNotify=true
 Terminal=false
 X-MultipleArgs=false
 ```
 
-Real copies of all four: [`files/.local/share/applications/`](files/.local/share/applications/).
+Real copies of all four `.desktop` files and wrapper scripts:
+[`files/.local/share/applications/`](files/.local/share/applications/),
+[`files/.local/bin/`](files/.local/bin/).
 Ran `update-desktop-database ~/.local/share/applications` afterward so launchers pick
 them up immediately.
+
+**Gotcha (noctalia shell specifically):** the first version of these `.desktop` files
+included `StartupWMClass=zen` (copied straight from Zen's own installed entry). Noctalia's
+launcher (`~/.cache/noctalia/noctalia.log`, `[desktop_entry]` log lines) treats matching
+`StartupWMClass` as "the same app" and silently collapses duplicates to one entry — so
+all 4 imported-profile launchers plus the base Zen entry got folded down to effectively
+one visible icon, with no warning logged. Confirmed via the app-count in that log
+(`refreshed desktop entries: N apps`) jumping from a wrong `+1` to the correct `+4` once
+`StartupWMClass` was removed from the 4 new files. Since the wrapper-script `Exec=` also
+makes each entry fully distinct (not just near-identical flatpak invocations), both
+changes together are the safest combination if this needs redoing on another
+noctalia-based setup — omit `StartupWMClass` on any `.desktop` file meant to be a
+*distinct* launch target for an app that's already otherwise installed.
 
 ## Notes
 - Bookmark/history/password merging **into** the pre-existing Linux profile was
@@ -150,7 +170,29 @@ them up immediately.
   Manager) and password export/import via CSV (`about:logins` → "⋯" menu) — both
   additive/non-destructive, no natively-supported way to merge `places.sqlite` history
   across profiles.
+- **Update, same day:** the pre-existing Linux profile (`6kha6tir.Default (release)`,
+  1.1G) was deleted outright once Nani was confirmed as a full replacement — no merge
+  ended up happening. Deleted after confirming no running process had it open (checked
+  `lock` symlink + `/proc/<pid>/fd` across all running `zen` PIDs), then removed its
+  `[Profile0]` block from `profiles.ini` and confirmed neither `Profile Groups/*.sqlite`
+  DB referenced its path. The still-present `xbt3gnri.Default Profile` (`[Profile1]`,
+  ~4K, effectively empty) was left alone — not the profile in question, and trivial to
+  delete later the same way if it's ever unwanted.
+- **Gotcha found from the above:** deleting `[Profile0]` without renumbering the
+  remaining `[ProfileN]` sections broke *every* launch path (CLI `-P <name>`, the app
+  launchers, and any WM keybind pointing at the app) — all of them fell through to
+  Zen/Firefox's classic Profile Manager dialog showing a completely **empty** profile
+  list, as if `profiles.ini` had no profiles at all. Cause: the toolkit profile-manager
+  parser reads `Profile0`, `Profile1`, `Profile2`, … as a strictly sequential,
+  zero-indexed scan and stops at the first missing number — it does not skip gaps or
+  scan by section name. Fix: whenever a `[ProfileN]` section is removed, renumber every
+  remaining `[ProfileN]` section so they run `0, 1, 2, …` with no gaps (matching the new
+  live state in
+  [`files/.var/app/app.zen_browser.zen/.zen/profiles.ini`](files/.var/app/app.zen_browser.zen/.zen/profiles.ini)).
+  Verified fixed by launching `flatpak run app.zen_browser.zen -P Nani --new-instance`
+  and confirming real content processes spawn instead of the Profile Manager dialog.
 - Only profiles actually needed were imported this way; if Zen is ever reinstalled fresh,
   repeat steps 2–4 minimum (3, 5–7 optional) per profile to bring than back.
 - This whole procedure is Zen/Firefox-profile-format-specific, not Hyprland/CachyOS-caused
-  — would apply identically on GNOME, KDE, or any other Linux desktop.
+  — would apply identically on GNOME, KDE, or any other Linux desktop. The step 7 gotcha
+  is the one noctalia-shell-specific exception within it.
