@@ -1936,7 +1936,7 @@ its own is overridden when a language server attaches):
 - `<C-r>{reg}` - insert a register's contents
 - `<C-r>"` - the last yank · `<C-r>0` - the last explicit yank
 - `<C-r>%` - the current filename
-- `<C-w>` (or `<C-BS>` / `<C-h>`) - delete the word before the cursor
+- `<C-w>` (or Ctrl+Backspace, which kitty sends as `<C-w>`) - delete the word before the cursor
 - `<C-u>` - delete back to the start of the line
 - `<C-o>` - run **one** normal-mode command, then return to insert
 - `<C-t>` / `<C-d>` - indent / unindent the current line
@@ -2887,7 +2887,6 @@ it.
   new  <lead>cL    set the language of the current buffer
   new  dm{mark}     delete a mark (dm- = all lowercase marks)
   new  \r / \s     LeetCode run / submit (solution files only)
-  new  <C-BS>      insert/cmdline: delete the previous word (also <C-h>)
   new  <C-e> <C-x> <C-o>   in this cheatsheet: edit / restore / edit original
 ```
 
